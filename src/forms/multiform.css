@@ -1,0 +1,593 @@
+/* MultiStepForm.css */
+
+/* Generic page container used by individual forms */
+.multiform-root.body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 60px 20px 20px;
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .multiform-root.body {
+    padding-top: 72px; /* 56px header + 16px margin */
+  }
+}
+
+.multiform-root .form-container {
+  max-width: 600px;
+  width: 100%;
+  margin: 40px auto;
+  padding: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+/* Form Header */
+.multiform-root .form-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.multiform-root .form-header h1 {
+  color: #2c3e50;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.multiform-root .progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e1e8ed;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  overflow: hidden;
+}
+
+.multiform-root .progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.multiform-root .form-header p {
+  color: #7f8c8d;
+  font-size: 16px;
+  margin: 0;
+}
+
+/* Error Messages */
+.multiform-root .error-message {
+  background: #fdf2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.multiform-root .error-icon {
+  font-size: 18px;
+}
+
+.multiform-root .field-error {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+}
+
+/* Form Steps */
+.multiform-root .form-step {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.multiform-root .form-step h2 {
+  color: #2c3e50;
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* Input Groups */
+.multiform-root .input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.multiform-root .input-group label {
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+/* Inputs, Selects, Textareas */
+.multiform-root input, .multiform-root select, .multiform-root textarea {
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 16px;
+  border: 2px solid #e1e8ed;
+  border-radius: 12px;
+  background: #fff;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+
+/* Generic field wrapper */
+.multiform-root .field {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+}
+
+/* Horizontal groups of fields */
+.multiform-root .row {
+  display: flex;
+  gap: 16px;
+}
+
+/* Status bar for feedback messages */
+.multiform-root .status-bar {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.multiform-root .status-bar.info {
+  background: #e1f5fe;
+  color: #0277bd;
+}
+
+.multiform-root .status-bar.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.multiform-root .status-bar.error {
+  background: #fdecea;
+  color: #c62828;
+}
+
+/* Responsive tweaks */
+@media (max-width: 600px) {
+  .multiform-root.body {
+    padding: 20px;
+  }
+
+  .multiform-root .row {
+    flex-direction: column;
+  }
+
+  .multiform-root .form-container {
+    margin: 20px auto;
+    padding: 20px;
+  }
+}
+
+.multiform-root input.error, .multiform-root select.error, .multiform-root textarea.error {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.multiform-root input:disabled, .multiform-root select:disabled, .multiform-root textarea:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.multiform-root textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Loading Text */
+.multiform-root .loading-text {
+  color: #3498db;
+  font-size: 12px;
+  font-style: italic;
+}
+
+
+.multiform-root .map-page {
+  top: 65px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.multiform-root .map-container {
+  width: 100%;
+  height: 300px;
+  margin-top: 20px;
+  
+}
+
+.multiform-root .map-container .leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Buttons */
+.multiform-root button {
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.multiform-root button:not(.service-tag) {
+  background: linear-gradient(193deg, #3498db, #2980b9);
+  color: white;
+}
+
+.multiform-root button:not(.service-tag):disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.multiform-root button.secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.multiform-root button.loading {
+  position: relative;
+  color: transparent;
+}
+
+.multiform-root button.loading::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 50%;
+  left: 50%;
+  margin-left: -10px;
+  margin-top: -10px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Button Groups */
+.multiform-root .button-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.multiform-root .button-group button {
+  flex: 1;
+}
+
+/* Services Grid */
+.multiform-root .services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.multiform-root .service-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: #f8f9fa;
+  border: 2px solid #e1e8ed;
+  border-radius: 12px;
+  color: #2c3e50;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.multiform-root .service-tag.selected {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  border-color: #3498db;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+.multiform-root .service-icon {
+  font-size: 24px;
+}
+
+.multiform-root .service-name {
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Success Modal */
+.multiform-root .success-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.multiform-root .success-modal {
+  background: white;
+  padding: 50px 40px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.5s ease;
+  max-width: 400px;
+  width: 90%;
+}
+
+.multiform-root .success-modal .success-icon {
+  width: 80px;
+  height: 80px;
+  background: #27ae60;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  margin: 0 auto 25px;
+  animation: bounce 0.6s ease;
+}
+
+.multiform-root .success-modal h2 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.multiform-root .success-modal p {
+  color: #7f8c8d;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Status Modal */
+.multiform-root .status-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.multiform-root .status-modal {
+  background: #fff;
+  padding: 30px 40px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: slideDown 0.3s ease;
+}
+
+.multiform-root .status-modal.success h2 {
+  color: #27ae60;
+}
+
+.multiform-root .status-modal.error h2 {
+  color: #e74c3c;
+}
+
+.multiform-root .status-modal button {
+  margin-top: 15px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+
+  .multiform-root .map-page {
+  top: 58px;
+  position: absolute;
+}
+  .multiform-root.body {
+    padding: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .multiform-root .form-container {
+    margin: 0;
+    padding: 20px 15px;
+    max-width: none;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  
+  .multiform-root .form-header h1 {
+    font-size: 28px;
+  }
+  
+  .multiform-root .form-step h2 {
+    font-size: 20px;
+  }
+  
+  .multiform-root input, .multiform-root select, .multiform-root textarea {
+    padding: 14px 16px;
+  }
+  
+  .multiform-root button {
+    padding: 14px 20px;
+  }
+  
+  .multiform-root .services-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  
+  .multiform-root .service-tag {
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+  
+  .multiform-root .service-icon {
+    font-size: 20px;
+  }
+  
+  .multiform-root .button-group {
+    flex-direction: column;
+  }
+
+  /* Modal adjustments for mobile */
+  .multiform-root .modal-overlay {
+    padding: 0;
+  }
+
+  .multiform-root .modal-content {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    border-radius: 0;
+    padding: 1rem;
+  }
+
+  .multiform-root .map-modal-container {
+    flex: 1;
+    height: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .multiform-root .form-container {
+    margin: 0;
+    padding: 20px 15px;
+  }
+  
+  .multiform-root .form-header h1 {
+    font-size: 24px;
+  }
+  
+  .multiform-root .services-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .multiform-root .success-modal {
+    padding: 30px 20px;
+  }
+  
+  .multiform-root .success-modal h2 {
+    font-size: 24px;
+  }
+}
+
+/* Modal padrao utilizado no AddressForm */
+.multiform-root .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.multiform-root .modal-content {
+  background: #fff;
+  border-radius: 20px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.multiform-root .map-modal-container {
+  height: 320px;
+  width: 100%;
+}

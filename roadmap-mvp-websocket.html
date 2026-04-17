@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roadmap Tecnico MVP</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --paper: #fffdf8;
+      --ink: #1f2933;
+      --muted: #52606d;
+      --line: #d9d3c7;
+      --accent: #0f766e;
+      --accent-soft: #d7f1ee;
+      --warn: #92400e;
+      --warn-soft: #fef3c7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 920px;
+      margin: 32px auto;
+      background: var(--paper);
+      padding: 40px 48px;
+      border: 1px solid var(--line);
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      line-height: 1.2;
+    }
+
+    h1 {
+      font-size: 30px;
+      color: var(--accent);
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-top: 28px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--line);
+    }
+
+    h3 {
+      font-size: 17px;
+      margin-top: 22px;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    ul {
+      margin: 0 0 14px 20px;
+      padding: 0;
+    }
+
+    li {
+      margin: 0 0 6px;
+    }
+
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #f1efe8;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.95em;
+    }
+
+    .lead {
+      color: var(--muted);
+      font-size: 15px;
+      margin-bottom: 18px;
+    }
+
+    .callout {
+      margin: 18px 0 22px;
+      padding: 14px 16px;
+      background: var(--accent-soft);
+      border-left: 5px solid var(--accent);
+    }
+
+    .warning {
+      background: var(--warn-soft);
+      border-left-color: var(--warn);
+    }
+
+    .section {
+      margin-top: 24px;
+    }
+
+    .footer {
+      margin-top: 34px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @page {
+      size: A4;
+      margin: 14mm;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        margin: 0;
+        max-width: none;
+        border: none;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>Roadmap Tecnico de Correcao do MVP</h1>
+    <p class="lead">
+      Plano de execucao para liberar o MVP com foco em seguranca, consistencia de fluxo,
+      autorizacao, integridade de dados e maturidade minima de producao.
+    </p>
+
+    <div class="callout warning">
+      <strong>Prioridade executiva:</strong> os PRs 1 a 8 formam a fase de bloqueio de deploy.
+      Os PRs 9 e 10 sao altamente recomendados para consolidacao pos-go-live e escala.
+    </div>
+
+    <section class="section">
+      <h2>Ordem Exata de Implementacao</h2>
+      <ul>
+        <li>PR 1: Seguranca de WebSocket</li>
+        <li>PR 2: Fluxo de estado de oferta e servico</li>
+        <li>PR 3: Transacoes e integridade de negocio</li>
+        <li>PR 4: Autorizacao por recurso</li>
+        <li>PR 5: DTOs e validacao de entrada</li>
+        <li>PR 6: Revisao de pagamentos</li>
+        <li>PR 7: Upload seguro</li>
+        <li>PR 8: Banco e migrations</li>
+        <li>PR 9: Realtime escalavel</li>
+        <li>PR 10: Operacao e qualidade</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>PR 1: Fechar Seguranca de WebSocket</h2>
+      <p><strong>Objetivo:</strong> remover o risco mais obvio e preparar a base do realtime.</p>
+      <p><strong>Arquivos:</strong></p>
+      <ul>
+        <li><code>src/config/realtime.js</code></li>
+        <li><code>go/src/config/auth.go</code></li>
+        <li><code>go/src/handlers/websocket_handler.go</code></li>
+        <li><code>go/src/handlers/chat_handler.go</code></li>
+        <li><code>go/main.go</code></li>
+      </ul>
+      <p><strong>Entradas do PR:</strong></p>
+      <ul>
+        <li>remover token da query string</li>
+        <li>aceitar token apenas por canal seguro definido</li>
+        <li>validar <code>Origin</code> no upgrade</li>
+        <li>centralizar extracao e autorizacao do socket</li>
+        <li>limpar logs sensiveis do handshake</li>
+      </ul>
+      <p><strong>Commit sugerido:</strong> <code>fix(ws): remove jwt from query string and validate websocket origin</code></p>
+    </section>
+
+    <section class="section">
+      <h2>PR 2: Corrigir Modelo de Estado de Oferta e Servico</h2>
+      <p><strong>Objetivo:</strong> consertar o fluxo principal do produto.</p>
+      <p><strong>Arquivos:</strong></p>
+      <ul>
+        <li><code>go/src/handlers/offer_handler.go</code></li>
+        <li><code>go/src/handlers/service_handler.go</code></li>
+        <li><code>go/src/constants/service_status.go</code></li>
+        <li><code>src/services/constants.js</code></li>
+      </ul>
+      <p><strong>Entradas do PR:</strong></p>
+      <ul>
+        <li>servico criado no estado correto apos aceite</li>
+        <li>alinhar <code>accept</code>, <code>start</code>, <code>start-with-pin</code>, <code>complete</code> e <code>cancel</code></li>
+        <li>remover estados impossiveis</li>
+        <li>revisar exibicao de status e acoes no frontend</li>
+      </ul>
+      <p><strong>Commit sugerido:</strong> <code>fix(service-flow): normalize offer and service state transitions</code></p>
+    </section>
+
+    <section class="section">
+      <h2>PR 3: Transacoes e Integridade de Negocio</h2>
+      <p><strong>Objetivo:</strong> evitar estados quebrados no banco.</p>
+      <p><strong>Arquivos:</strong></p>
+      <ul>
+        <li><code>go/src/handlers/offer_handler.go</code></li>
+        <li><code>go/src/handlers/service_handler.go</code></li>
+      </ul>
+      <p><strong>Entradas do PR:</strong></p>
+      <ul>
+        <li>transacao em aceitar oferta</li>
+        <li>transacao em aceitar contraproposta</li>
+        <li>rollback explicito em fluxo multi-entidade</li>
+        <li>reduzir chance de gravacao parcial</li>
+      </ul>
+      <p><strong>Commit sugerido:</strong> <code>fix(db): wrap offer acceptance and service creation in transactions</code></p>
+    </section>
+
+    <section class="section">
+      <h2>PR 4: Fechar Autorizacao por Recurso</h2>
+      <p><strong>Objetivo:</strong> impedir vazamento e alteracao indevida de dados.</p>
+      <p><strong>Arquivos:</strong></p>
+      <ul>
+        <li><code>go/src/handlers/user_handler.go</code></li>
+        <li><code>go/src/handlers/payment_handler.go</code></li>
+        <li><code>go/src/routes/routes.go</code></li>
+      </ul>
+      <p><strong>Entradas do PR:</strong></p>
+      <ul>
+        <li>restringir leitura de usuarios e pagamentos</li>
+        <li>aplicar ownership e role check em rotas sensiveis</li>
+        <li>revisar updates perigosos feitos com <code>BodyParser</code> direto em model</li>
+      </ul>
+      <p><strong>Commit sugerido:</strong> <code>fix(authz): enforce ownership and restrict sensitive resource access</code></p>
+    </section>
+
+    <section class="section">
+      <h2>PR 5: DTOs e Validacao de Entrada</h2>
+      <p><strong>Objetivo:</strong> parar de desserializar request direto em model do banco.</p>
+      <p><strong>Arquivos:</strong></p>
+      <ul>
+        <li><code>go/src/handlers/user_handler.go</code></li>
+        <li><code>go/src/handlers/service_handler.go</code></li>
+        <li><code>go/src/handlers/offer_handler.go</code></li>
+        <li><code>go/src/handlers/payment_handler.go</code></li>
+      </ul>
+      <p><strong>Entradas do PR:</strong></p>
+      <ul>
+        <li>criar structs de input e output</li>
+        <li>validar campos obrigatorios, enums, limites e ranges</li>
+        <li>sanitizar updates</li>
+        <li>padronizar resposta de erro</li>
+      </ul>
+      <p><strong>Commit sugerido:</strong> <code>refactor(api): introduce request dto validation for critical handlers</code></p>
+    </section>
+
+    <section class="section">
+      <h2>PR 6: Revisar Pagamentos</h2>
+      <p><strong>Objetivo:</strong> deixar o MVP com um fluxo de pagamento minimamente confiavel.</p>
+      <p><strong>Arquivos:</strong></p>
+      <ul>
+        <li><code>go/src/handlers/payment_handler.go</code></li>
+        <li><code>go/src/handlers/checkout_handler.go</code></li>
+        <li><code>go/src/models/payment.go</code></li>
+      </ul>
+      <p><strong>Entradas do PR:</strong></p>
+      <ul>
+        <li>definir um fluxo unico de pagamento</li>
+        <li>remover ou isolar fluxo morto/inseguro</li>
+        <li>impedir CRUD livre em pagamento</li>
+        <li>ajustar status e tentativas conforme necessidade do MVP</li>
+      </ul>
+      <p><strong>Commit sugerido:</strong> <code>fix(payments): consolidate payment flow and restrict payment operations</code></p>
+    </section>
+
+    <section class="section">
+      <h2>PR 7: Upload Seguro</h2>
+      <p><strong>Objetivo:</strong> reduzir risco operacional e abuso.</p>
+      <p><strong>Arquivos:</strong></p>
+      <ul>
+        <li><code>go/src/handlers/upload.go</code></li>
+      </ul>
+      <p><strong>Entradas do PR:</strong></p>
+      <ul>
+        <li>validar MIME type</li>
+        <li>validar tamanho maximo</li>
+        <li>limitar quantidade de arquivos</li>
+        <li>preferir storage seguro a anexo bruto por e-mail</li>
+      </ul>
+      <p><strong>Commit sugerido:</strong> <code>fix(upload): validate size and file type for document submission</code></p>
+    </section>
+
+    <section class="section">
+      <h2>PR 8: Banco e Migrations</h2>
+      <p><strong>Objetivo:</strong> tornar deploy previsivel.</p>
+      <p><strong>Arquivos:</strong></p>
+      <ul>
+        <li><code>go/src/config/db.go</code></li>
+        <li>nova pasta de migrations</li>
+        <li>scripts de execucao</li>
+      </ul>
+      <p><strong>Entradas do PR:</strong></p>
+      <ul>
+        <li>remover <code>AutoMigrate</code> do boot de producao</li>
+        <li>introduzir migrations versionadas</li>
+        <li>definir fluxo de bootstrap local versus producao</li>
+      </ul>
+      <p><strong>Commit sugerido:</strong> <code>chore(db): replace automigrate with versioned migrations</code></p>
+    </section>
+
+    <section class="section">
+      <h2>PR 9: Realtime Escalavel</h2>
+      <p><strong>Objetivo:</strong> preparar multiplas instancias.</p>
+      <p><strong>Arquivos:</strong></p>
+      <ul>
+        <li><code>go/src/realtime/hub.go</code></li>
+        <li><code>go/src/realtime/offers.go</code></li>
+        <li><code>go/src/chat/websocket/hub.go</code></li>
+        <li><code>go/src/chat/container.go</code></li>
+        <li><code>go/main.go</code></li>
+      </ul>
+      <p><strong>Entradas do PR:</strong></p>
+      <ul>
+        <li>introduzir <code>EventBus</code></li>
+        <li>introduzir <code>PresenceStore</code></li>
+        <li>implementar Redis para presenca e pub/sub</li>
+        <li>manter hub local apenas como registry de conexoes</li>
+      </ul>
+      <p><strong>Commit sugerido:</strong> <code>feat(realtime): add redis-backed presence and cross-instance event delivery</code></p>
+    </section>
+
+    <section class="section">
+      <h2>PR 10: Operacao e Qualidade</h2>
+      <p><strong>Objetivo:</strong> deixar deploy repetivel.</p>
+      <p><strong>Arquivos:</strong></p>
+      <ul>
+        <li>novos arquivos de infra como <code>Dockerfile</code> e workflow CI</li>
+        <li><code>go/main.go</code></li>
+        <li><code>package.json</code></li>
+      </ul>
+      <p><strong>Entradas do PR:</strong></p>
+      <ul>
+        <li>build backend e frontend</li>
+        <li>healthcheck</li>
+        <li>pipeline minima de validacao</li>
+        <li>padronizacao de envs</li>
+        <li>remocao do self-ping</li>
+      </ul>
+      <p><strong>Commit sugerido:</strong> <code>chore(infra): add build pipeline and production health checks</code></p>
+    </section>
+
+    <section class="section">
+      <h2>Divisao por Fase</h2>
+      <ul>
+        <li><strong>Fase de desbloqueio de deploy:</strong> PR 1 ao PR 8</li>
+        <li><strong>Fase pos-go-live forte:</strong> PR 9 e PR 10</li>
+      </ul>
+      <p>
+        Se o time quiser um MVP mais agressivo, o PR 9 pode ficar para depois, mas isso deve ser uma decisao
+        consciente: producao em instancia unica e sem prometer escala horizontal ainda.
+      </p>
+    </section>
+
+    <div class="footer">
+      Documento gerado no workspace do projeto Limpae para apoiar a liberacao do MVP em producao.
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,626 @@
+/* ============================================
+   DESIGN SYSTEM - LIMPAE LOGIN PREMIUM
+   ============================================ */
+
+:root {
+  /* Cores Primarias */
+  --primary-color: #2563eb;
+  --primary-dark: #1e40af;
+  --primary-light: #3b82f6;
+  
+  /* Cores Secundarias */
+  --success-color: #10b981;
+  --success-dark: #059669;
+  --error-color: #ef4444;
+  --error-light: #fee2e2;
+  
+  /* Cores Neutras */
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #9ca3af;
+  --bg-light: #f9fafb;
+  --bg-white: #ffffff;
+  --border-color: #e5e7eb;
+  
+  /* Sombras */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  
+  /* Tipografia */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 32px;
+  
+  /* Espacamento */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  
+  /* Transicoes */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 300ms ease-in-out;
+  --transition-slow: 500ms ease-in-out;
+}
+
+/* ============================================
+   RESET E ESTILOS GLOBAIS
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   LAYOUT PRINCIPAL
+   ============================================ */
+
+.body {
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: var(--spacing-lg);
+  position: relative;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .body {
+    padding-top: 76px !important;
+    align-items: flex-start; /* Alinha ao topo para evitar que o contedo suma se for muito grande */
+    overflow-y: auto;
+  }
+}
+
+.body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ============================================
+   CONTAINER DE LOGIN
+   ============================================ */
+
+.login-container {
+  width: 100%;
+  max-width: 385px;
+  background: var(--bg-white);
+  padding: 28px;
+  box-shadow: var(--shadow-xl);
+  border-radius: var(--radius-xl);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.6s ease-out;
+  margin-top: 50px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   HEADER DO FORMULRIO
+   ============================================ */
+
+.form-header {
+  margin-bottom: 26px;
+  position: relative;
+}
+
+.form-header h2 {
+  color: var(--text-primary);
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  margin-bottom: var(--spacing-sm);
+  letter-spacing: -0.5px;
+}
+
+.form-header p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ============================================
+   FORMULRIO DE LOGIN
+   ============================================ */
+
+.login-form {
+  width: 100%;
+}
+
+/* ============================================
+   GRUPOS DE INPUT
+   ============================================ */
+
+.input-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.3px;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 13px 18px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: all var(--transition-base);
+  background: var(--bg-white);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+}
+
+.login-form input::placeholder {
+  color: var(--text-light);
+}
+
+.login-form input:hover {
+  border-color: var(--text-light);
+}
+
+.login-form input.error {
+  border-color: var(--error-color);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.login-form input:disabled {
+  background-color: var(--bg-light);
+  cursor: not-allowed;
+  opacity: 0.6;
+  border-color: var(--border-color);
+}
+
+/* ============================================
+   ERROS DE CAMPO
+   ============================================ */
+
+.field-error {
+  color: var(--error-color);
+  font-size: var(--font-size-xs);
+  margin-top: var(--spacing-xs);
+  display: block;
+  font-weight: 500;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   MENSAGENS DE ERRO GERAL
+   ============================================ */
+
+.error-message {
+  background: var(--error-light);
+  border: 2px solid var(--error-color);
+  color: var(--error-color);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  animation: slideDown 0.3s ease-out;
+}
+
+.error-icon {
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ============================================
+   BOTO DE LOGIN
+   ============================================ */
+
+.login-form button {
+  width: 100%;
+  padding: 18px 26px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  transition: all var(--transition-base);
+  margin-top: 14px;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+}
+
+.login-form button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: left var(--transition-base);
+}
+
+.login-form button:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.login-form button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+}
+
+.login-form button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-form button.loading {
+  position: relative;
+  color: transparent;
+}
+
+.login-form button.loading::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 50%;
+  left: 50%;
+  margin-left: -10px;
+  margin-top: -10px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ============================================
+   FOOTER DO FORMULRIO
+   ============================================ */
+
+.form-footer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.form-footer p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.form-footer a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all var(--transition-base);
+  position: relative;
+}
+
+.form-footer a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--primary-color);
+  transition: width var(--transition-base);
+}
+
+.form-footer a:hover {
+  color: var(--primary-dark);
+}
+
+.form-footer a:hover::after {
+  width: 100%;
+}
+
+/* ============================================
+   MODAL DE SUCESSO
+   ============================================ */
+
+.success-message {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.success-content {
+  background: var(--bg-white);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-xl);
+  text-align: center;
+  box-shadow: var(--shadow-xl);
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 420px;
+  width: 90%;
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--success-color), var(--success-dark));
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  margin: 0 auto var(--spacing-lg);
+  animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.success-content h3 {
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+}
+
+.success-content p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 768px) {
+  :root {
+    --font-size-2xl: 16px;
+    --font-size-xl: 15px;
+    --font-size-lg: 14px;
+    --font-size-base: 13px;
+    --font-size-sm: 11px;
+    --font-size-xs: 10px;
+    --spacing-xl: 12px;
+    --spacing-lg: 10px;
+    --spacing-md: 12px;
+    --spacing-sm: 6px;
+  }
+
+  .login-container {
+    max-width: 340px;
+    padding: 12px 10px;
+    border-radius: 12px;
+  }
+
+  .form-header {
+    margin-bottom: 12px;
+  }
+
+  .form-header h2 {
+    font-size: var(--font-size-2xl);
+    margin-bottom: 4px;
+  }
+
+  .form-header p {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .input-group {
+    margin-bottom: 10px;
+  }
+
+  .input-group label {
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+
+  .login-form input {
+    padding: 9px 10px;
+    font-size: 12px;
+    border-radius: 10px;
+  }
+
+  .login-form button {
+    padding: 10px 12px;
+    font-size: 12px;
+    margin-top: 6px;
+    border-radius: 10px;
+  }
+
+  .form-footer p {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --spacing-xl: 10px;
+    --spacing-lg: 9px;
+    --spacing-md: 10px;
+    --spacing-sm: 5px;
+    --font-size-2xl: 14px;
+    --font-size-xl: 14px;
+    --font-size-lg: 13px;
+    --font-size-base: 12px;
+    --font-size-sm: 10px;
+    --font-size-xs: 9px;
+  }
+
+  .body {
+    padding: 8px;
+  }
+
+  .login-container {
+    width: 100%;
+    max-width: none;
+    padding: 10px 9px;
+    border-radius: 10px;
+  }
+
+  .form-header {
+    margin-bottom: 10px;
+  }
+
+  .form-header h2 {
+    font-size: 13px;
+    text-align: center;
+    letter-spacing: -0.03em;
+  }
+
+  .form-header p {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .login-form input {
+    width: 100%;
+    padding: 8px 9px;
+    font-size: 11px;
+  }
+
+  .login-form button {
+    width: 100%;
+    padding: 9px 10px;
+    font-size: 11px;
+  }
+
+  .input-group label,
+  .field-error,
+  .form-footer p {
+    font-size: 10px;
+  }
+
+  .success-content {
+    padding: var(--spacing-lg);
+  }
+
+  .success-content h3 {
+    font-size: var(--font-size-lg);
+  }
+}
+
+/* ============================================
+   ACESSIBILIDADE
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visivel para navegacao por teclado */

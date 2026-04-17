@@ -1,0 +1,134 @@
+<svg width="1440" height="1800" viewBox="0 0 1440 1800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1440" y2="1800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EEF5FF"/>
+      <stop offset="1" stop-color="#F8FBFF"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="280" y1="60" x2="1160" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F2F7FF"/>
+    </linearGradient>
+    <linearGradient id="blueBtn" x1="0" y1="0" x2="220" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#172554"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="1440" height="1800" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+    <filter id="soft" x="0" y="0" width="1440" height="1800" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#1D4ED8" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="1440" height="1800" fill="url(#bg)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="270" y="72" width="900" height="238" rx="24" fill="url(#hero)" stroke="white" stroke-width="5"/>
+  </g>
+
+  <text x="720" y="144" text-anchor="middle" fill="#10213E" font-size="46" font-weight="800" font-family="Manrope, Arial">Mural de Ofertas</text>
+  <rect x="636" y="164" width="168" height="6" rx="3" fill="url(#blueBtn)"/>
+
+  <g filter="url(#soft)">
+    <rect x="316" y="205" width="240" height="56" rx="14" fill="url(#blueBtn)"/>
+  </g>
+  <text x="436" y="240" text-anchor="middle" fill="white" font-size="19" font-weight="700" font-family="Manrope, Arial">Criar oferta</text>
+
+  <rect x="316" y="280" width="808" height="58" rx="14" fill="#FCFCFD" stroke="#E5E7EB"/>
+  <text x="340" y="304" fill="#0F172A" font-size="12" font-weight="700" font-family="Manrope, Arial" letter-spacing="1.2">FILTROS</text>
+  <text x="340" y="326" fill="#64748B" font-size="16" font-weight="500" font-family="Manrope, Arial">Sem filtros ativos</text>
+  <rect x="976" y="288" width="128" height="42" rx="12" fill="#FFFFFF" stroke="#DBE2EA"/>
+  <text x="1040" y="314" text-anchor="middle" fill="#0F172A" font-size="16" font-weight="700" font-family="Manrope, Arial">Filtrar</text>
+
+  <rect x="270" y="348" width="900" height="70" rx="22" fill="#FFFFFF" stroke="#E5E7EB"/>
+  <rect x="292" y="364" width="180" height="38" rx="19" fill="#1D4ED8"/>
+  <text x="382" y="388" text-anchor="middle" fill="white" font-size="15" font-weight="700" font-family="Manrope, Arial">Minhas ofertas</text>
+  <rect x="486" y="364" width="230" height="38" rx="19" fill="#F8FAFC"/>
+  <text x="601" y="388" text-anchor="middle" fill="#475569" font-size="15" font-weight="700" font-family="Manrope, Arial">Minhas negociacoes</text>
+
+  <g filter="url(#shadow)">
+    <rect x="270" y="448" width="900" height="460" rx="24" fill="#FFFFFF"/>
+  </g>
+  <text x="314" y="492" fill="#64748B" font-size="12" font-weight="700" font-family="Manrope, Arial" letter-spacing="1.2">OFERTA PUBLICADA</text>
+  <text x="314" y="530" fill="#0F172A" font-size="34" font-weight="800" font-family="Manrope, Arial">Limpeza completa</text>
+  <text x="314" y="562" fill="#64748B" font-size="18" font-weight="500" font-family="Manrope, Arial">22/03/2026 as 09:00</text>
+
+  <rect x="972" y="486" width="126" height="34" rx="17" fill="#DBEAFE"/>
+  <text x="1035" y="507" text-anchor="middle" fill="#1D4ED8" font-size="14" font-weight="800" font-family="Manrope, Arial">NEGOCIACAO</text>
+  <text x="973" y="555" fill="#64748B" font-size="14" font-weight="600" font-family="Manrope, Arial">Valor atual</text>
+  <text x="973" y="590" fill="#0F172A" font-size="30" font-weight="800" font-family="Manrope, Arial">R$ 220,00</text>
+
+  <rect x="314" y="612" width="170" height="94" rx="18" fill="#F8FAFC" stroke="#E5E7EB"/>
+  <text x="338" y="642" fill="#64748B" font-size="13" font-weight="700" font-family="Manrope, Arial">DURACAO</text>
+  <text x="338" y="682" fill="#0F172A" font-size="28" font-weight="800" font-family="Manrope, Arial">4h</text>
+
+  <rect x="500" y="612" width="628" height="94" rx="18" fill="#F8FAFC" stroke="#E5E7EB"/>
+  <text x="524" y="642" fill="#64748B" font-size="13" font-weight="700" font-family="Manrope, Arial">ENDERECO</text>
+  <text x="524" y="682" fill="#0F172A" font-size="24" font-weight="700" font-family="Manrope, Arial">Rua das Flores, 120 - Centro</text>
+
+  <rect x="314" y="726" width="814" height="78" rx="18" fill="#F8FAFC" stroke="#E5E7EB"/>
+  <text x="338" y="756" fill="#64748B" font-size="13" font-weight="700" font-family="Manrope, Arial">OBSERVACOES</text>
+  <text x="338" y="790" fill="#0F172A" font-size="20" font-weight="600" font-family="Manrope, Arial">Apartamento com cozinha e dois banheiros.</text>
+
+  <line x1="314" y1="836" x2="1126" y2="836" stroke="#E5E7EB"/>
+  <text x="314" y="878" fill="#0F172A" font-size="24" font-weight="800" font-family="Manrope, Arial">Contrapropostas</text>
+  <text x="1032" y="878" fill="#64748B" font-size="16" font-weight="600" font-family="Manrope, Arial">2 de 4 visiveis</text>
+
+  <rect x="314" y="896" width="814" height="78" rx="16" fill="#F8FAFC" stroke="#E5E7EB"/>
+  <text x="336" y="926" fill="#64748B" font-size="13" font-weight="700" font-family="Manrope, Arial">FILTROS</text>
+  <text x="336" y="952" fill="#64748B" font-size="15" font-weight="500" font-family="Manrope, Arial">2 filtros ativos</text>
+  <rect x="988" y="914" width="118" height="40" rx="12" fill="#FFFFFF" stroke="#DBE2EA"/>
+  <text x="1047" y="939" text-anchor="middle" fill="#0F172A" font-size="15" font-weight="700" font-family="Manrope, Arial">Filtrar</text>
+
+  <rect x="336" y="992" width="148" height="32" rx="16" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="410" y="1012" text-anchor="middle" fill="#334155" font-size="13" font-weight="700" font-family="Manrope, Arial">Nota: 4.5+</text>
+  <rect x="498" y="992" width="168" height="32" rx="16" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="582" y="1012" text-anchor="middle" fill="#334155" font-size="13" font-weight="700" font-family="Manrope, Arial">Ate 8 km</text>
+
+  <g filter="url(#soft)">
+    <rect x="314" y="1048" width="814" height="138" rx="20" fill="#FFFFFF" stroke="#E5E7EB"/>
+  </g>
+  <text x="338" y="1094" fill="#0F172A" font-size="24" font-weight="800" font-family="Manrope, Arial">Mariana Costa</text>
+  <text x="338" y="1124" fill="#64748B" font-size="16" font-weight="600" font-family="Manrope, Arial">Centro  •  3.2 km  •  4.9 estrelas</text>
+  <rect x="972" y="1070" width="118" height="32" rx="16" fill="#FFEDD5"/>
+  <text x="1031" y="1090" text-anchor="middle" fill="#C2410C" font-size="13" font-weight="800" font-family="Manrope, Arial">PENDENTE</text>
+  <text x="338" y="1160" fill="#0F172A" font-size="15" font-weight="600" font-family="Manrope, Arial">Valor proposto</text>
+  <text x="338" y="1188" fill="#0F172A" font-size="28" font-weight="800" font-family="Manrope, Arial">R$ 240,00</text>
+  <path d="M1084 1114L1104 1134L1084 1154" stroke="#64748B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g filter="url(#soft)">
+    <rect x="314" y="1206" width="814" height="164" rx="20" fill="#FFFFFF" stroke="#E5E7EB"/>
+  </g>
+  <text x="338" y="1250" fill="#0F172A" font-size="24" font-weight="800" font-family="Manrope, Arial">Juliana Lima</text>
+  <text x="338" y="1280" fill="#64748B" font-size="16" font-weight="600" font-family="Manrope, Arial">Bela Vista  •  5.1 km  •  4.8 estrelas</text>
+  <rect x="966" y="1228" width="124" height="32" rx="16" fill="#DCFCE7"/>
+  <text x="1028" y="1248" text-anchor="middle" fill="#166534" font-size="13" font-weight="800" font-family="Manrope, Arial">ACEITA</text>
+  <text x="338" y="1312" fill="#0F172A" font-size="15" font-weight="600" font-family="Manrope, Arial">Valor proposto</text>
+  <text x="338" y="1340" fill="#0F172A" font-size="28" font-weight="800" font-family="Manrope, Arial">R$ 230,00</text>
+  <text x="338" y="1376" fill="#475569" font-size="16" font-weight="500" font-family="Manrope, Arial">Tenho experiencia com limpeza pesada e disponibilidade no horario.</text>
+
+  <rect x="314" y="1400" width="146" height="42" rx="12" fill="#F8FAFC" stroke="#DCE3EA"/>
+  <text x="387" y="1426" text-anchor="middle" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">Ver perfil</text>
+  <rect x="474" y="1400" width="118" height="42" rx="12" fill="url(#blueBtn)"/>
+  <text x="533" y="1426" text-anchor="middle" fill="#FFFFFF" font-size="14" font-weight="700" font-family="Manrope, Arial">Aceitar</text>
+  <rect x="606" y="1400" width="118" height="42" rx="12" fill="#FFFFFF" stroke="#DCE3EA"/>
+  <text x="665" y="1426" text-anchor="middle" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">Recusar</text>
+
+  <g opacity="0.9">
+    <rect x="1190" y="520" width="170" height="520" rx="22" fill="#FFFFFF" stroke="#E5E7EB"/>
+    <text x="1216" y="564" fill="#0F172A" font-size="22" font-weight="800" font-family="Manrope, Arial">Drawer</text>
+    <text x="1216" y="592" fill="#64748B" font-size="15" font-weight="500" font-family="Manrope, Arial">Filtros da proposta</text>
+    <rect x="1216" y="622" width="118" height="14" rx="7" fill="#E2E8F0"/>
+    <rect x="1216" y="648" width="118" height="44" rx="12" fill="#FFFFFF" stroke="#DCE3EA"/>
+    <rect x="1216" y="730" width="118" height="14" rx="7" fill="#E2E8F0"/>
+    <rect x="1216" y="758" width="118" height="44" rx="12" fill="#FFFFFF" stroke="#DCE3EA"/>
+    <rect x="1216" y="838" width="118" height="14" rx="7" fill="#E2E8F0"/>
+    <rect x="1216" y="870" width="118" height="12" rx="6" fill="#CBD5E1"/>
+    <rect x="1216" y="924" width="118" height="14" rx="7" fill="#E2E8F0"/>
+    <rect x="1216" y="956" width="54" height="42" rx="12" fill="#FFFFFF" stroke="#DCE3EA"/>
+    <rect x="1280" y="956" width="54" height="42" rx="12" fill="#FFFFFF" stroke="#DCE3EA"/>
+  </g>
+
+  <text x="720" y="1664" text-anchor="middle" fill="#475569" font-size="24" font-weight="700" font-family="Manrope, Arial">Mock visual aproximado do mural atual</text>
+  <text x="720" y="1700" text-anchor="middle" fill="#64748B" font-size="18" font-weight="500" font-family="Manrope, Arial">Baseado na estrutura de src/offers/index.js + src/offers/offers.css</text>
+</svg>

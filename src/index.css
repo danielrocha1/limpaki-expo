@@ -1,0 +1,517 @@
+/* CSS Variables for Design System - Global */
+:root {
+  --app-background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  --app-background-solid: #1e40af;
+  --app-header-height: 64px;
+  /* Colors */
+  --primary-600: #2563eb;
+  --primary-500: #3b82f6;
+  --primary-400: #60a5fa;
+  --primary-200: #bfdbfe;
+  --primary-100: #dbeafe;
+  --primary-50: #eff6ff;
+  
+  --secondary-600: #dc2626;
+  --secondary-500: #ef4444;
+  --secondary-400: #f87171;
+  
+  --accent-600: #d97706;
+  --accent-500: #f59e0b;
+  --accent-400: #fbbf24;
+  
+  --gray-900: #111827;
+  --gray-800: #1f2937;
+  --gray-700: #374151;
+  --gray-600: #4b5563;
+  --gray-500: #6b7280;
+  --gray-400: #9ca3af;
+  --gray-300: #d1d5db;
+  --gray-200: #e5e7eb;
+  --gray-100: #f3f4f6;
+  --gray-50: #f9fafb;
+  
+  --white: #ffffff;
+  --black: #000000;
+  
+  /* Typography */
+  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-family-secondary: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+  /* Font Sizes */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
+  --text-5xl: 3rem;       /* 48px */
+  --text-6xl: 3.75rem;    /* 60px */
+  
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-400) 100%);
+  --gradient-secondary: linear-gradient(135deg, var(--accent-600) 0%, var(--accent-400) 100%);
+  --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
+  /* Transitions */
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 300ms ease-in-out;
+  --transition-slow: 500ms ease-in-out;
+}
+
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  min-height: 100%;
+  background: var(--app-background-solid);
+  scrollbar-gutter: stable;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-family-primary);
+  line-height: 1.6;
+  color: var(--gray-800);
+  position: relative;
+  background: transparent;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--app-background);
+  background-repeat: no-repeat;
+  background-size: cover;
+  pointer-events: none;
+}
+
+#root {
+  min-height: 100vh;
+  position: relative;
+  background: transparent;
+}
+
+.app-shell {
+  min-height: 100vh;
+  position: relative;
+  isolation: isolate;
+}
+
+.app-shell-main {
+  min-height: 100vh;
+  
+  position: relative;
+  z-index: 1;
+}
+
+.email-verification-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 10000;
+}
+
+.email-verification-banner {
+  display: grid;
+  gap: 10px;
+  width: min(520px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border: 1px solid rgba(254, 215, 170, 0.9);
+  background: rgba(255, 247, 237, 0.98);
+  border-radius: 18px;
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.22);
+}
+
+.email-verification-banner__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.email-verification-banner__copy strong {
+  color: #9a3412;
+}
+
+.email-verification-banner__copy span,
+.email-verification-banner__feedback {
+  color: #7c2d12;
+  font-size: 14px;
+}
+
+.email-verification-banner__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.email-verification-banner__actions button,
+.email-verification-banner__actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.email-verification-banner__actions button {
+  background: #ea580c;
+  color: #fff;
+}
+
+.email-verification-banner__actions button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.email-verification-banner__actions a {
+  background: #fff;
+  color: #9a3412;
+  border: 1px solid rgba(251, 146, 60, 0.55);
+}
+
+@media (max-width: 768px) {
+  .email-verification-overlay {
+    align-items: center;
+    justify-content: center;
+  }
+
+  .email-verification-banner {
+    padding: 16px;
+  }
+
+  .email-verification-banner__actions {
+    flex-direction: column;
+  }
+
+  .email-verification-banner__actions button,
+  .email-verification-banner__actions a {
+    width: 100%;
+  }
+}
+
+.route-loading-fallback {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 16px;
+  color: var(--white);
+  font-weight: 700;
+}
+
+.route-loading-fallback__spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-top-color: var(--white);
+  border-radius: 9999px;
+  animation: route-loading-spin 0.8s linear infinite;
+}
+
+@keyframes route-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+main,
+.main-content,
+.page-content,
+.dashboard,
+.map-container,
+.offers-container,
+.services-container,
+.profile-container,
+.ant-layout,
+.ant-layout-content {
+  background: transparent;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-secondary);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--gray-900);
+}
+
+p {
+  margin-bottom: var(--space-4);
+  color: var(--gray-600);
+}
+
+a {
+  color: var(--primary-600);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--primary-700);
+}
+
+/* Focus styles for accessibility */
+
+/* Selection styles */
+::selection {
+  background-color: var(--primary-100);
+  color: var(--primary-900);
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-400);
+  border-radius: var(--radius-full);
+  margin-top: 80px;
+  margin-bottom: 30px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+/* Utility classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.text-primary {
+  color: var(--primary-600);
+}
+
+.text-secondary {
+  color: var(--gray-600);
+}
+
+.text-muted {
+  color: var(--gray-500);
+}
+
+/* Loading animation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Slide up animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+/* Button reset */
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* Form element improvements */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Image responsiveness */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Code font family fallback */
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Print styles */
+@media print {
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  a, a:visited {
+    text-decoration: underline;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   AJUSTES PARA MOBILE COM BOTTOM NAVIGATION
+   ============================================ */
+
+@media (max-width: 768px) {
+  :root {
+    --app-header-height: 56px;
+  }
+
+  body {
+    padding-bottom: 60px;
+  }
+
+  /* Garantir que o contedo principal nao fique atrs do header e bottom nav */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .app-shell-main {
+    padding-top: 36px;
+  }
+
+  /* Ajustar rotas para ter espao adequado */
+  main,
+  .main-content,
+  .page-content,
+  .dashboard,
+  .map-container,
+  .offers-container,
+  .services-container,
+  .profile-container {
+    padding-bottom: 60px;
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding-bottom: 56px;
+  }
+
+  main,
+  .main-content,
+  .page-content,
+  .dashboard,
+  .map-container,
+  .offers-container,
+  .services-container,
+  .profile-container {
+    padding-bottom: 56px;
+  }
+}

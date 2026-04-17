@@ -1,0 +1,737 @@
+/* ============================================
+   DESIGN SYSTEM - LIMPAE ORDER STEPPER MOBILE
+   ============================================ */
+
+:root {
+  /* Cores Primarias */
+  --primary-color: #2563eb;
+  --primary-dark: #1e40af;
+  --primary-light: #3b82f6;
+
+  /* Cores Secundarias */
+  --success-color: #10b981;
+  --success-dark: #059669;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+
+  /* Cores Neutras */
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #9ca3af;
+  --bg-light: #f9fafb;
+  --bg-white: #ffffff;
+  --border-color: #e5e7eb;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  /* Tipografia */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Transicoes */
+  --transition-base: 300ms ease-in-out;
+}
+
+/* ============================================
+   CONTAINER PRINCIPAL
+   ============================================ */
+
+.order-stepper-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-white);
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .order-stepper-container {
+    height: 100vh;
+    max-height: 100vh;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 0;
+  }
+}
+
+/* ============================================
+   PROGRESS BAR E STEPS
+   ============================================ */
+
+.stepper-progress {
+  padding: 8px 12px;
+  background: var(--bg-white);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--border-color);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+  transition: width 0.5s ease;
+}
+
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.progress-step {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 11px;
+  transition: all var(--transition-base);
+}
+
+.progress-step.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.progress-step.current {
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+  transform: scale(1.1);
+}
+
+/* ============================================
+   CONTEUDO DOS PASSOS
+   ============================================ */
+
+.stepper-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  padding-bottom: 90px;
+}
+
+@media (max-width: 768px) {
+  .stepper-content {
+    padding: 8px;
+    padding-bottom: 70px;
+  }
+}
+
+.step-container {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-header {
+  margin-bottom: 10px;
+}
+
+.step-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+}
+
+@media (max-width: 768px) {
+  .step-title {
+    font-size: 18px;
+  }
+}
+
+.step-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ============================================
+   OPES DE SELEO (CARDS)
+   ============================================ */
+
+.step-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.option-card {
+  position: relative;
+  cursor: pointer;
+}
+
+.option-card input {
+  display: none;
+}
+
+.option-card .option-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-white);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+}
+
+.option-card:hover .option-content {
+  border-color: var(--primary-light);
+  background: rgba(37, 99, 235, 0.02);
+}
+
+.option-card input:checked + .option-content {
+  border-color: var(--primary-color);
+  background: rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.option-icon {
+  font-size: 24px;
+  min-width: 30px;
+  text-align: center;
+}
+
+.option-text h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.option-text p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ============================================
+   CALENDRIO
+   ============================================ */
+
+.calendar-wrapper {
+  margin-bottom: 20px;
+}
+
+.react-calendar {
+  width: 100% !important;
+  max-width: 100%;
+  background: var(--bg-white);
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.react-calendar__navigation {
+  margin-bottom: 12px;
+}
+
+.react-calendar__navigation button {
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+}
+
+.react-calendar__navigation button:enabled:hover {
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.react-calendar__month-view__weekdays {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+}
+
+.react-calendar__tile {
+  padding: 10px 4px !important;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.react-calendar__tile:enabled:hover {
+  background-color: rgba(37, 99, 235, 0.1) !important;
+  color: var(--primary-color) !important;
+}
+
+.react-calendar__tile--now {
+  background: rgba(37, 99, 235, 0.05) !important;
+  color: var(--primary-color) !important;
+  font-weight: 700;
+}
+
+.react-calendar__tile--active {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
+  color: white !important;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+.react-calendar__tile:disabled {
+  background-color: var(--bg-light) !important;
+  color: var(--text-light) !important;
+  cursor: not-allowed;
+}
+
+.selected-date {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* ============================================
+   SELETOR DE TEMPO
+   ============================================ */
+
+.time-section {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.time-picker {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.time-input {
+  flex: 1;
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-white);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+
+/* ============================================
+   DURAO (STEPPER)
+   ============================================ */
+
+.duration-section {
+  margin-bottom: 24px;
+}
+
+.duration-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  background: var(--bg-light);
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.stepper-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--primary-color);
+  background: var(--bg-white);
+  color: var(--primary-color);
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stepper-btn:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+  transform: scale(1.05);
+}
+
+.stepper-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.duration-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-color);
+  min-width: 60px;
+  text-align: center;
+}
+
+/* ============================================
+   PREVIEW DE PREO
+   ============================================ */
+
+.price-preview {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.price-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  font-weight: 500;
+}
+
+.price-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--success-dark);
+  margin: 0;
+}
+
+/* ============================================
+   TEXTAREA PARA SERVIO
+   ============================================ */
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.service-textarea {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-white);
+  font-family: var(--font-family);
+  resize: vertical;
+  transition: all var(--transition-base);
+  color: var(--text-primary);
+}
+
+
+.service-textarea::placeholder {
+  color: var(--text-light);
+}
+
+.service-textarea-counter {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   INFORMAES DE ENDEREO
+   ============================================ */
+
+.address-info {
+  background: rgba(37, 99, 235, 0.05);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 24px;
+}
+
+.info-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 6px 0;
+}
+
+.info-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ============================================
+   CARD DE REVISO
+   ============================================ */
+
+.review-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.review-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+}
+
+.review-item:last-of-type:not(.total) {
+  border-bottom: none;
+}
+
+.review-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.review-value {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: right;
+  max-width: 50%;
+  word-wrap: break-word;
+}
+
+.review-divider {
+  height: 2px;
+  background: linear-gradient(90deg, var(--border-color), transparent);
+  margin: 12px 0;
+}
+
+.review-item.total {
+  border-bottom: none;
+  padding-top: 16px;
+  font-size: 16px;
+}
+
+.review-value-total {
+  color: var(--success-dark);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+/* ============================================
+   BOTES DE AO
+   ============================================ */
+
+.stepper-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-white);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 768px) {
+  .stepper-actions {
+    padding: 10px 12px;
+  }
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-success {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--bg-light);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--border-color);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--success-color), var(--success-dark));
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.btn-success:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 480px) {
+  .order-stepper-container {
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .stepper-progress {
+    padding: 12px 12px;
+  }
+
+  .stepper-content {
+    padding: 12px 12px;
+    padding-bottom: 80px;
+  }
+
+  .step-title {
+    font-size: 18px;
+  }
+
+  .step-subtitle {
+    font-size: 12px;
+  }
+
+  .stepper-actions {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-success {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .progress-step {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .option-icon {
+    font-size: 28px;
+  }
+
+  .option-text h3 {
+    font-size: 15px;
+  }
+
+  .option-text p {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .stepper-progress {
+    padding: 12px 8px;
+  }
+
+  .stepper-content {
+    padding: 12px 8px;
+    padding-bottom: 120px;
+  }
+
+  .step-title {
+    font-size: 18px;
+  }
+
+  .progress-steps {
+    gap: 4px;
+  }
+
+  .progress-step {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+
+  .stepper-actions {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-success {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}

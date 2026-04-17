@@ -1,0 +1,758 @@
+/* ============================================
+   DESIGN SYSTEM - LIMPAE HEADER PREMIUM
+   ============================================ */
+
+:root {
+  /* Cores Primarias */
+  --primary-color: #2563eb;
+  --primary-dark: #1e40af;
+  --primary-light: #3b82f6;
+  
+  /* Cores Secundarias */
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  
+  /* Cores Neutras */
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #9ca3af;
+  --bg-light: #f9fafb;
+  --bg-white: #ffffff;
+  --border-color: #e5e7eb;
+  
+  /* Sombras */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  
+  /* Tipografia */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  
+  /* Espacamento */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  
+  /* Transicoes */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 300ms ease-in-out;
+  --transition-slow: 500ms ease-in-out;
+}
+
+/* ============================================
+   RESET E ESTILOS GLOBAIS
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ============================================
+   HEADER PRINCIPAL
+   ============================================ */
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 64px; /* Altura fixa para facilitar o clculo do dropdown */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--app-background);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-family);
+  z-index: 5000;
+  transition: all var(--transition-base);
+}
+
+.header-center-slot {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.header:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* ============================================
+   LINKS DE LOGIN E REGISTRO (QUANDO DESLOGADO)
+   ============================================ */
+
+.login-text {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.login-link, .register-link {
+  color: #fbbf24 !important; /* Amarelo/Dourado para destaque */
+  text-decoration: none;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+  position: relative;
+  display: inline-block;
+}
+
+.login-link::after, .register-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 50%;
+  background-color: #fbbf24;
+  transition: all var(--transition-fast);
+  transform: translateX(-50%);
+}
+
+.login-link:hover, .register-link:hover {
+  color: #ffffff !important;
+  background: rgba(251, 191, 36, 0.2);
+  transform: translateY(-1px);
+}
+
+.login-link:hover::after, .register-link:hover::after {
+  width: 80%;
+}
+
+/* ============================================
+   LOGO
+   ============================================ */
+
+.logo {
+  font-family: var(--font-family);
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.logo a {
+  text-decoration: none;
+  transition: all var(--transition-base);
+  display: inline-block;
+}
+
+.logo a:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* ============================================
+   CONTAINER DE ENDEREO
+   ============================================ */
+
+.address-container {
+  flex-grow: 0; /* Nao cresce mais que o necessrio */
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  padding: 0 var(--spacing-md);
+  min-width: fit-content; /* Adapta-se ao contedo */
+  pointer-events: auto;
+}
+
+.header-right-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.header-chat-center {
+  position: relative;
+  z-index: 1;
+  margin-right: 0;
+}
+
+.header-chat-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.header-chat-badge,
+.header-chat-item-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.header-chat-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
+  padding: 10px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  box-shadow: var(--shadow-lg);
+}
+
+.header-chat-menu-title {
+  padding: 8px 8px 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.header-chat-empty {
+  padding: 12px 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.header-chat-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  border-radius: 14px;
+  background: #f8fafc;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+.header-chat-menu-item:last-child {
+  margin-bottom: 0;
+}
+
+.header-chat-menu-avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e3a8a;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
+}
+
+.header-chat-menu-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.header-chat-menu-item strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 3px;
+}
+
+.header-chat-menu-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.header-chat-online-indicator {
+  width: fit-content;
+}
+
+.header-chat-menu-item span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.mobile-chat-floating-btn {
+  position: fixed;
+  right: 20px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0f172a, #1d4ed8);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow: 0 18px 34px rgba(29, 78, 216, 0.28);
+  cursor: pointer;
+  z-index: 5100;
+}
+
+.mobile-chat-floating-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mobile-chat-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(6px);
+  z-index: 5300;
+  display: flex;
+  align-items: flex-end;
+  justify-content: stretch;
+}
+
+.mobile-chat-menu {
+  width: 100%;
+  max-height: 70vh;
+  padding: 12px 16px calc(18px + env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0;
+  background: #ffffff;
+  box-shadow: 0 -24px 48px rgba(15, 23, 42, 0.18);
+  overflow-y: auto;
+}
+
+.mobile-chat-menu-handle {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  margin: 0 auto 14px;
+}
+
+.mobile-chat-menu-title {
+  padding: 0 2px 12px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.mobile-chat-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-chat-menu-item {
+  margin-bottom: 0;
+}
+
+.mobile-chat-menu-avatar {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e3a8a;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
+}
+
+.mobile-chat-menu-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mobile-chat-menu-copy {
+  flex: 1;
+}
+
+.mobile-chat-menu-copy strong,
+.mobile-chat-menu-copy span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-chat-menu-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  font-weight: 600;
+}
+
+.mobile-chat-menu-status.is-online {
+  color: #16a34a;
+}
+
+.mobile-chat-menu-status.is-offline {
+  color: #94a3b8;
+}
+
+.mobile-chat-menu-status-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.address-button {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 6px 12px !important;
+  border-radius: var(--radius-md) !important;
+  cursor: pointer;
+  color: var(--bg-white);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  transition: all var(--transition-base);
+  max-width: 100%;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+.address-text1 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 300px; /* Aumentado para permitir nomes maiores */
+  color: #e5e7eb;
+  transition: max-width var(--transition-base);
+}
+
+.address-loading-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.address-loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-top-color: #ffffff;
+  border-radius: 999px;
+  animation: headerAddressSpin 0.7s linear infinite;
+}
+
+@keyframes headerAddressSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.address-button:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+.header-address-overlay {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 260px;
+  max-width: min(340px, calc(100vw - 24px));
+  z-index: 5100;
+}
+
+.header-address-overlay .ant-dropdown-menu {
+  width: 100%;
+}
+
+/* ============================================
+   CONTAINER DE USURIO
+   ============================================ */
+
+.user-container {
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.user-icon {
+  font-size: 20px !important;
+  cursor: pointer;
+  color: var(--bg-white);
+  transition: all var(--transition-base);
+  padding: 8px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+}
+
+.user-icon:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   DROPDOWN OVERLAY (ANTD)
+   ============================================ */
+
+.header-dropdown-overlay {
+  z-index: 5200 !important;
+  position: absolute !important;
+  top: 100% !important; /* Fora o menu a aparecer logo abaixo do botao */
+}
+
+/* Garante que o container do dropdown nao tenha overflow hidden */
+.address-container, .user-container {
+  overflow: visible !important;
+}
+
+.header-dropdown-overlay .ant-dropdown-menu,
+.header-address-overlay .ant-dropdown-menu {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .header {
+    padding: 8px 16px;
+    height: 56px;
+  }
+
+  .logo {
+    font-size: 18px;
+  }
+
+  .address-container {
+    padding: 0 8px;
+  }
+
+  .header-center-slot {
+    position: static;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .header-right-actions {
+    gap: 8px;
+  }
+
+  .header-chat-center {
+    display: none;
+  }
+
+  .mobile-chat-floating-btn {
+    display: inline-flex;
+  }
+
+  .mobile-chat-menu-backdrop {
+    display: flex;
+  }
+
+  .address-text1 {
+    max-width: 120px;
+    font-size: 13px;
+  }
+
+  .user-icon {
+    width: 34px;
+    height: 34px;
+    padding: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    flex-wrap: nowrap; /* Impede quebra de linha */
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .logo {
+    font-size: 16px;
+  }
+
+  .address-container {
+    order: 0; /* Mantem no meio */
+    flex-basis: auto;
+    margin-top: 0;
+    max-width: 50%;
+  }
+
+  .header-right-actions {
+    margin-left: 0;
+  }
+
+  .address-text1 {
+    max-width: 100px;
+  }
+
+  .header-address-overlay {
+    left: 50%;
+    min-width: 220px;
+  }
+}
+
+/* ============================================
+   AJUSTE DE QUEBRA DE LINHA NO DROPDOWN
+   ============================================ */
+
+.header-dropdown-overlay .ant-dropdown-menu-item,
+.header-dropdown-overlay .ant-dropdown-menu-submenu-title,
+.header-address-overlay .ant-dropdown-menu-item,
+.header-address-overlay .ant-dropdown-menu-submenu-title {
+  white-space: nowrap !important;
+}
+
+/* ============================================
+   ESTILIZAO AZUL DO DROPDOWN (BORDAS E TEXTO)
+   ============================================ */
+
+.header-dropdown-overlay .ant-dropdown-menu,
+.header-address-overlay .ant-dropdown-menu {
+  padding: 8px !important;
+  border: 1px solid var(--primary-color) !important;
+  background: var(--bg-white) !important;
+}
+
+.header-dropdown-overlay .ant-dropdown-menu-item,
+.header-address-overlay .ant-dropdown-menu-item {
+  border: 1px solid var(--primary-color) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 10px 14px !important;
+  margin-bottom: 6px !important;
+  color: var(--primary-color) !important;
+  transition: all var(--transition-fast) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-sm) !important;
+}
+
+.header-dropdown-overlay .ant-dropdown-menu-item:last-child,
+.header-address-overlay .ant-dropdown-menu-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+.header-dropdown-overlay .ant-dropdown-menu-item .anticon,
+.header-address-overlay .ant-dropdown-menu-item .anticon {
+  color: var(--primary-color) !important;
+}
+
+/* Efeito de Hover */
+.header-dropdown-overlay .ant-dropdown-menu-item:hover,
+.header-address-overlay .ant-dropdown-menu-item:hover {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.header-dropdown-overlay .ant-dropdown-menu-item:hover .anticon,
+.header-address-overlay .ant-dropdown-menu-item:hover .anticon {
+  color: white !important;
+}
+
+/* Ajuste para o divisor */
+.header-dropdown-overlay .ant-dropdown-menu-item-divider,
+.header-address-overlay .ant-dropdown-menu-item-divider {
+  height: 1px !important;
+  background-color: rgba(37, 99, 235, 0.16) !important;
+  opacity: 1 !important;
+  margin: 8px 4px !important;
+  border-radius: 999px;
+}
+
+.header-address-overlay .ant-dropdown-menu-item-disabled,
+.header-address-overlay .ant-dropdown-menu-item-disabled:hover {
+  background: var(--bg-light) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+  cursor: default !important;
+}
+
+.header-address-overlay .ant-dropdown-menu-item-disabled .anticon,
+.header-address-overlay .ant-dropdown-menu-item-disabled:hover .anticon {
+  color: var(--text-secondary) !important;
+}

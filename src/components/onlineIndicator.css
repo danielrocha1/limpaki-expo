@@ -1,0 +1,39 @@
+.online-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.online-indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  box-shadow: 0 0 0 3px rgba(203, 213, 225, 0.25);
+  flex-shrink: 0;
+}
+
+.online-indicator.is-online .online-indicator-dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.online-indicator-label {
+  font-size: 0.92rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.online-indicator.is-online .online-indicator-label {
+  color: #166534;
+}
+
+.online-indicator.is-compact {
+  gap: 0;
+}
+
+.online-indicator.is-compact .online-indicator-dot {
+  width: 9px;
+  height: 9px;
+}

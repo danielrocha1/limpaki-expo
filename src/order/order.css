@@ -1,0 +1,337 @@
+/* ============================================
+   DESIGN SYSTEM - LIMPAE ORDER PREMIUM
+   ============================================ */
+
+:root {
+  /* Cores Primarias */
+  --primary-color: #2563eb;
+  --primary-dark: #1e40af;
+  --primary-light: #3b82f6;
+  
+  /* Cores Secundarias */
+  --success-color: #10b981;
+  --success-dark: #059669;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  
+  /* Cores Neutras */
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #9ca3af;
+  --bg-light: #f9fafb;
+  --bg-white: #ffffff;
+  --border-color: #e5e7eb;
+  
+  /* Sombras */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  
+  /* Tipografia */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  
+  /* Transicoes */
+  --transition-base: 300ms ease-in-out;
+}
+
+/* ============================================
+   CONTAINER PRINCIPAL
+   ============================================ */
+
+.order-container {
+  padding: 10px;
+  font-family: var(--font-family);
+  color: var(--text-primary);
+}
+
+.h2 {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 20px 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.h2::before {
+  content: '';
+  width: 4px;
+  height: 18px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  border-radius: 2px;
+}
+
+/* ============================================
+   CALENDRIO CUSTOMIZADO
+   ============================================ */
+
+.react-calendar {
+  width: 100% !important;
+  max-width: 100%;
+  background: var(--bg-white);
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  padding: 15px;
+  box-shadow: var(--shadow-sm);
+}
+
+.react-calendar__navigation {
+  margin-bottom: 15px;
+}
+
+.react-calendar__navigation button {
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 16px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+}
+
+.react-calendar__navigation button:enabled:hover {
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.react-calendar__month-view__weekdays {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--text-light);
+  margin-bottom: 10px;
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+}
+
+.react-calendar__tile {
+  padding: 12px 8px !important;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.react-calendar__tile:enabled:hover {
+  background-color: rgba(37, 99, 235, 0.1) !important;
+  color: var(--primary-color) !important;
+}
+
+.react-calendar__tile--now {
+  background: rgba(37, 99, 235, 0.05) !important;
+  color: var(--primary-color) !important;
+  font-weight: 700;
+}
+
+.react-calendar__tile--active {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
+  color: white !important;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+.react-calendar__tile:disabled {
+  background-color: var(--bg-light) !important;
+  color: var(--text-light) !important;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   SELEO DE HORRIO
+   ============================================ */
+
+.time-select-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-light);
+  padding: 15px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.time-select {
+  flex: 1;
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-white);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+
+.time-separator {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+/* ============================================
+   TIPO DE CONTRATAO (RADIOS)
+   ============================================ */
+
+.hire-type-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin: 15px 0;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  gap: 10px;
+  padding: 15px;
+  background: var(--bg-white);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.radio-option:hover {
+  border-color: var(--primary-light);
+  background: rgba(37, 99, 235, 0.02);
+}
+
+.radio-option input {
+  display: none;
+}
+
+.custom-radio {
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.radio-option input:checked + .custom-radio {
+  transform: scale(1.2);
+}
+
+.radio-option:has(input:checked) {
+  border-color: var(--primary-color);
+  background: rgba(37, 99, 235, 0.05);
+  color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   INPUTS DE TEXTO E NMERO
+   ============================================ */
+
+.service-input,
+.duration-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-white);
+  font-size: 16px;
+  transition: all var(--transition-base);
+  color: var(--text-primary);
+}
+
+
+.service-input::placeholder {
+  color: var(--text-light);
+}
+
+/* ============================================
+   INFORMAES E PREO
+   ============================================ */
+
+.daily-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+  background: rgba(37, 99, 235, 0.05);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--primary-color);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.total-price {
+  margin-top: 20px;
+  padding: 15px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--success-dark);
+  text-align: center;
+}
+
+/* ============================================
+   BOTO DE CONTRATAO
+   ============================================ */
+
+.hire-button {
+  width: 100%;
+  max-width: 300px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  transition: all var(--transition-base);
+  margin-top: 25px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+}
+
+.hire-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+  filter: brightness(1.1);
+}
+
+.hire-button:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .order-container {
+    padding-top: 72px; /* 56px header + 16px margin */
+  }
+}
+
+@media (max-width: 480px) {
+  .hire-type-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .h2 {
+    font-size: 16px;
+  }
+  
+  .react-calendar {
+    padding: 10px;
+  }
+  
+  .react-calendar__tile {
+    padding: 10px 5px !important;
+    font-size: 14px;
+  }
+}

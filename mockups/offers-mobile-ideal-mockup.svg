@@ -1,0 +1,265 @@
+<svg width="1600" height="1850" viewBox="0 0 1600 1850" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="1600" y2="1850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3F8FF"/>
+      <stop offset="1" stop-color="#EEF6F3"/>
+    </linearGradient>
+    <linearGradient id="phoneBg" x1="0" y1="0" x2="420" y2="1500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FAFCFF"/>
+      <stop offset="1" stop-color="#F7FAFC"/>
+    </linearGradient>
+    <linearGradient id="primaryBtn" x1="0" y1="0" x2="260" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#173A8A"/>
+    </linearGradient>
+    <linearGradient id="heroCard" x1="30" y1="0" x2="390" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEF5FF"/>
+    </linearGradient>
+    <filter id="frameShadow" x="0" y="0" width="1600" height="1850" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+    <filter id="cardShadow" x="0" y="0" width="1600" height="1850" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1850" fill="url(#pageBg)"/>
+
+  <text x="800" y="96" text-anchor="middle" fill="#0F172A" font-size="44" font-weight="800" font-family="Manrope, Arial">Mural de Ofertas Mobile - proposta ideal</text>
+  <text x="800" y="138" text-anchor="middle" fill="#475569" font-size="20" font-weight="500" font-family="Manrope, Arial">Fluxo completo: lista principal, contraproposta expandida e drawer de filtros</text>
+
+  <g filter="url(#frameShadow)">
+    <rect x="90" y="190" width="420" height="1480" rx="54" fill="#0F172A"/>
+    <rect x="590" y="190" width="420" height="1480" rx="54" fill="#0F172A"/>
+    <rect x="1090" y="190" width="420" height="1480" rx="54" fill="#0F172A"/>
+  </g>
+
+  <g>
+    <rect x="108" y="208" width="384" height="1444" rx="42" fill="url(#phoneBg)"/>
+    <rect x="608" y="208" width="384" height="1444" rx="42" fill="url(#phoneBg)"/>
+    <rect x="1108" y="208" width="384" height="1444" rx="42" fill="url(#phoneBg)"/>
+    <rect x="242" y="222" width="116" height="18" rx="9" fill="#111827"/>
+    <rect x="742" y="222" width="116" height="18" rx="9" fill="#111827"/>
+    <rect x="1242" y="222" width="116" height="18" rx="9" fill="#111827"/>
+  </g>
+
+  <text x="300" y="175" text-anchor="middle" fill="#0F172A" font-size="24" font-weight="800" font-family="Manrope, Arial">1. Lista principal</text>
+  <text x="800" y="175" text-anchor="middle" fill="#0F172A" font-size="24" font-weight="800" font-family="Manrope, Arial">2. Contraproposta aberta</text>
+  <text x="1300" y="175" text-anchor="middle" fill="#0F172A" font-size="24" font-weight="800" font-family="Manrope, Arial">3. Drawer de filtros</text>
+
+  <g transform="translate(108 208)">
+    <text x="26" y="62" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">09:41</text>
+    <text x="314" y="62" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">4G  87%</text>
+
+    <g filter="url(#cardShadow)">
+      <rect x="18" y="88" width="348" height="182" rx="28" fill="url(#heroCard)" stroke="#FFFFFF" stroke-width="3"/>
+    </g>
+    <text x="32" y="126" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial" letter-spacing="1.5">MURAL DE OFERTAS</text>
+    <text x="32" y="166" fill="#0F172A" font-size="30" font-weight="800" font-family="Manrope, Arial">Tudo que voce precisa</text>
+    <text x="32" y="200" fill="#475569" font-size="15" font-weight="500" font-family="Manrope, Arial">Veja suas ofertas, acompanhe contrapropostas e filtre sem perder contexto.</text>
+    <rect x="32" y="220" width="168" height="40" rx="20" fill="url(#primaryBtn)"/>
+    <text x="116" y="245" text-anchor="middle" fill="white" font-size="15" font-weight="700" font-family="Manrope, Arial">Criar oferta</text>
+    <rect x="214" y="220" width="112" height="40" rx="20" fill="#FFFFFF" stroke="#D6E0EA"/>
+    <text x="270" y="245" text-anchor="middle" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">Aceitas</text>
+
+    <rect x="18" y="290" width="348" height="54" rx="20" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="30" y="299" width="156" height="36" rx="18" fill="#1D4ED8"/>
+    <text x="108" y="322" text-anchor="middle" fill="#FFFFFF" font-size="14" font-weight="700" font-family="Manrope, Arial">Pendentes 12</text>
+    <rect x="194" y="299" width="160" height="36" rx="18" fill="#F8FAFC"/>
+    <text x="274" y="322" text-anchor="middle" fill="#475569" font-size="14" font-weight="700" font-family="Manrope, Arial">Aceitas 3</text>
+
+    <rect x="18" y="360" width="348" height="72" rx="22" fill="#FCFCFD" stroke="#E5E7EB"/>
+    <text x="34" y="388" fill="#0F172A" font-size="12" font-weight="800" font-family="Manrope, Arial" letter-spacing="1.2">FILTROS</text>
+    <text x="34" y="414" fill="#64748B" font-size="14" font-weight="500" font-family="Manrope, Arial">2 filtros ativos nesta lista</text>
+    <rect x="266" y="377" width="84" height="38" rx="14" fill="#FFFFFF" stroke="#D6E0EA"/>
+    <text x="308" y="401" text-anchor="middle" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">Filtrar</text>
+
+    <rect x="32" y="446" width="106" height="30" rx="15" fill="#F8FAFC" stroke="#E2E8F0"/>
+    <text x="85" y="465" text-anchor="middle" fill="#334155" font-size="12" font-weight="700" font-family="Manrope, Arial">Ate R$ 250</text>
+    <rect x="146" y="446" width="86" height="30" rx="15" fill="#F8FAFC" stroke="#E2E8F0"/>
+    <text x="189" y="465" text-anchor="middle" fill="#334155" font-size="12" font-weight="700" font-family="Manrope, Arial">Pendente</text>
+
+    <g filter="url(#cardShadow)">
+      <rect x="18" y="494" width="348" height="508" rx="28" fill="#FFFFFF"/>
+    </g>
+    <text x="34" y="532" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial" letter-spacing="1.2">OFERTA PUBLICADA</text>
+    <text x="34" y="568" fill="#0F172A" font-size="24" font-weight="800" font-family="Manrope, Arial">Limpeza completa</text>
+    <text x="34" y="594" fill="#64748B" font-size="14" font-weight="500" font-family="Manrope, Arial">22/03/2026 as 09:00</text>
+    <rect x="254" y="530" width="92" height="30" rx="15" fill="#DBEAFE"/>
+    <text x="300" y="549" text-anchor="middle" fill="#1D4ED8" font-size="11" font-weight="800" font-family="Manrope, Arial">NEGOCIACAO</text>
+    <text x="255" y="584" fill="#64748B" font-size="11" font-weight="700" font-family="Manrope, Arial">Valor atual</text>
+    <text x="255" y="610" fill="#0F172A" font-size="20" font-weight="800" font-family="Manrope, Arial">R$ 220</text>
+
+    <rect x="34" y="624" width="134" height="84" rx="18" fill="#F8FAFC" stroke="#E5E7EB"/>
+    <text x="48" y="650" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">DURACAO</text>
+    <text x="48" y="688" fill="#0F172A" font-size="24" font-weight="800" font-family="Manrope, Arial">4h</text>
+    <rect x="180" y="624" width="166" height="84" rx="18" fill="#F8FAFC" stroke="#E5E7EB"/>
+    <text x="194" y="650" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">ENDERECO</text>
+    <text x="194" y="678" fill="#0F172A" font-size="15" font-weight="700" font-family="Manrope, Arial">Centro, Rua das</text>
+    <text x="194" y="698" fill="#0F172A" font-size="15" font-weight="700" font-family="Manrope, Arial">Flores, 120</text>
+
+    <rect x="34" y="720" width="312" height="72" rx="18" fill="#F8FAFC" stroke="#E5E7EB"/>
+    <text x="48" y="746" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">OBSERVACOES</text>
+    <text x="48" y="774" fill="#0F172A" font-size="14" font-weight="600" font-family="Manrope, Arial">Apartamento com cozinha, sala e</text>
+    <text x="48" y="794" fill="#0F172A" font-size="14" font-weight="600" font-family="Manrope, Arial">dois banheiros. Levar produtos.</text>
+
+    <text x="34" y="832" fill="#0F172A" font-size="18" font-weight="800" font-family="Manrope, Arial">Contrapropostas</text>
+    <text x="268" y="832" fill="#64748B" font-size="12" font-weight="700" font-family="Manrope, Arial">2 de 4 visiveis</text>
+
+    <rect x="34" y="846" width="312" height="64" rx="18" fill="#F8FAFC" stroke="#E5E7EB"/>
+    <text x="48" y="872" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">RESUMO DOS FILTROS</text>
+    <text x="48" y="896" fill="#64748B" font-size="13" font-weight="500" font-family="Manrope, Arial">Busca, faixa de valor e apenas pendentes</text>
+    <rect x="272" y="860" width="62" height="36" rx="14" fill="#FFFFFF" stroke="#D6E0EA"/>
+    <text x="303" y="883" text-anchor="middle" fill="#0F172A" font-size="13" font-weight="700" font-family="Manrope, Arial">Filtrar</text>
+
+    <rect x="34" y="924" width="312" height="62" rx="18" fill="#FFFFFF" stroke="#EAB308"/>
+    <text x="48" y="950" fill="#0F172A" font-size="15" font-weight="800" font-family="Manrope, Arial">Mariana Costa</text>
+    <text x="48" y="972" fill="#64748B" font-size="12" font-weight="600" font-family="Manrope, Arial">3.2 km  •  4.9 estrelas  •  R$ 240</text>
+    <rect x="264" y="938" width="70" height="24" rx="12" fill="#FFEDD5"/>
+    <text x="299" y="954" text-anchor="middle" fill="#C2410C" font-size="10" font-weight="800" font-family="Manrope, Arial">PENDENTE</text>
+
+    <rect x="34" y="1000" width="312" height="62" rx="18" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="48" y="1026" fill="#0F172A" font-size="15" font-weight="800" font-family="Manrope, Arial">Juliana Lima</text>
+    <text x="48" y="1048" fill="#64748B" font-size="12" font-weight="600" font-family="Manrope, Arial">5.1 km  •  4.8 estrelas  •  R$ 230</text>
+    <rect x="268" y="1014" width="66" height="24" rx="12" fill="#DCFCE7"/>
+    <text x="301" y="1030" text-anchor="middle" fill="#166534" font-size="10" font-weight="800" font-family="Manrope, Arial">ACEITA</text>
+
+    <rect x="18" y="1412" width="348" height="12" rx="6" fill="#D9E2EC"/>
+    <rect x="152" y="1430" width="80" height="6" rx="3" fill="#111827"/>
+  </g>
+
+  <g transform="translate(608 208)">
+    <text x="26" y="62" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">09:41</text>
+    <text x="314" y="62" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">4G  87%</text>
+
+    <g filter="url(#cardShadow)">
+      <rect x="18" y="88" width="348" height="1340" rx="30" fill="#FFFFFF"/>
+    </g>
+    <text x="30" y="126" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial" letter-spacing="1.2">OFERTA PUBLICADA</text>
+    <text x="30" y="160" fill="#0F172A" font-size="26" font-weight="800" font-family="Manrope, Arial">Limpeza completa</text>
+    <text x="30" y="186" fill="#64748B" font-size="14" font-weight="500" font-family="Manrope, Arial">Oferta com detalhe expandido para decidir rapido</text>
+
+    <rect x="30" y="210" width="306" height="98" rx="20" fill="#F8FAFC" stroke="#E5E7EB"/>
+    <text x="48" y="238" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">ENDERECO E RESUMO</text>
+    <text x="48" y="266" fill="#0F172A" font-size="15" font-weight="700" font-family="Manrope, Arial">Rua das Flores, 120 - Centro</text>
+    <text x="48" y="290" fill="#475569" font-size="13" font-weight="500" font-family="Manrope, Arial">4h • 22/03/2026 • Valor atual R$ 220</text>
+
+    <text x="30" y="346" fill="#0F172A" font-size="18" font-weight="800" font-family="Manrope, Arial">Contrapropostas</text>
+    <text x="255" y="346" fill="#64748B" font-size="12" font-weight="700" font-family="Manrope, Arial">Toque para expandir</text>
+
+    <rect x="30" y="364" width="306" height="98" rx="20" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="48" y="392" fill="#0F172A" font-size="15" font-weight="800" font-family="Manrope, Arial">Mariana Costa</text>
+    <text x="48" y="414" fill="#64748B" font-size="12" font-weight="600" font-family="Manrope, Arial">3.2 km  •  4.9 estrelas</text>
+    <text x="48" y="442" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">R$ 240,00</text>
+    <path d="M302 404L316 418L302 432" stroke="#64748B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="30" y="476" width="306" height="332" rx="22" fill="#FFFFFF" stroke="#F59E0B" stroke-width="2"/>
+    <text x="48" y="510" fill="#0F172A" font-size="16" font-weight="800" font-family="Manrope, Arial">Juliana Lima</text>
+    <text x="48" y="534" fill="#64748B" font-size="12" font-weight="600" font-family="Manrope, Arial">5.1 km  •  4.8 estrelas</text>
+    <rect x="256" y="496" width="64" height="24" rx="12" fill="#FFEDD5"/>
+    <text x="288" y="512" text-anchor="middle" fill="#C2410C" font-size="10" font-weight="800" font-family="Manrope, Arial">PENDENTE</text>
+    <line x1="48" y1="550" x2="318" y2="550" stroke="#FDE68A"/>
+
+    <rect x="48" y="568" width="124" height="74" rx="16" fill="#F8FAFC" stroke="#DBEAFE"/>
+    <text x="62" y="592" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">VALOR PROPOSTO</text>
+    <text x="62" y="626" fill="#0F172A" font-size="24" font-weight="800" font-family="Manrope, Arial">R$ 230</text>
+
+    <rect x="184" y="568" width="136" height="74" rx="16" fill="#F8FAFC" stroke="#DBEAFE"/>
+    <text x="198" y="592" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">PROXIMIDADE</text>
+    <text x="198" y="626" fill="#0F172A" font-size="22" font-weight="800" font-family="Manrope, Arial">5.1 km</text>
+
+    <rect x="48" y="656" width="272" height="80" rx="16" fill="#FFF7ED" stroke="#FED7AA"/>
+    <text x="62" y="682" fill="#9A3412" font-size="11" font-weight="800" font-family="Manrope, Arial">MENSAGEM</text>
+    <text x="62" y="708" fill="#7C2D12" font-size="13" font-weight="500" font-family="Manrope, Arial">Tenho disponibilidade no horario e experiencia</text>
+    <text x="62" y="728" fill="#7C2D12" font-size="13" font-weight="500" font-family="Manrope, Arial">com limpeza pesada e pos-obra leve.</text>
+
+    <rect x="48" y="752" width="128" height="38" rx="14" fill="#FFFFFF" stroke="#BFDBFE"/>
+    <text x="112" y="776" text-anchor="middle" fill="#1D4ED8" font-size="13" font-weight="700" font-family="Manrope, Arial">Ver perfil</text>
+    <rect x="186" y="752" width="64" height="38" rx="14" fill="url(#primaryBtn)"/>
+    <text x="218" y="776" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700" font-family="Manrope, Arial">Aceitar</text>
+    <rect x="260" y="752" width="60" height="38" rx="14" fill="#FFFFFF" stroke="#FECACA"/>
+    <text x="290" y="776" text-anchor="middle" fill="#B91C1C" font-size="13" font-weight="700" font-family="Manrope, Arial">Recusar</text>
+
+    <rect x="30" y="832" width="306" height="148" rx="22" fill="#F8FAFC" stroke="#E2E8F0"/>
+    <text x="48" y="866" fill="#0F172A" font-size="16" font-weight="800" font-family="Manrope, Arial">Resumo fixo da decisao</text>
+    <text x="48" y="894" fill="#475569" font-size="13" font-weight="500" font-family="Manrope, Arial">No mobile, esse bloco ajuda a comparar sem voltar:</text>
+    <text x="48" y="924" fill="#0F172A" font-size="13" font-weight="700" font-family="Manrope, Arial">Valor atual: R$ 220</text>
+    <text x="48" y="950" fill="#0F172A" font-size="13" font-weight="700" font-family="Manrope, Arial">Contraproposta: R$ 230</text>
+    <text x="48" y="976" fill="#0F172A" font-size="13" font-weight="700" font-family="Manrope, Arial">Diferenca: +R$ 10</text>
+
+    <rect x="18" y="1320" width="348" height="104" rx="26" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="36" y="1352" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">PAGINACAO</text>
+    <rect x="36" y="1368" width="84" height="34" rx="17" fill="#F8FAFC" stroke="#D6E0EA"/>
+    <text x="78" y="1390" text-anchor="middle" fill="#0F172A" font-size="13" font-weight="700" font-family="Manrope, Arial">Anterior</text>
+    <text x="192" y="1390" text-anchor="middle" fill="#475569" font-size="13" font-weight="700" font-family="Manrope, Arial">Pagina 1 de 4</text>
+    <rect x="248" y="1368" width="84" height="34" rx="17" fill="#F8FAFC" stroke="#D6E0EA"/>
+    <text x="290" y="1390" text-anchor="middle" fill="#0F172A" font-size="13" font-weight="700" font-family="Manrope, Arial">Proxima</text>
+
+    <rect x="152" y="1430" width="80" height="6" rx="3" fill="#111827"/>
+  </g>
+
+  <g transform="translate(1108 208)">
+    <text x="26" y="62" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">09:41</text>
+    <text x="314" y="62" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">4G  87%</text>
+
+    <g filter="url(#cardShadow)">
+      <rect x="18" y="88" width="348" height="1340" rx="30" fill="#FFFFFF"/>
+    </g>
+    <text x="30" y="126" fill="#0F172A" font-size="22" font-weight="800" font-family="Manrope, Arial">Filtros</text>
+    <text x="30" y="154" fill="#64748B" font-size="14" font-weight="500" font-family="Manrope, Arial">Drawer mobile vindo de baixo, sem esconder contexto</text>
+    <rect x="298" y="118" width="36" height="36" rx="18" fill="#F8FAFC" stroke="#D6E0EA"/>
+    <text x="316" y="141" text-anchor="middle" fill="#0F172A" font-size="16" font-weight="700" font-family="Manrope, Arial">X</text>
+
+    <rect x="30" y="188" width="306" height="54" rx="16" fill="#FFFFFF" stroke="#D6E0EA"/>
+    <text x="46" y="211" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">BUSCAR</text>
+    <text x="46" y="232" fill="#94A3B8" font-size="13" font-weight="500" font-family="Manrope, Arial">Nome, bairro ou mensagem</text>
+
+    <text x="30" y="280" fill="#0F172A" font-size="13" font-weight="800" font-family="Manrope, Arial">Ordenar por</text>
+    <rect x="30" y="294" width="306" height="50" rx="16" fill="#FFFFFF" stroke="#D6E0EA"/>
+    <text x="46" y="324" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">Melhor equilibrio</text>
+
+    <text x="30" y="384" fill="#0F172A" font-size="13" font-weight="800" font-family="Manrope, Arial">Nota minima: 4.5</text>
+    <line x1="42" y1="414" x2="324" y2="414" stroke="#CBD5E1" stroke-width="6" stroke-linecap="round"/>
+    <line x1="42" y1="414" x2="264" y2="414" stroke="#2563EB" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="264" cy="414" r="12" fill="#FFFFFF" stroke="#2563EB" stroke-width="4"/>
+
+    <text x="30" y="468" fill="#0F172A" font-size="13" font-weight="800" font-family="Manrope, Arial">Distancia maxima: 8 km</text>
+    <line x1="42" y1="498" x2="324" y2="498" stroke="#CBD5E1" stroke-width="6" stroke-linecap="round"/>
+    <line x1="42" y1="498" x2="182" y2="498" stroke="#2563EB" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="182" cy="498" r="12" fill="#FFFFFF" stroke="#2563EB" stroke-width="4"/>
+
+    <text x="30" y="552" fill="#0F172A" font-size="13" font-weight="800" font-family="Manrope, Arial">Faixa de valor</text>
+    <rect x="30" y="568" width="146" height="78" rx="18" fill="#FFFFFF" stroke="#E5E7EB"/>
+    <text x="46" y="594" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">MINIMO</text>
+    <text x="46" y="626" fill="#0F172A" font-size="22" font-weight="800" font-family="Manrope, Arial">R$ 180</text>
+    <rect x="190" y="568" width="146" height="78" rx="18" fill="#FFFFFF" stroke="#E5E7EB"/>
+    <text x="206" y="594" fill="#64748B" font-size="11" font-weight="800" font-family="Manrope, Arial">MAXIMO</text>
+    <text x="206" y="626" fill="#0F172A" font-size="22" font-weight="800" font-family="Manrope, Arial">R$ 250</text>
+
+    <rect x="30" y="676" width="306" height="62" rx="18" fill="#F8FAFC" stroke="#E5E7EB"/>
+    <rect x="46" y="694" width="42" height="26" rx="13" fill="#2563EB"/>
+    <circle cx="74" cy="707" r="9" fill="#FFFFFF"/>
+    <text x="102" y="712" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">Mostrar apenas pendentes</text>
+
+    <text x="30" y="780" fill="#0F172A" font-size="13" font-weight="800" font-family="Manrope, Arial">Filtros ativos</text>
+    <rect x="30" y="796" width="86" height="30" rx="15" fill="#F8FAFC" stroke="#E2E8F0"/>
+    <text x="73" y="815" text-anchor="middle" fill="#334155" font-size="12" font-weight="700" font-family="Manrope, Arial">4.5+</text>
+    <rect x="124" y="796" width="92" height="30" rx="15" fill="#F8FAFC" stroke="#E2E8F0"/>
+    <text x="170" y="815" text-anchor="middle" fill="#334155" font-size="12" font-weight="700" font-family="Manrope, Arial">Ate 8 km</text>
+    <rect x="224" y="796" width="94" height="30" rx="15" fill="#F8FAFC" stroke="#E2E8F0"/>
+    <text x="271" y="815" text-anchor="middle" fill="#334155" font-size="12" font-weight="700" font-family="Manrope, Arial">Pendentes</text>
+
+    <rect x="18" y="1302" width="348" height="126" rx="26" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="36" y="1322" width="132" height="44" rx="18" fill="#F8FAFC" stroke="#D6E0EA"/>
+    <text x="102" y="1349" text-anchor="middle" fill="#0F172A" font-size="14" font-weight="700" font-family="Manrope, Arial">Limpar tudo</text>
+    <rect x="182" y="1322" width="150" height="44" rx="18" fill="url(#primaryBtn)"/>
+    <text x="257" y="1349" text-anchor="middle" fill="#FFFFFF" font-size="14" font-weight="700" font-family="Manrope, Arial">Ver 2 resultados</text>
+    <text x="36" y="1396" fill="#64748B" font-size="12" font-weight="500" font-family="Manrope, Arial">Rodape fixo para aplicar sem rolar de volta.</text>
+
+    <rect x="152" y="1430" width="80" height="6" rx="3" fill="#111827"/>
+  </g>
+
+  <text x="800" y="1778" text-anchor="middle" fill="#0F172A" font-size="28" font-weight="800" font-family="Manrope, Arial">O que esse mockup resolve melhor no mobile</text>
+  <text x="800" y="1816" text-anchor="middle" fill="#475569" font-size="18" font-weight="500" font-family="Manrope, Arial">Hierarquia clara, filtros resumidos, decisao rapida na contraproposta e drawer com CTA fixo.</text>
+</svg>

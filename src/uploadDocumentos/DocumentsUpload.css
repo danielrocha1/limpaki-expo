@@ -1,0 +1,183 @@
+/* Container holding all document items */
+.documents-container {
+    position: absolute;
+    display: grid;
+    grid-template-columns: 2fr;
+    gap: 2rem;
+    top: 80px;
+    right: 2rem;
+    left: 2rem;
+  }
+
+@media (max-width: 768px) {
+  .documents-container {
+    top: 72px; /* 56px header + 16px margin */
+    padding-top: 20px;
+    right: 1rem;
+    left: 1rem;
+  }
+}
+
+ 
+  /* Individual document card */
+  .document-card {
+    background-color: var(--card-bg, #ffffff);
+    border: 1px solid var(--card-border, #e5e7eb);
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    transition: box-shadow 0.2s ease-in-out;
+  }
+  .document-card:hover {
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Header section inside each card */
+  .document-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .document-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary, #1f2937);
+  }
+  .document-check-icon {
+    margin-left: auto;
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #10b981;
+  }
+  .document-icon-header {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--icon-color, #4b5563);
+  }
+  
+  /* Label wrapping the dropzone */
+  .document-label {
+    display: block;
+    cursor: pointer;
+  }
+  
+  /* Dropzone default & uploaded states */
+  .document-dropzone {
+    border: 2px dashed var(--dropzone-border, #d1d5db);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    text-align: center;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  }
+  .document-dropzone:hover {
+    background-color: var(--dropzone-hover, #f9fafb);
+  }
+  .document-dropzone.uploaded {
+    border-color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  
+  /* Preview & file info */
+  .document-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .document-image {
+    object-fit: cover;
+    margin: 0 auto;
+  }
+  .document-image.rectangle {
+    width: 100%;
+    height: 10rem;
+    border-radius: 0.5rem;
+  }
+  .document-image.circle {
+    width: 9rem;
+    height: 9rem;
+    border-radius: 50%;
+  }
+  .document-icon {
+    width: 2rem;
+    height: 2rem;
+    color: #3b82f6;
+  }
+  .document-filename {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary, #374151);
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+ /* Empty dropzone state */
+.document-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .document-upload-icon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--text-muted, #9ca3af);
+  }
+  .document-instruction {
+    font-size: 0.875rem;
+    color: var(--text-muted, #6b7280);
+  }
+  .document-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted, #9ca3af);
+  }
+  
+  /* Success message */
+  .document-success {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: #10b981;
+  }
+  .document-check-small {
+    width: 1rem;
+    height: 1rem;
+    color: #10b981;
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --card-bg: #1f2937;
+      --card-border: #374151;
+      --text-primary: #f9fafb;
+      --text-secondary: #d1d5db;
+      --icon-color: #9ca3af;
+      --dropzone-border: #4b5563;
+      --dropzone-hover: #374151;
+      --text-muted: #6b7280;
+    }
+  }
+  
+    
+@media (min-width: 640px) {
+    .documents-container {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .documents-container {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+.submit-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

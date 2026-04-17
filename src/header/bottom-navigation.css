@@ -1,0 +1,171 @@
+/* ============================================
+   BOTTOM NAVIGATION - MOBILE ONLY
+   ============================================ */
+
+.bottom-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 999;
+  display: none;
+  /* Ser ativado apenas em mobile */
+}
+
+.bottom-nav-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  height: 60px;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  gap: 0;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 200ms ease-in-out;
+  padding: 8px 0;
+  font-size: 12px;
+  font-weight: 500;
+  height: 100%;
+  position: relative;
+  min-width: 0;
+}
+
+.nav-item:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-item.active {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #fbbf24;
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  height: 24px;
+  width: 24px;
+}
+
+.nav-label {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 0 4px;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+/* Tablets e acima - esconder bottom nav */
+@media (min-width: 769px) {
+  .bottom-navigation {
+    display: none !important;
+  }
+}
+
+/* Mobile - exibir bottom nav */
+@media (max-width: 768px) {
+  .bottom-navigation {
+    display: flex;
+  }
+
+  /* Adicionar padding inferior ao body para nao sobrepor contedo */
+  body {
+    padding-bottom: 60px;
+  }
+
+  /* Ajustar main content para nao sobrepor */
+  main,
+  .main-content,
+  .page-content {
+    padding-bottom: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bottom-nav-container {
+    height: 56px;
+  }
+
+  .nav-item {
+    gap: 2px;
+    padding: 6px 0;
+  }
+
+  .nav-icon {
+    font-size: 18px;
+    height: 20px;
+    width: 20px;
+  }
+
+  .nav-label {
+    font-size: 10px;
+  }
+
+  body {
+    padding-bottom: 56px;
+  }
+
+  main,
+  .main-content,
+  .page-content {
+    padding-bottom: 56px;
+  }
+}
+
+/* Ajuste para evitar que o header fixo sobreponha o contedo */
+@media (max-width: 768px) {
+  .header {
+    margin-bottom: 0;
+  }
+
+  /* Garantir que o contedo nao fique atrs do header fixo */
+  main,
+  .content,
+  .page-wrapper {
+    margin-top: 56px;
+    margin-bottom: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  main,
+  .content,
+  .page-wrapper {
+    margin-top: 56px;
+    margin-bottom: 56px;
+  }
+}
