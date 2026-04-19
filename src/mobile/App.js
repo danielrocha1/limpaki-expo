@@ -221,6 +221,7 @@ export default function MobileApp() {
           return;
         }
 
+        await setToken(storedToken);
         const { nextSession } = await buildSessionFromToken(storedToken);
 
         if (!cancelled) {
