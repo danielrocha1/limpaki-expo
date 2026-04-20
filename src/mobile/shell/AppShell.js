@@ -8,7 +8,6 @@ import OffersScreen from "./screens/OffersScreen";
 import ServicesScreen from "./screens/ServicesScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import SubscriptionScreen from "./screens/SubscriptionScreen";
-import { MobileChatCenterProvider } from "../MobileChatCenter";
 
 export default function AppShell({ forcedRoute, session, onRouteChange, onSessionUpdate, onLogout }) {
   const insets = useSafeAreaInsets();
@@ -48,7 +47,7 @@ export default function AppShell({ forcedRoute, session, onRouteChange, onSessio
       screen = <OffersScreen session={session} onSessionUpdate={onSessionUpdate} onLogout={onLogout} />;
       break;
     case "services":
-      screen = <ServicesScreen session={session} />;
+      screen = <ServicesScreen />;
       break;
     case "subscription":
       screen = <SubscriptionScreen session={session} />;
@@ -60,16 +59,14 @@ export default function AppShell({ forcedRoute, session, onRouteChange, onSessio
   }
 
   return (
-    <MobileChatCenterProvider session={session}>
-      <View style={styles.shell}>
-        <View style={[styles.screenArea, { paddingBottom: screenBottomPadding }]}>{screen}</View>
-        <MobileBottomNavigation
-          currentRoute={currentRoute}
-          onNavigate={setCurrentRoute}
-          role={session.role}
-          bottomOffset={bottomOffset}
-        />
-      </View>
-    </MobileChatCenterProvider>
+    <View style={styles.shell}>
+      <View style={[styles.screenArea, { paddingBottom: screenBottomPadding }]}>{screen}</View>
+      <MobileBottomNavigation
+        currentRoute={currentRoute}
+        onNavigate={setCurrentRoute}
+        role={session.role}
+        bottomOffset={bottomOffset}
+      />
+    </View>
   );
 }
