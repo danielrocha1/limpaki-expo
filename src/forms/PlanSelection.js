@@ -117,7 +117,11 @@ async function defaultStartCheckout(plan) {
       planId: plan?.id,
       url: payload.url,
     });
-    window.location.assign(payload.url);
+    if (typeof window !== "undefined" && window.location?.assign) {
+      window.location.assign(payload.url);
+      return;
+    }
+    throw new Error("Redirecionamento web indisponivel neste ambiente.");
     return;
   }
 

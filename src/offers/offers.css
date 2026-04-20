@@ -10,13 +10,13 @@
   --primary-soft: #dbeafe;
   --accent-color: #f97316;
   --accent-soft: #ffedd5;
-  
+
   /* Cores Secundarias */
   --success-color: #10b981;
   --success-dark: #059669;
   --warning-color: #f59e0b;
   --error-color: #ef4444;
-  
+
   /* Cores Neutras */
   --text-primary: #1f2937;
   --text-secondary: #6b7280;
@@ -26,22 +26,22 @@
   --border-color: #e5e7eb;
   --surface-strong: #ffffff;
   --surface-tint: #f8fbff;
-  
+
   /* Sombras */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 24px 60px rgba(15, 23, 42, 0.16);
   --shadow-glow: 0 18px 42px rgba(29, 78, 216, 0.18);
-  
+
   /* Tipografia */
   --font-family: "Manrope", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  
+
   /* Border Radius */
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  
+
   /* Transicoes */
   --transition-base: 300ms ease-in-out;
 }
@@ -52,7 +52,7 @@
 
 .offers-page {
   position: relative;
-  padding: 65px 10px 50px;
+  padding: 65px 10px 10px;
   max-width: 900px;
   margin: 0 auto;
   font-family: var(--font-family);
@@ -60,7 +60,7 @@
 }
 
 .offers-page-hero {
-  margin-top: 25px;
+  margin-top: 5px;
   margin-bottom: 28px;
   padding: 44px 28px 0;
   border: 5px solid rgba(255, 255, 255, 0.94);
@@ -79,8 +79,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .offers-page h2 {
@@ -135,7 +142,7 @@
   filter: brightness(1.06);
 }
 
-.offers-page-hero > .ant-btn-primary {
+.offers-page-hero>.ant-btn-primary {
   display: inline-flex;
   margin-bottom: 24px !important;
 }
@@ -819,6 +826,7 @@
 }
 
 @media (max-width: 768px) {
+
   .offers-create-modal-intro,
   .offers-create-grid {
     grid-template-columns: 1fr;
@@ -849,19 +857,19 @@
   color: var(--text-secondary);
 }
 
-.ant-input-number, 
+.ant-input-number,
 .ant-picker {
   border-radius: var(--radius-sm);
   border: 2px solid var(--border-color);
   transition: all var(--transition-base);
 }
 
-.ant-input-number:hover, 
+.ant-input-number:hover,
 .ant-picker:hover {
   border-color: var(--primary-light);
 }
 
-.ant-input-number-focused, 
+.ant-input-number-focused,
 .ant-picker-focused {
   border-color: var(--primary-color) !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
@@ -1219,6 +1227,45 @@
   font-weight: 700;
 }
 
+.client-offer-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.client-offer-footer-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.client-offer-footer-label {
+  color: #6d8298;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.client-offer-footer-copy p {
+  margin: 0;
+  color: #526375;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.client-offer-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
+
 .diarist-offer-card .ant-card-body {
   display: flex;
   flex-direction: column;
@@ -1383,7 +1430,7 @@
   flex: 1;
 }
 
-.diarist-offer-header-main > div {
+.diarist-offer-header-main>div {
   min-width: 0;
 }
 
@@ -1875,26 +1922,31 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 12px;
   width: 100%;
 }
 
 .negotiation-item-compact .negotiation-item-actions .ant-space {
   margin-top: 0 !important;
   margin-left: auto;
-  gap: 8px !important;
+  gap: 10px !important;
 }
 
 .negotiation-item-compact .negotiation-item-actions .ant-btn {
-  min-height: 26px;
-  padding-inline: 10px;
+  min-height: 34px;
+  padding-inline: 14px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .negotiation-item-compact .negotiation-profile-btn {
   margin-right: auto;
+}
+
+.negotiation-item-compact .negotiation-item-cta-group {
+  row-gap: 10px !important;
 }
 
 .negotiation-item p {
@@ -1967,6 +2019,31 @@
   background: #ef4444 !important;
 }
 
+@media (max-width: 768px) {
+  .client-offer-footer-actions {
+    align-items: stretch;
+  }
+
+  .client-offer-actions-row {
+    width: 100%;
+    margin-left: 0;
+    justify-content: stretch;
+  }
+
+  .client-offer-actions-row .ant-btn,
+  .negotiation-item-compact .negotiation-item-actions .ant-btn {
+    width: 100%;
+  }
+
+  .negotiation-item-compact .negotiation-item-actions .ant-space,
+  .negotiation-item-compact .negotiation-item-cta-group {
+    width: 100%;
+    margin-left: 0;
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+}
+
 .negotiation-item strong {
   color: var(--text-primary);
   font-weight: 600;
@@ -2021,26 +2098,26 @@
     border-radius: 20px;
     margin-bottom: 22px;
   }
-  
+
   .offers-page h2 {
     font-size: 26px;
   }
-  
+
   .offer-actions {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .offer-actions .status {
     text-align: center;
     justify-content: center;
     margin-top: 8px;
   }
-  
+
   .offer-actions .ant-space {
     width: 100%;
   }
-  
+
   .offer-actions .ant-btn {
     flex: 1;
   }

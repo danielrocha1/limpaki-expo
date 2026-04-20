@@ -1,6 +1,7 @@
 import { API_ORIGIN, getToken } from "./api";
 
 const normalizePath = (path = "") => (path.startsWith("/") ? path : `/${path}`);
+const encodeQueryValue = (value) => encodeURIComponent(String(value));
 
 export const buildWebSocketUrl = (path = "/api/ws/offers") => {
   const normalizedOrigin = API_ORIGIN.replace(/\/$/, "");
@@ -18,17 +19,23 @@ export const createAuthenticatedWebSocket = (path = "/api/ws/offers", searchPara
     return null;
   }
 
-  const url = new URL(buildWebSocketUrl(path));
+  try {
+    const queryParts = [];
 
-  Object.entries(searchParams).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === "") {
-      return;
-    }
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") {
+        return;
+      }
 
-    url.searchParams.set(key, String(value));
-  });
+      queryParts.push(`${encodeQueryValue(key)}=${encodeQueryValue(value)}`);
+    });
 
-  url.searchParams.set("access_token", token);
+    queryParts.push(`access_token=${encodeQueryValue(token)}`);
 
-  return new WebSocket(url.toString(), ["json", `bearer.${token}`]);
+    const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+    return new WebSocket(`${buildWebSocketUrl(path)}${queryString}`, ["json", `bearer.${token}`]);
+  } catch (error) {
+    console.error("Erro ao criar URL de websocket:", error);
+    return null;
+  }
 };

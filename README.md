@@ -1,206 +1,81 @@
-# API de Diaristas
+# Limpae Expo
 
-## Introdução
-Esta API permite a gestão de um marketplace de diaristas, onde clientes podem contratar serviços de limpeza e diaristas podem se cadastrar para oferecer seus serviços.
+Frontend mobile/web em Expo para o marketplace de diaristas Limpae.
 
-## Tecnologias Utilizadas
-- **Linguagem:** Go (Golang)
-- **Framework:** Fiber
-- **ORM:** GORM
-- **Banco de Dados:** PostgreSQL
-- **Autenticação:** JWT (em futuras implementações)
+## Requisitos
 
----
+- Node.js 20 ou superior
+- npm 10 ou superior
+- Expo Go no celular ou um emulador Android/iOS
 
-# Endpoints da API
+## Instalar
 
-## Usuários (`/api/users`)
-
-### Criar um usuário
-**POST** `/api/users`
-```json
-{
-  "name": "João Silva",
-  "email": "joao@email.com",
-  "phone": "11999999999",
-  "password": "senha123",
-  "role": "cliente"
-}
-```
-**Resposta:**
-```json
-{
-  "id": 1,
-  "name": "João Silva",
-  "email": "joao@email.com",
-  "phone": "11999999999",
-  "role": "cliente",
-  "created_at": "2025-02-08T12:00:00Z"
-}
+```bash
+npm install
 ```
 
-### Buscar todos os usuários
-**GET** `/api/users`
+## Variaveis de ambiente
 
-### Buscar um usuário por ID
-**GET** `/api/users/:id`
+Crie um `.env` a partir de `.env.example` e ajuste os valores do backend:
 
-### Atualizar um usuário
-**PUT** `/api/users/:id`
-
-### Deletar um usuário
-**DELETE** `/api/users/:id`
-
----
-
-## Endereços (`/api/addresses`)
-
-### Criar um endereço
-**POST** `/api/addresses`
-```json
-{
-  "user_id": 1,
-  "street": "Rua Exemplo",
-  "number": "100",
-  "city": "São Paulo",
-  "state": "SP",
-  "zipcode": "01000-000",
-  "latitude": -23.55052,
-  "longitude": -46.63331
-}
+```env
+EXPO_PUBLIC_API_URL=https://seu-backend.onrender.com
+EXPO_PUBLIC_STRIPE_PUBLIC_KEY=pk_test_sua_chave_publica
 ```
 
-### Buscar todos os endereços
-**GET** `/api/addresses`
+Observacoes:
 
-### Buscar um endereço por ID
-**GET** `/api/addresses/:id`
+- `EXPO_PUBLIC_API_URL` e a variavel usada pelo app Expo.
+- `EXPO_PUBLIC_STRIPE_PUBLIC_KEY` so e necessaria se o fluxo de assinatura com Stripe estiver habilitado.
+- Neste repositorio ja existe um `.env` apontando para o backend atual usado no projeto.
 
-### Atualizar um endereço
-**PUT** `/api/addresses/:id`
+## Rodar com Expo
 
-### Deletar um endereço
-**DELETE** `/api/addresses/:id`
-
----
-
-## Diaristas (`/api/diarists`)
-
-### Criar um diarista
-**POST** `/api/diarists`
-```json
-{
-  "user_id": 2,
-  "bio": "Tenho 5 anos de experiência em limpeza residencial.",
-  "experience_years": 5,
-  "price_per_hour": 50.00,
-  "available": true
-}
+```bash
+npm start
 ```
 
-### Buscar todos os diaristas
-**GET** `/api/diarists`
+Comandos uteis:
 
-### Buscar um diarista por ID
-**GET** `/api/diarists/:id`
-
-### Atualizar um diarista
-**PUT** `/api/diarists/:id`
-
-### Deletar um diarista
-**DELETE** `/api/diarists/:id`
-
----
-
-## Serviços (`/api/services`)
-
-### Criar um serviço
-**POST** `/api/services`
-```json
-{
-  "client_id": 1,
-  "diarist_id": 2,
-  "address_id": 3,
-  "status": "pendente",
-  "total_price": 150.00,
-  "duration_hours": 3.00,
-  "scheduled_at": "2025-02-10T10:00:00Z"
-}
+```bash
+npm run android
+npm run ios
+npm run web
+npm run doctor
 ```
 
-### Buscar todos os serviços
-**GET** `/api/services`
+## Rodar com proxy no Expo
 
-### Buscar um serviço por ID
-**GET** `/api/services/:id`
+Quando quiser forcar o app a bater em um proxy local apontando para `https://limpae-jcqa.onrender.com`, use:
 
-### Atualizar um serviço
-**PUT** `/api/services/:id`
-
-### Deletar um serviço
-**DELETE** `/api/services/:id`
-
----
-
-## Pagamentos (`/api/payments`)
-
-### Criar um pagamento
-**POST** `/api/payments`
-```json
-{
-  "service_id": 1,
-  "client_id": 1,
-  "diarist_id": 2,
-  "amount": 150.00,
-  "status": "pendente",
-  "method": "pix"
-}
+```bash
+npm run start:proxy
 ```
 
-### Buscar todos os pagamentos
-**GET** `/api/payments`
+Ou direto para Android:
 
-### Buscar um pagamento por ID
-**GET** `/api/payments/:id`
-
-### Atualizar um pagamento
-**PUT** `/api/payments/:id`
-
-### Deletar um pagamento
-**DELETE** `/api/payments/:id`
-
----
-
-## Avaliações (`/api/reviews`)
-
-### Criar uma avaliação
-**POST** `/api/reviews`
-```json
-{
-  "service_id": 1,
-  "reviewer_id": 1,
-  "reviewed_id": 2,
-  "rating": 5,
-  "comment": "Serviço excelente!"
-}
+```bash
+npm run android:proxy
 ```
 
-### Buscar todas as avaliações
-**GET** `/api/reviews`
+Esse fluxo:
 
-### Buscar uma avaliação por ID
-**GET** `/api/reviews/:id`
+- sobe um proxy local em `0.0.0.0:8787`
+- aponta o Expo para `http://SEU_IP_LOCAL:8787`
+- encaminha requisicoes HTTP e WebSocket para `https://limpae-jcqa.onrender.com`
 
-### Atualizar uma avaliação
-**PUT** `/api/reviews/:id`
+Observacao:
 
-### Deletar uma avaliação
-**DELETE** `/api/reviews/:id`
+- celular e computador precisam estar na mesma rede local
 
----
+## Estrutura relevante
 
-# Autoria e Contato
-- **Desenvolvedor:** Daniel Rocha Tavares da Silva
-- **GitHub:** [github.com/de.maricaense](https://github.com/danielrocha1)
-- **Email:** daniel.rochats@gmail.com
-- **Instagram:** [@de.maricaense](https://instagram.com/dev.maricaense)
+- `App.js`: entrada do Expo
+- `src/mobile`: experiencia principal mobile/web responsiva
+- `src/config/api.js`: configuracao da API e autenticacao
+
+## Observacoes do projeto
+
+- O projeto ainda carrega algumas dependencias antigas do fluxo web legado (`react-scripts`, `antd`, `react-router-dom`), mas o caminho principal para execucao agora e o Expo.
+- Para web local com proxy, ainda existe o script `npm run proxy:web`.
+- Para gerar export web estatico, use `npm run export:web`.

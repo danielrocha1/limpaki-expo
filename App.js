@@ -1,1 +1,1 @@
-export { default } from "./src/mobile/App";
+export { default } from "./src/mobile/App.js";

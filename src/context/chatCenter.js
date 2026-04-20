@@ -19,7 +19,11 @@ const normalizeStatus = (value = "") =>
     .toLowerCase()
     .trim();
 
-const isSubscriptionFlowPath = () => window.location.pathname.startsWith("/assinatura");
+const isSubscriptionFlowPath = () =>
+  typeof window !== "undefined" &&
+  typeof window.location !== "undefined" &&
+  typeof window.location.pathname === "string" &&
+  window.location.pathname.startsWith("/assinatura");
 
 const isChatAvailable = (service) => {
   const status = normalizeStatus(service?.status);

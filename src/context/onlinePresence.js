@@ -25,7 +25,11 @@ const normalizeUserIds = (userIds) =>
         .filter((value) => Number.isFinite(value) && value > 0)
     : [];
 
-const isSubscriptionFlowPath = () => window.location.pathname.startsWith("/assinatura");
+const isSubscriptionFlowPath = () =>
+  typeof window !== "undefined" &&
+  typeof window.location !== "undefined" &&
+  typeof window.location.pathname === "string" &&
+  window.location.pathname.startsWith("/assinatura");
 
 export const OnlinePresenceProvider = ({ children }) => {
   const [onlineClientIds, setOnlineClientIds] = useState([]);

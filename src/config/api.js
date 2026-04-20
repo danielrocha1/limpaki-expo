@@ -7,15 +7,37 @@ import {
   setPersistentItem,
 } from "./storage";
 
-const DEFAULT_API_ORIGIN = "https://limpae.onrender.com";
-const isLocalWebRuntime =
+const DEFAULT_API_ORIGIN = "https://limpae-jcqa.onrender.com";
+const hasWindowLocation =
   typeof window !== "undefined" &&
+  typeof window.location !== "undefined" &&
+  typeof window.location.hostname === "string";
+const isLocalWebRuntime =
+  hasWindowLocation &&
   /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
 const localWebProxyOrigin = "http://localhost:8787";
+const rawPublicApiOrigin =
+  process.env.EXPO_PUBLIC_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  DEFAULT_API_ORIGIN;
+const sanitizeOrigin = (value = "") => {
+  const normalizedValue = String(value || "").trim().replace(/\/+$/, "");
+
+  if (!normalizedValue) {
+    return DEFAULT_API_ORIGIN;
+  }
+
+  if (/^https?:\/\//i.test(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  return `https://${normalizedValue}`;
+};
+const publicApiOrigin = sanitizeOrigin(rawPublicApiOrigin);
 
 export const API_ORIGIN = isLocalWebRuntime
   ? localWebProxyOrigin
-  : (process.env.REACT_APP_API_URL || DEFAULT_API_ORIGIN);
+  : publicApiOrigin;
 export const API_BASE_URL = API_ORIGIN.endsWith("/api")
   ? API_ORIGIN
   : `${API_ORIGIN}/api`;

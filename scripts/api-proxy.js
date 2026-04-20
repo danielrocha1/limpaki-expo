@@ -1,7 +1,10 @@
 const http = require("http");
 const https = require("https");
 const fs = require("fs");
+const net = require("net");
+const os = require("os");
 const path = require("path");
+const tls = require("tls");
 const { URL } = require("url");
 
 const envFilePath = path.join(process.cwd(), ".env");
@@ -28,10 +31,13 @@ if (fs.existsSync(envFilePath)) {
 
 const TARGET_ORIGIN =
   process.env.LIMPAE_PROXY_TARGET ||
+  process.env.EXPO_PUBLIC_API_URL ||
   process.env.REACT_APP_API_URL ||
+  envFromFile.EXPO_PUBLIC_API_URL ||
   envFromFile.REACT_APP_API_URL ||
-  "https://limpae.onrender.com";
+  "https://limpae-jcqa.onrender.com";
 const PORT = Number(process.env.LIMPAE_PROXY_PORT || 8787);
+const HOST = process.env.LIMPAE_PROXY_HOST || "0.0.0.0";
 
 const allowedHeaders = [
   "Content-Type",
@@ -42,6 +48,28 @@ const allowedHeaders = [
 ];
 
 const getCorsOrigin = (req) => req.headers.origin || "http://localhost:8081";
+const getLanAddress = () => {
+  const interfaces = os.networkInterfaces();
+
+  for (const values of Object.values(interfaces)) {
+    for (const entry of values || []) {
+      if (entry.family === "IPv4" && !entry.internal) {
+        return entry.address;
+      }
+    }
+  }
+
+  return "127.0.0.1";
+};
+const copyProxySafeHeaders = (headers = {}, targetUrl) => {
+  const nextHeaders = { ...headers };
+
+  nextHeaders.host = targetUrl.host;
+  nextHeaders.origin = TARGET_ORIGIN;
+  delete nextHeaders["content-length"];
+
+  return nextHeaders;
+};
 
 const sendJson = (req, res, statusCode, payload) => {
   res.writeHead(statusCode, {
@@ -77,11 +105,7 @@ const server = http.createServer((req, res) => {
       upstreamUrl,
       {
         method: req.method,
-        headers: {
-          ...req.headers,
-          host: upstreamUrl.host,
-          origin: TARGET_ORIGIN,
-        },
+        headers: copyProxySafeHeaders(req.headers, upstreamUrl),
       },
       (upstreamResponse) => {
         const responseHeaders = {
@@ -118,6 +142,62 @@ const server = http.createServer((req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`[limpae proxy] forwarding ${TARGET_ORIGIN} on http://localhost:${PORT}`);
+server.on("upgrade", (req, socket, head) => {
+  try {
+    const upstreamUrl = new URL(req.url, TARGET_ORIGIN);
+    const upstreamHeaders = copyProxySafeHeaders(req.headers, upstreamUrl);
+    upstreamHeaders.connection = "Upgrade";
+    upstreamHeaders.upgrade = req.headers.upgrade || "websocket";
+
+    const connect =
+      upstreamUrl.protocol === "https:"
+        ? tls.connect
+        : net.connect;
+    const upstreamSocket = connect(
+      upstreamUrl.protocol === "https:"
+        ? {
+            host: upstreamUrl.hostname,
+            port: Number(upstreamUrl.port || 443),
+            servername: upstreamUrl.hostname,
+          }
+        : {
+            host: upstreamUrl.hostname,
+            port: Number(upstreamUrl.port || 80),
+          },
+      () => {
+        const requestLines = [
+          `${req.method} ${upstreamUrl.pathname}${upstreamUrl.search} HTTP/${req.httpVersion}`,
+          ...Object.entries(upstreamHeaders).map(([key, value]) => `${key}: ${value}`),
+          "",
+          "",
+        ];
+
+        upstreamSocket.write(requestLines.join("\r\n"));
+        if (head && head.length > 0) {
+          upstreamSocket.write(head);
+        }
+
+        socket.pipe(upstreamSocket).pipe(socket);
+      },
+    );
+
+    upstreamSocket.on("error", (error) => {
+      console.error("[limpae proxy] websocket upstream error:", error.message);
+      socket.destroy(error);
+    });
+
+    socket.on("error", () => {
+      upstreamSocket.destroy();
+    });
+  } catch (error) {
+    console.error("[limpae proxy] websocket setup failed:", error.message);
+    socket.destroy(error);
+  }
+});
+
+server.listen(PORT, HOST, () => {
+  const lanAddress = getLanAddress();
+  console.log(`[limpae proxy] forwarding ${TARGET_ORIGIN}`);
+  console.log(`[limpae proxy] local:   http://localhost:${PORT}`);
+  console.log(`[limpae proxy] device:  http://${lanAddress}:${PORT}`);
 });

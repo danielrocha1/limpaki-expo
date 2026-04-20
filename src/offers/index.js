@@ -1306,24 +1306,40 @@ const OffersBoard = () => {
   };
 
   const openDiaristProfileDrawer = async (negotiation) => {
+    const negotiationDiarist =
+      negotiation.diarist ||
+      negotiation.Diarist ||
+      {};
+    const embeddedDiaristProfile =
+      negotiation.diarist_profile ||
+      negotiation.DiaristProfile ||
+      negotiationDiarist.diarist_profile ||
+      negotiationDiarist.DiaristProfile ||
+      {};
     const diaristName =
-      negotiation.diarist?.name ||
-      negotiation.diarist?.Name ||
+      negotiationDiarist.name ||
+      negotiationDiarist.Name ||
       `Diarista #${negotiation.diarist_id}`;
     const diaristPhoto =
-      negotiation.diarist?.photo ||
-      negotiation.diarist?.Photo ||
+      negotiationDiarist.photo ||
+      negotiationDiarist.Photo ||
       "https://placehold.co/160x160?text=Diarista";
+    const diaristProfileId =
+      embeddedDiaristProfile.id ||
+      embeddedDiaristProfile.ID ||
+      null;
 
-    let fetchedUser = null;
+    let fetchedProfile = null;
     try {
       setProfileLoading(true);
-      const response = await apiFetch(`/users/${negotiation.diarist_id}`, {
-        authenticated: true,
-      });
+      if (diaristProfileId) {
+        const response = await apiFetch(`/diarists/${diaristProfileId}`, {
+          authenticated: true,
+        });
 
-      if (response.ok) {
-        fetchedUser = await response.json();
+        if (response.ok) {
+          fetchedProfile = await response.json();
+        }
       }
     } catch (error) {
       console.error("Erro ao buscar perfil atualizado da diarista:", error);
@@ -1332,23 +1348,19 @@ const OffersBoard = () => {
     }
 
     const diaristProfile =
-      negotiation.diarist_profile ||
-      negotiation.DiaristProfile ||
-      fetchedUser?.DiaristProfile ||
-      fetchedUser?.diarist_profile ||
-      negotiation.diarist?.diarist_profile ||
-      negotiation.diarist?.DiaristProfile ||
+      fetchedProfile ||
+      embeddedDiaristProfile ||
       {};
 
     const drawerProfile = {
       id: negotiation.diarist_id,
-      name: fetchedUser?.Name || fetchedUser?.name || diaristName,
-      photo: fetchedUser?.Photo || fetchedUser?.photo || diaristPhoto,
+      name: diaristName,
+      photo: diaristPhoto,
       emailVerified: Boolean(
-        fetchedUser?.EmailVerified ?? fetchedUser?.email_verified,
+        negotiationDiarist.EmailVerified ?? negotiationDiarist.email_verified,
       ),
       average_rating: Number(negotiation.diarist_rating || 0),
-      total_reviews: allReviews.length,
+      total_reviews: Number(negotiation.diarist_total_reviews || 0),
       distance: formatDistance(negotiation.diarist_distance),
       bio: diaristProfile.Bio || diaristProfile.bio || "",
       experienceYears:
@@ -1368,11 +1380,7 @@ const OffersBoard = () => {
       specialties: parseSpecialties(
         diaristProfile.Specialties || diaristProfile.specialties,
       ),
-      address:
-        fetchedUser?.Address ||
-        fetchedUser?.address ||
-        negotiation.diarist?.Address ||
-        [],
+      address: negotiationDiarist.Address || negotiationDiarist.address || [],
     };
 
     setSelectedProfile(drawerProfile);
@@ -2093,6 +2101,8 @@ const OffersBoard = () => {
     const negotiationCount = Array.isArray(offer.negotiations)
       ? offer.negotiations.length
       : 0;
+    const canCancelOffer =
+      offer.status === "aberta" || offer.status === "negociacao";
 
     return (
       <Card key={offer.id} className="offer-card client-offer-card">
@@ -2521,11 +2531,14 @@ const OffersBoard = () => {
                                   loading={profileLoading}
                                   onClick={() => openDiaristProfileDrawer(neg)}
                                 >
-                                  Ver perfil da diarista
+                                  Ver perfil completo
                                 </Button>
 
                                 {neg.status === "pendente" && (
-                                  <Space style={{ marginTop: "12px" }}>
+                                  <Space
+                                    className="negotiation-item-cta-group"
+                                    style={{ marginTop: "12px" }}
+                                  >
                                     <Button
                                       type="primary"
                                       className="offer-cta-btn offer-cta-btn-primary"
@@ -2538,7 +2551,7 @@ const OffersBoard = () => {
                                         handleAcceptNegotiation(offer.id, neg.id)
                                       }
                                     >
-                                      Aceitar
+                                      Aceitar contraproposta
                                     </Button>
                                     <Button
                                       size="small"
@@ -2551,7 +2564,7 @@ const OffersBoard = () => {
                                         handleRejectNegotiation(offer.id, neg.id)
                                       }
                                     >
-                                      Recusar
+                                      Recusar contraproposta
                                     </Button>
                                   </Space>
                                 )}
@@ -2571,19 +2584,30 @@ const OffersBoard = () => {
 
               <Divider />
 
-              <div className="offer-actions">
-                {(offer.status === "aberta" || offer.status === "negociacao") && (
-                  <Button
-                    className="offer-cta-btn offer-cta-btn-danger offer-cancel-btn"
-                    loading={actionLoadingKey === `cancel-offer-${offer.id}`}
-                    onClick={() => handleCancelOffer(offer.id)}
-                  >
-                    Cancelar oferta
-                  </Button>
-                )}
-                {offer.status === "aceita" && (
-                  <Tag color="success">{getDisplayOrderStatus(offer)}</Tag>
-                )}
+              <div className="client-offer-footer-actions">
+                <div className="client-offer-footer-copy">
+                  <span className="client-offer-footer-label">Próximo passo</span>
+                  <p>
+                    {canCancelOffer
+                      ? "Você ainda pode analisar contrapropostas ou encerrar esta publicação."
+                      : "Esta oferta já avançou para a próxima etapa do fluxo."}
+                  </p>
+                </div>
+
+                <div className="offer-actions client-offer-actions-row">
+                  {canCancelOffer && (
+                    <Button
+                      className="offer-cta-btn offer-cta-btn-danger offer-cancel-btn"
+                      loading={actionLoadingKey === `cancel-offer-${offer.id}`}
+                      onClick={() => handleCancelOffer(offer.id)}
+                    >
+                      Cancelar publicação
+                    </Button>
+                  )}
+                  {offer.status === "aceita" && (
+                    <Tag color="success">{getDisplayOrderStatus(offer)}</Tag>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -3333,6 +3357,67 @@ const OffersBoard = () => {
                       </div>
                     )}
 
+                    {!isClientProfile && (
+                      <div style={{ background: "#fff", border: "1px solid #dbeafe", borderRadius: "18px", padding: isMobile ? "16px" : "14px 16px" }}>
+                        <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "10px" }}>
+                          Valores informados
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px" }}>
+                          <div style={{ background: "#f8fbff", border: "1px solid #dbeafe", borderRadius: "14px", padding: "12px 14px" }}>
+                            <div style={{ color: "#64748b", fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px" }}>
+                              Por hora
+                            </div>
+                            <strong style={{ fontSize: "16px", color: "#0f172a" }}>
+                              {formatCurrency(selectedProfile.pricePerHour || 0)}
+                            </strong>
+                          </div>
+                          <div style={{ background: "#f8fbff", border: "1px solid #dbeafe", borderRadius: "14px", padding: "12px 14px" }}>
+                            <div style={{ color: "#64748b", fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px" }}>
+                              Diária
+                            </div>
+                            <strong style={{ fontSize: "16px", color: "#0f172a" }}>
+                              {formatCurrency(selectedProfile.pricePerDay || 0)}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {!isClientProfile && (
+                      <div style={{ background: "#fff", border: "1px solid #dbeafe", borderRadius: "18px", padding: isMobile ? "16px" : "14px 16px" }}>
+                        <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "10px" }}>
+                          Especialidades
+                        </div>
+                        {Array.isArray(selectedProfile.specialties) && selectedProfile.specialties.length > 0 ? (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {selectedProfile.specialties.map((specialty) => (
+                              <span
+                                key={specialty}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  minHeight: "32px",
+                                  padding: "0 12px",
+                                  borderRadius: "999px",
+                                  background: "#eff6ff",
+                                  border: "1px solid #bfdbfe",
+                                  color: "#1d4ed8",
+                                  fontSize: "12px",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {specialty}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p style={{ margin: 0, color: "#64748b", lineHeight: 1.5, fontSize: "14px" }}>
+                            Nenhuma especialidade informada.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     
                       <div style={{ background: "#fff", border: "1px solid #dbeafe", borderRadius: "18px", padding: isMobile ? "16px" : "14px 16px" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "10px" }}>
@@ -3922,6 +4007,67 @@ const OffersBoard = () => {
                       </strong>
                     </div>
                   </div>
+
+                  {!isClientProfile && (
+                    <div style={{ background: "#fff", border: "1px solid #dbeafe", borderRadius: "18px", padding: isMobile ? "16px" : "14px 16px" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "10px" }}>
+                        Valores informados
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px" }}>
+                        <div style={{ background: "#f8fbff", border: "1px solid #dbeafe", borderRadius: "14px", padding: "12px 14px" }}>
+                          <div style={{ color: "#64748b", fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px" }}>
+                            Por hora
+                          </div>
+                          <strong style={{ fontSize: "16px", color: "#0f172a" }}>
+                            {formatCurrency(selectedProfile.pricePerHour || 0)}
+                          </strong>
+                        </div>
+                        <div style={{ background: "#f8fbff", border: "1px solid #dbeafe", borderRadius: "14px", padding: "12px 14px" }}>
+                          <div style={{ color: "#64748b", fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px" }}>
+                            Diária
+                          </div>
+                          <strong style={{ fontSize: "16px", color: "#0f172a" }}>
+                            {formatCurrency(selectedProfile.pricePerDay || 0)}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!isClientProfile && (
+                    <div style={{ background: "#fff", border: "1px solid #dbeafe", borderRadius: "18px", padding: isMobile ? "16px" : "14px 16px" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginBottom: "10px" }}>
+                        Especialidades
+                      </div>
+                      {Array.isArray(selectedProfile.specialties) && selectedProfile.specialties.length > 0 ? (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                          {selectedProfile.specialties.map((specialty) => (
+                            <span
+                              key={specialty}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                minHeight: "32px",
+                                padding: "0 12px",
+                                borderRadius: "999px",
+                                background: "#eff6ff",
+                                border: "1px solid #bfdbfe",
+                                color: "#1d4ed8",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                              }}
+                            >
+                              {specialty}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ margin: 0, color: "#64748b", lineHeight: 1.5, fontSize: "14px" }}>
+                          Nenhuma especialidade informada.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   
                     <div style={{ background: "#fff", border: "1px solid #dbeafe", borderRadius: "18px", padding: isMobile ? "16px" : "14px 16px" }}>

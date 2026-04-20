@@ -1,8 +1,2 @@
-import { Platform } from "react-native";
+export { default } from "./features/map/MapConfirmModal";
 
-const MapConfirmModal =
-  Platform.OS === "web"
-    ? require("./MapConfirmModal.web").default
-    : require("./MapConfirmModal.native").default;
-
-export default MapConfirmModal;

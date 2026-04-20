@@ -5,40 +5,45 @@
   "main": "node_modules/expo/AppEntry.js",
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
-    "@expo/metro-runtime": "~5.0.5",
-    "@expo/vector-icons": "^14.1.0",
-    "@react-native-async-storage/async-storage": "^2.1.2",
+    "@expo/metro-runtime": "~6.1.2",
+    "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@stripe/react-stripe-js": "^3.1.1",
     "@stripe/stripe-js": "^5.6.0",
     "antd": "^5.26.4",
     "cra-template": "1.2.0",
     "dayjs": "^1.11.19",
-    "expo": "~53.0.20",
-    "expo-status-bar": "~2.2.3",
+    "expo": "~54.0.33",
+    "expo-font": "~14.0.11",
+    "expo-status-bar": "~3.0.9",
     "framer-motion": "^12.5.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.476.0",
-    "react": "^19.0.0-rc.1",
+    "react": "19.1.0",
     "react-calendar": "^5.1.0",
-    "react-dom": "19.0.0",
+    "react-dom": "19.1.0",
     "react-leaflet": "^5.0.0",
-    "react-native": "0.79.5",
-    "react-native-safe-area-context": "5.4.0",
-    "react-native-screens": "~4.11.1",
-    "react-native-web": "^0.20.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-web": "^0.21.0",
     "react-router-dom": "^6.29.0",
     "react-scripts": "5.0.1"
   },
   "scripts": {
+    "start": "expo start",
+    "start:proxy": "node scripts/start-expo-proxy.js",
     "android": "expo start --android",
-    "expo": "expo start",
+    "android:proxy": "node scripts/start-expo-proxy.js --android",
     "ios": "expo start --ios",
+    "ios:proxy": "node scripts/start-expo-proxy.js --ios",
+    "web": "expo start --web",
+    "export:web": "expo export --platform web",
     "proxy:web": "node scripts/api-proxy.js",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "web": "react-scripts start"
+    "doctor": "npx expo-doctor",
+    "start:legacy": "react-scripts start",
+    "build:legacy": "react-scripts build",
+    "test:legacy": "react-scripts test"
   },
   "eslintConfig": {
     "extends": [
@@ -57,5 +62,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "babel-preset-expo": "~54.0.6"
   }
 }
