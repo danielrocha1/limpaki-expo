@@ -106,6 +106,8 @@ export default function ServiceDetailsModal({
   onComplete,
   onOpenClientProfile,
   onStartWithPin,
+  onOpenChat,
+  chatLabel = "Abrir chat",
 }) {
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
@@ -519,6 +521,33 @@ export default function ServiceDetailsModal({
                 )}
               </View>
             ) : null}
+
+            {onOpenChat ? (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => onOpenChat?.(safeService)}
+                style={{
+                  marginBottom: 14,
+                  minHeight: 44,
+                  borderRadius: 14,
+                  backgroundColor: "#2563eb",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "row",
+                  gap: 8,
+                  paddingHorizontal: 14,
+                }}
+              >
+                <Feather name="message-circle" size={16} color="#ffffff" />
+                <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "800" }}>
+                  {chatLabel}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={{ color: "#6b7280", fontSize: 13, lineHeight: 19, marginBottom: 14 }}>
+                O chat fica indisponivel para servicos em servico, cancelados ou concluidos.
+              </Text>
+            )}
 
             <View
               style={{

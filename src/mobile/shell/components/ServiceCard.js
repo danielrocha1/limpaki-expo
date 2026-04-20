@@ -125,6 +125,8 @@ export default function ServiceCard({
   onStart,
   onComplete,
   onOpenClientProfile,
+  onOpenChat,
+  chatLabel = "Abrir chat",
 }) {
   const safeService = service || {};
   const { isPending, isAccepted, isInJourney, canRevealPreciseLocation } =
@@ -472,6 +474,30 @@ export default function ServiceCard({
           >
             <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
               {busyAction === "complete" ? "Concluindo..." : "Concluir servico"}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {onOpenChat ? (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => onOpenChat?.(safeService)}
+            disabled={Boolean(busyAction) || disabled}
+            style={{
+              flex: 1,
+              minHeight: 42,
+              borderRadius: 12,
+              backgroundColor: "#2563eb",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 8,
+              opacity: busyAction || disabled ? 0.7 : 1,
+            }}
+          >
+            <Feather name="message-circle" size={16} color="#ffffff" />
+            <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
+              {chatLabel}
             </Text>
           </TouchableOpacity>
         ) : null}
