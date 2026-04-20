@@ -8,6 +8,7 @@ import SectionCard from "../components/SectionCard";
 import ServiceCard from "../components/ServiceCard";
 import ServiceDetailsModal from "../components/ServiceDetailsModal";
 import ClientProfileModal from "../components/ClientProfileModal";
+import { useMobileChatCenter } from "../../MobileChatCenter";
 import { SERVICE_ACTIONS } from "../../../services/constants";
 
 const DEFAULT_PAGINATION = {
@@ -70,6 +71,18 @@ const getInlineClientReviews = (service = {}) => {
       const comment = String(review?.diarist_comment || "").trim();
       return rating > 0 || comment.length > 0;
     });
+};
+
+const normalizeStatus = (value = "") =>
+  String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const isServiceChatAvailable = (service) => {
+  const status = normalizeStatus(service?.status || service?.Status || "");
+  return status !== "cancelado" && status !== "concluido" && status !== "em servico";
 };
 
 function ServicesLoadingState({ switching = false, tabLabel = "ativos" }) {
@@ -474,7 +487,8 @@ function ServiceFileTab({ label, active, disabled, loading, icon, onPress }) {
   );
 }
 
-export default function ServicesScreen() {
+export default function ServicesScreen({ session }) {
+  const { openChat } = useMobileChatCenter();
   const [tab, setTab] = useState("active");
   const [pageByTab, setPageByTab] = useState({
     active: 1,
@@ -1040,6 +1054,8 @@ export default function ServicesScreen() {
                   onStart={setSelectedService}
                   onComplete={handleComplete}
                   onOpenClientProfile={handleOpenClientProfile}
+                  onOpenChat={isServiceChatAvailable(service) ? openChat : null}
+                  chatLabel={session?.role === "cliente" ? "Falar com a diarista" : "Falar com cliente"}
                 />
               );
             })}
@@ -1063,6 +1079,8 @@ export default function ServicesScreen() {
         onComplete={handleComplete}
         onOpenClientProfile={handleOpenClientProfile}
         onStartWithPin={handleStartWithPin}
+        onOpenChat={isServiceChatAvailable(modalService) ? openChat : null}
+        chatLabel={session?.role === "cliente" ? "Falar com a diarista" : "Falar com cliente"}
       />
 
       <ClientProfileModal
