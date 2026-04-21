@@ -46,6 +46,7 @@ const proxyProcess = spawn(
 const expoEnv = {
   ...process.env,
   EXPO_PUBLIC_API_URL: proxyUrl,
+  EXPO_OFFLINE: process.env.EXPO_OFFLINE || "1",
 };
 const expoProcess = isWindows
   ? spawn(

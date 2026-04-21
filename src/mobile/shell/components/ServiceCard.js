@@ -158,9 +158,10 @@ export default function ServiceCard({
     safeService.reviews ||
     safeService.Reviews ||
     {};
-  const historyRating = role === "diarista"
-    ? Number(reviewData.client_rating || reviewData.ClientRating || 0)
-    : Number(reviewData.diarist_rating || reviewData.DiaristRating || 0);
+  const historyRating =
+    role === "diarista"
+      ? Number(reviewData.client_rating || reviewData.ClientRating || 0)
+      : Number(reviewData.diarist_rating || reviewData.DiaristRating || 0);
   const nextStep = isHistoryCard
     ? ""
     : isPending
@@ -212,28 +213,57 @@ export default function ServiceCard({
             )}
           </View>
 
-          {role === "diarista" ? (
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => onOpenClientProfile?.(safeService)}
-              disabled={disabled}
-              style={{
-                minHeight: 34,
-                marginTop: 8,
-                paddingHorizontal: 8,
-                borderRadius: 10,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#eff6ff",
-                borderWidth: 1,
-                borderColor: "#bfdbfe",
-                opacity: disabled ? 0.7 : 1,
-              }}
-            >
-              <Text style={{ color: "#1d4ed8", fontSize: 11, fontWeight: "800", textAlign: "center" }}>
-                Ver perfil
-              </Text>
-            </TouchableOpacity>
+          {onOpenClientProfile ? (
+            <>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => onOpenClientProfile?.(safeService)}
+                disabled={disabled}
+                style={{
+                  minHeight: 34,
+                  marginTop: 8,
+                  paddingHorizontal: 8,
+                  borderRadius: 10,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#eff6ff",
+                  borderWidth: 1,
+                  borderColor: "#bfdbfe",
+                  opacity: disabled ? 0.7 : 1,
+                }}
+              >
+                <Text style={{ color: "#1d4ed8", fontSize: 11, fontWeight: "800", textAlign: "center" }}>
+                  Ver perfil
+                </Text>
+              </TouchableOpacity>
+
+              <View
+                style={{
+                  marginTop: 40,
+                  minHeight: 40,
+                  paddingHorizontal: 12,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "row",
+                  gap: 6,
+                  backgroundColor: "#eff6ff",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#1d4ed8",
+                    fontSize: 12,
+                    fontWeight: "800",
+                    textAlign: "center",
+                    width: "100%",
+                  }}
+                >
+                  Ver detalhes
+                </Text>
+                <Feather name="chevron-right" size={15} color="#1d4ed8" />
+              </View>
+            </>
           ) : null}
         </View>
 
@@ -260,9 +290,11 @@ export default function ServiceCard({
               </Text>
             </View>
 
-            <Text style={{ color: "#111827", fontSize: 16, fontWeight: "900" }}>
-              {formatCurrency(safeService.total_price || 0)}
-            </Text>
+            <View style={{ alignItems: "flex-end", gap: 8 }}>
+              <Text style={{ color: "#111827", fontSize: 16, fontWeight: "900" }}>
+                {formatCurrency(safeService.total_price || 0)}
+              </Text>
+            </View>
           </View>
 
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -478,30 +510,6 @@ export default function ServiceCard({
           </TouchableOpacity>
         ) : null}
 
-        {onOpenChat ? (
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => onOpenChat?.(safeService)}
-            disabled={Boolean(busyAction) || disabled}
-            style={{
-              flex: 1,
-              minHeight: 42,
-              borderRadius: 12,
-              backgroundColor: "#2563eb",
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              gap: 8,
-              opacity: busyAction || disabled ? 0.7 : 1,
-            }}
-          >
-            <Feather name="message-circle" size={16} color="#ffffff" />
-            <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
-              {chatLabel}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-
         {role === "diarista" && isCompletedStatus(safeService.status) ? (
           <View
             style={{
@@ -521,22 +529,30 @@ export default function ServiceCard({
           </View>
         ) : null}
 
-        <View
-          style={{
-            marginLeft: "auto",
-            minHeight: 40,
-            paddingHorizontal: 12,
-            borderRadius: 12,
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "row",
-            gap: 6,
-            backgroundColor: "#eff6ff",
-          }}
-        >
-          <Text style={{ color: "#1d4ed8", fontSize: 12, fontWeight: "800" }}>Ver detalhes</Text>
-          <Feather name="chevron-right" size={15} color="#1d4ed8" />
-        </View>
+        {onOpenChat ? (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => onOpenChat?.(safeService)}
+            disabled={Boolean(busyAction) || disabled}
+            style={{
+              width: "100%",
+              minHeight: 42,
+              paddingHorizontal: 14,
+              borderRadius: 12,
+              backgroundColor: "#2563eb",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 8,
+              opacity: busyAction || disabled ? 0.7 : 1,
+            }}
+          >
+            <Feather name="message-circle" size={15} color="#ffffff" />
+            <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
+              {chatLabel}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <Text style={{ color: "#6b7280", fontSize: 12, lineHeight: 18, marginTop: 12 }}>

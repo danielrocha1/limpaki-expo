@@ -8,19 +8,27 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "A Limpae usa sua localizacao para compartilhar a posicao em tempo real no chat do servico."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0d8c74"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-location"
     ]
   }
 }

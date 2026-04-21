@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Platform,
   StatusBar,
   StyleSheet,
@@ -23,6 +24,7 @@ import {
 } from "../../config/api";
 import RegisterFlow from "../features/auth/RegisterFlow";
 import AppShell from "../shell/AppShell";
+import { formatAddress, normalizeAddress } from "../shell/utils/shellUtils";
 
 const palette = {
   bgTop: "#2f5fe0",
@@ -47,12 +49,19 @@ function MobileAppContent() {
   const [successMessage, setSuccessMessage] = useState("");
   const [session, setSession] = useState(null);
   const [appRoute, setAppRoute] = useState(null);
+  const [profileIntent, setProfileIntent] = useState(null);
+  const [addressOptions, setAddressOptions] = useState([]);
+  const [activeAddressId, setActiveAddressId] = useState(null);
   const [activeAddressLabel, setActiveAddressLabel] = useState("");
   const [isAddressLoading, setIsAddressLoading] = useState(false);
+  const shouldShowHeader = isBootstrappingSession || authMode !== "login";
 
   const resetSessionState = () => {
     setSession(null);
     setAppRoute(null);
+    setProfileIntent(null);
+    setAddressOptions([]);
+    setActiveAddressId(null);
     setActiveAddressLabel("");
     setIsAddressLoading(false);
     setSuccessMessage("");
@@ -252,7 +261,7 @@ function MobileAppContent() {
     let cancelled = false;
 
     const loadActiveAddress = async () => {
-      if (!session || authMode !== "app" || session.role === "diarista") {
+      if (!session || authMode !== "app") {
         setActiveAddressLabel("");
         setIsAddressLoading(false);
         return;
@@ -263,16 +272,31 @@ function MobileAppContent() {
       try {
         const response = await apiFetch("/addresses", { authenticated: true });
         const data = response.ok ? await response.json().catch(() => []) : [];
-        const addresses = Array.isArray(data) ? data : [];
-        const firstAddress = addresses[0] || {};
-        const label = firstAddress.street || firstAddress.Street || "Selecione um endereco";
+        const addresses = (Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+            ? data.items
+            : [])
+          .map((address) => normalizeAddress(address));
+        const activeAddress =
+          addresses.find((address) => address?.active || address?.Active) || addresses[0] || null;
+        const label =
+          formatAddress(activeAddress) ||
+          activeAddress?.street ||
+          activeAddress?.neighborhood ||
+          activeAddress?.city ||
+          "Adicionar endereco";
 
         if (!cancelled) {
+          setAddressOptions(addresses);
+          setActiveAddressId(activeAddress?.id || null);
           setActiveAddressLabel(label);
         }
       } catch (_error) {
         if (!cancelled) {
-          setActiveAddressLabel("Selecione um endereco");
+          setAddressOptions([]);
+          setActiveAddressId(null);
+          setActiveAddressLabel("Adicionar endereco");
         }
       } finally {
         if (!cancelled) {
@@ -292,26 +316,63 @@ function MobileAppContent() {
     <SafeAreaView style={styles.safeArea}>
       <ExpoStatusBar style="light" />
       <StatusBar barStyle="light-content" backgroundColor={palette.bgTop} />
-      <AppHeader
-        topInset={insets.top}
-        session={session}
-        activeAddressLabel={activeAddressLabel}
-        isAddressLoading={isAddressLoading}
-        onLoginPress={() => setAuthMode(session ? "app" : "login")}
-        onRegisterPress={() => setAuthMode("register")}
-        onProfilePress={() => {
-          if (!session) {
-            return;
-          }
-          setAuthMode("app");
-          setAppRoute("profile");
-        }}
-        onLogoutPress={async () => {
-          await clearToken();
-          resetSessionState();
-        }}
-      />
-      <View style={StyleSheet.flatten([styles.container, { marginTop: headerHeight }])}>
+      {shouldShowHeader ? (
+        <AppHeader
+          topInset={insets.top}
+          session={session}
+          addressOptions={addressOptions}
+          activeAddressId={activeAddressId}
+          activeAddressLabel={activeAddressLabel}
+          isAddressLoading={isAddressLoading}
+          onAddressSelect={(address) => {
+            const normalizedAddress = normalizeAddress(address);
+            setActiveAddressId(normalizedAddress?.id || null);
+            setActiveAddressLabel(
+              formatAddress(normalizedAddress) ||
+                normalizedAddress?.street ||
+                normalizedAddress?.neighborhood ||
+                "Adicionar endereco",
+            );
+          }}
+          onAddAddressPress={() => {
+            if (!session) {
+              return;
+            }
+
+            setAuthMode("app");
+            setAppRoute("profile");
+            setProfileIntent({
+              section: "addresses",
+              openAddressForm: !activeAddressLabel || activeAddressLabel === "Adicionar endereco",
+              stamp: Date.now(),
+            });
+          }}
+          onLoginPress={() => setAuthMode(session ? "app" : "login")}
+          onRegisterPress={() => setAuthMode("register")}
+          onProfilePress={() => {
+            if (!session) {
+              return;
+            }
+            setAuthMode("app");
+            setAppRoute("profile");
+            setProfileIntent({
+              section: "personal",
+              openAddressForm: false,
+              stamp: Date.now(),
+            });
+          }}
+          onLogoutPress={async () => {
+            await clearToken();
+            resetSessionState();
+          }}
+        />
+      ) : null}
+      <View
+        style={StyleSheet.flatten([
+          styles.container,
+          { marginTop: shouldShowHeader ? headerHeight : 0 },
+        ])}
+      >
         {isBootstrappingSession ? (
           <View style={styles.bootSplash}>
             <ActivityIndicator color="#ffffff" size="large" />
@@ -319,6 +380,7 @@ function MobileAppContent() {
         ) : authMode === "app" && session ? (
           <AppShell
             forcedRoute={appRoute}
+            profileIntent={profileIntent}
             session={session}
             onSessionUpdate={setSession}
             onRouteChange={setAppRoute}
@@ -336,72 +398,82 @@ function MobileAppContent() {
             }}
           />
         ) : (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.title}>Bem-vindo de volta!</Text>
-              <Text style={styles.subtitle}>Faca login para acessar sua conta.</Text>
-            </View>
-
-            {errors.general ? (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{errors.general}</Text>
-              </View>
-            ) : null}
-
-            {successMessage ? (
-              <View style={styles.successBanner}>
-                <Text style={styles.successBannerText}>{successMessage}</Text>
-              </View>
-            ) : null}
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>E-mail</Text>
-              <TextInput
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                onChangeText={setEmail}
-                placeholder="Digite seu e-mail"
-                placeholderTextColor={palette.placeholder}
-                style={[styles.input, errors.email && styles.inputError]}
-                value={email}
-                editable={!isLoading}
+          <View style={styles.authShell}>
+            <View style={styles.authBrandBlock}>
+              <Image
+                source={require("../../../public/limpae-logo.png")}
+                resizeMode="contain"
+                style={styles.authLogo}
               />
-              {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
             </View>
 
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Senha</Text>
-              <TextInput
-                autoCapitalize="none"
-                onChangeText={setPassword}
-                placeholder="Digite sua senha"
-                placeholderTextColor={palette.placeholder}
-                secureTextEntry
-                style={[styles.input, errors.password && styles.inputError]}
-                value={password}
-                editable={!isLoading}
-              />
-              {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
-            </View>
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.title}>Bem-vindo de volta!</Text>
+                <Text style={styles.subtitle}>Faca login para acessar sua conta.</Text>
+              </View>
 
-            <TouchableOpacity
-              activeOpacity={0.9}
-              disabled={isLoading}
-              onPress={handleLogin}
-              style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.primaryButtonText}>Entrar</Text>
-              )}
-            </TouchableOpacity>
+              {errors.general ? (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorBannerText}>{errors.general}</Text>
+                </View>
+              ) : null}
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>
-                Nao tem uma conta? <Text style={styles.footerLink}>Cadastre-se</Text>
-              </Text>
+              {successMessage ? (
+                <View style={styles.successBanner}>
+                  <Text style={styles.successBannerText}>{successMessage}</Text>
+                </View>
+              ) : null}
+
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>E-mail</Text>
+                <TextInput
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  onChangeText={setEmail}
+                  placeholder="Digite seu e-mail"
+                  placeholderTextColor={palette.placeholder}
+                  style={[styles.input, errors.email && styles.inputError]}
+                  value={email}
+                  editable={!isLoading}
+                />
+                {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Senha</Text>
+                <TextInput
+                  autoCapitalize="none"
+                  onChangeText={setPassword}
+                  placeholder="Digite sua senha"
+                  placeholderTextColor={palette.placeholder}
+                  secureTextEntry
+                  style={[styles.input, errors.password && styles.inputError]}
+                  value={password}
+                  editable={!isLoading}
+                />
+                {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.9}
+                disabled={isLoading}
+                onPress={handleLogin}
+                style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Entrar</Text>
+                )}
+              </TouchableOpacity>
+
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>
+                  Nao tem uma conta? <Text style={styles.footerLink}>Cadastre-se</Text>
+                </Text>
+              </View>
             </View>
           </View>
         )}
@@ -439,12 +511,25 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surface,
     paddingHorizontal: 12,
     paddingVertical: 22,
-    marginTop: 18,
     shadowColor: "#0f172a",
     shadowOpacity: 0.12,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
     elevation: 5,
+  },
+  authShell: {
+    flex: 1,
+    justifyContent: "center",
+    paddingBottom: 24,
+  },
+  authBrandBlock: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 22,
+  },
+  authLogo: {
+    width: 238,
+    height: 96,
   },
   cardHeader: {
     alignItems: "center",

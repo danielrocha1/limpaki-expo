@@ -15,14 +15,19 @@ export const MOBILE_HEADER_HEIGHT = 64;
 export default function AppHeader({
   topInset = 0,
   session,
+  addressOptions = [],
+  activeAddressId = null,
   activeAddressLabel,
   isAddressLoading,
+  onAddressSelect,
+  onAddAddressPress,
   onLoginPress,
   onRegisterPress,
   onProfilePress,
   onLogoutPress,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [addressMenuOpen, setAddressMenuOpen] = useState(false);
 
   const menuTitle = useMemo(() => {
     if (!session) return "";
@@ -31,12 +36,29 @@ export default function AppHeader({
 
   const handleProfilePress = () => {
     setMenuOpen(false);
+    setAddressMenuOpen(false);
     onProfilePress?.();
   };
 
   const handleLogoutPress = () => {
     setMenuOpen(false);
+    setAddressMenuOpen(false);
     onLogoutPress?.();
+  };
+
+  const handleToggleAddressMenu = () => {
+    setMenuOpen(false);
+    setAddressMenuOpen((current) => !current);
+  };
+
+  const handleAddressSelect = (address) => {
+    setAddressMenuOpen(false);
+    onAddressSelect?.(address);
+  };
+
+  const handleAddAddressPress = () => {
+    setAddressMenuOpen(false);
+    onAddAddressPress?.();
   };
 
   return (
@@ -57,21 +79,90 @@ export default function AppHeader({
         />
       </View>
 
-      {session && session.role !== "diarista" ? (
+      {session ? (
         <View style={styles.headerCenterSlot}>
           <View style={styles.addressContainer}>
-            <View style={styles.addressButton}>
+            <Pressable
+              onPress={handleToggleAddressMenu}
+              style={({ pressed }) => [styles.addressButton, pressed && styles.addressButtonPressed]}
+            >
               {isAddressLoading ? (
                 <Text style={styles.addressText}>Carregando...</Text>
               ) : (
                 <>
                   <Text numberOfLines={1} style={styles.addressText}>
-                    {activeAddressLabel || "Selecione um endereco"}
+                    {activeAddressLabel || "Adicionar endereco"}
                   </Text>
-                  <Feather name="chevron-down" size={14} color="#ffffff" />
+                  <Feather
+                    name={addressMenuOpen ? "chevron-up" : "chevron-down"}
+                    size={14}
+                    color="#ffffff"
+                  />
                 </>
               )}
-            </View>
+            </Pressable>
+
+            {addressMenuOpen ? (
+              <View style={styles.addressMenuPanel}>
+                {Array.isArray(addressOptions) && addressOptions.length > 0 ? (
+                  addressOptions.map((address) => {
+                    const addressId = address?.id || address?.ID || null;
+                    const isActive = activeAddressId && addressId === activeAddressId;
+                    const title =
+                      [address?.street || address?.Street, address?.number || address?.Number]
+                        .filter(Boolean)
+                        .join(", ") ||
+                      address?.neighborhood ||
+                      address?.Neighborhood ||
+                      "Endereco";
+                    const subtitle =
+                      [address?.neighborhood || address?.Neighborhood, address?.city || address?.City]
+                        .filter(Boolean)
+                        .join(" • ") || "Endereco cadastrado";
+
+                    return (
+                      <Pressable
+                        key={addressId || title}
+                        onPress={() => handleAddressSelect(address)}
+                        style={({ pressed }) => [
+                          styles.addressMenuItem,
+                          isActive && styles.addressMenuItemActive,
+                          pressed && styles.addressMenuItemPressed,
+                        ]}
+                      >
+                        <View style={styles.addressMenuItemCopy}>
+                          <Text
+                            numberOfLines={1}
+                            style={[styles.addressMenuItemTitle, isActive && styles.addressMenuItemTitleActive]}
+                          >
+                            {title}
+                          </Text>
+                          <Text numberOfLines={1} style={styles.addressMenuItemSubtitle}>
+                            {subtitle}
+                          </Text>
+                        </View>
+                        {isActive ? <Feather name="check" size={15} color="#2563eb" /> : null}
+                      </Pressable>
+                    );
+                  })
+                ) : (
+                  <View style={styles.addressEmptyState}>
+                    <Text style={styles.addressEmptyStateText}>Nenhum endereco cadastrado.</Text>
+                  </View>
+                )}
+
+                <Pressable
+                  onPress={handleAddAddressPress}
+                  style={({ pressed }) => [
+                    styles.addressAddButton,
+                    pressed && styles.addressMenuItemPressed,
+                  ]}
+                >
+                  <Feather name="plus" size={15} color="#2563eb" />
+                  <Text style={styles.addressAddButtonText}>Adicionar endereco</Text>
+                </Pressable>
+              </View>
+            ) : null}
           </View>
         </View>
       ) : null}
@@ -79,7 +170,10 @@ export default function AppHeader({
       {session ? (
         <View style={styles.menuWrapper}>
           <Pressable
-            onPress={() => setMenuOpen((current) => !current)}
+            onPress={() => {
+              setAddressMenuOpen(false);
+              setMenuOpen((current) => !current);
+            }}
             style={({ hovered, pressed }) => [
               styles.menuTrigger,
               hovered && styles.menuTriggerHover,
@@ -188,7 +282,7 @@ const styles = StyleSheet.create({
   logoWrapper: {
     zIndex: 2,
     flexShrink: 0,
-    marginLeft: -22,
+    marginLeft: -10,
   },
   logo: {
     width: 119,
@@ -202,7 +296,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: "center",
     justifyContent: "center",
-    pointerEvents: "none",
     zIndex: 1,
   },
   addressContainer: {
@@ -210,6 +303,8 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 12,
     marginTop: 40,
+    zIndex: 3,
+    position: "relative",
   },
   addressButton: {
     minHeight: 38,
@@ -222,6 +317,87 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+  },
+  addressButtonPressed: {
+    opacity: 0.92,
+    backgroundColor: "rgba(255, 255, 255, 0.22)",
+  },
+  addressMenuPanel: {
+    position: "absolute",
+    top: 48,
+    left: "50%",
+    minWidth: 220,
+    borderRadius: 16,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#d9dee8",
+    padding: 8,
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
+    zIndex: 20,
+    transform: [{ translateX: -110 }],
+  },
+  addressMenuItem: {
+    minHeight: 48,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  addressMenuItemActive: {
+    backgroundColor: "#eff6ff",
+  },
+  addressMenuItemPressed: {
+    opacity: 0.88,
+  },
+  addressMenuItemCopy: {
+    flex: 1,
+  },
+  addressMenuItemTitle: {
+    color: "#1f2937",
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  addressMenuItemTitleActive: {
+    color: "#2563eb",
+  },
+  addressMenuItemSubtitle: {
+    color: "#6b7280",
+    fontSize: 11,
+  },
+  addressEmptyState: {
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+  },
+  addressEmptyStateText: {
+    color: "#6b7280",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  addressAddButton: {
+    minHeight: 44,
+    marginTop: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#dbeafe",
+    backgroundColor: "#eff6ff",
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  addressAddButtonText: {
+    color: "#2563eb",
+    fontSize: 13,
+    fontWeight: "800",
   },
   addressText: {
     flexShrink: 1,

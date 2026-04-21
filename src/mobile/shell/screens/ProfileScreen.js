@@ -219,7 +219,7 @@ function buildAddressForm(address = {}) {
   };
 }
 
-export default function ProfileScreen({ session }) {
+export default function ProfileScreen({ session, profileIntent }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -677,6 +677,30 @@ export default function ProfileScreen({ session }) {
     setAddressNotice(null);
     setShowAddressMap(false);
   }
+
+  useEffect(() => {
+    if (!profileIntent?.stamp) {
+      return;
+    }
+
+    if (profileIntent.section) {
+      setActiveSection(profileIntent.section);
+    }
+
+    if (profileIntent.section === "addresses" && profileIntent.openAddressForm) {
+      setEditingAddressId(null);
+      setEditingRoomsAddressId(null);
+      setAddressForm(defaultAddressForm);
+      setAddressMapCoords(null);
+      setAddressLookupFeedback({ show: false, success: false, message: "" });
+      setIsAddressFormOpen(true);
+      return;
+    }
+
+    if (profileIntent.section === "addresses") {
+      setIsAddressFormOpen(false);
+    }
+  }, [profileIntent]);
 
   function handleAddressCoordsChange(coords) {
     const lat = Number(coords?.lat ?? coords?.latitude ?? 0);

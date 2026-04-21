@@ -10,7 +10,14 @@ import ProfileScreen from "./screens/ProfileScreen";
 import SubscriptionScreen from "./screens/SubscriptionScreen";
 import { MobileChatCenterProvider } from "../MobileChatCenter";
 
-export default function AppShell({ forcedRoute, session, onRouteChange, onSessionUpdate, onLogout }) {
+export default function AppShell({
+  forcedRoute,
+  profileIntent,
+  session,
+  onRouteChange,
+  onSessionUpdate,
+  onLogout,
+}) {
   const insets = useSafeAreaInsets();
   const bottomOffset = Platform.OS === "ios" ? Math.max(insets.bottom, 0) : 0;
   const screenBottomPadding = BOTTOM_NAV_HEIGHT + bottomOffset + 8;
@@ -55,7 +62,7 @@ export default function AppShell({ forcedRoute, session, onRouteChange, onSessio
       break;
     case "profile":
     default:
-      screen = <ProfileScreen session={session} />;
+      screen = <ProfileScreen session={session} profileIntent={profileIntent} />;
       break;
   }
 

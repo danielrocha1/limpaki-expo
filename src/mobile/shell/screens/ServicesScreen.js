@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { apiFetch } from "../../../config/api";
 import { styles } from "../AppShell.styles";
@@ -8,8 +8,17 @@ import SectionCard from "../components/SectionCard";
 import ServiceCard from "../components/ServiceCard";
 import ServiceDetailsModal from "../components/ServiceDetailsModal";
 import ClientProfileModal from "../components/ClientProfileModal";
+import LoadingState from "../components/LoadingState";
 import { useMobileChatCenter } from "../../MobileChatCenter";
 import { SERVICE_ACTIONS } from "../../../services/constants";
+import {
+  formatAverageRatingText,
+  formatCurrency,
+  formatShortDate,
+  getEmailVerificationLabel,
+  getSpecialtyPresentation,
+  normalizeDiaristReview,
+} from "../utils/shellUtils";
 
 const DEFAULT_PAGINATION = {
   page: 1,
@@ -72,6 +81,15 @@ const getInlineClientReviews = (service = {}) => {
       return rating > 0 || comment.length > 0;
     });
 };
+
+const formatProfileNeighborhood = (source = {}) =>
+  source?.neighborhood ||
+  source?.Neighborhood ||
+  source?.address?.neighborhood ||
+  source?.address?.Neighborhood ||
+  source?.address_neighborhood ||
+  source?.AddressNeighborhood ||
+  "";
 
 const normalizeStatus = (value = "") =>
   String(value)
@@ -489,6 +507,7 @@ function ServiceFileTab({ label, active, disabled, loading, icon, onPress }) {
 
 export default function ServicesScreen({ session }) {
   const { openChat } = useMobileChatCenter();
+  const viewerRole = session?.role === "cliente" ? "cliente" : "diarista";
   const [tab, setTab] = useState("active");
   const [pageByTab, setPageByTab] = useState({
     active: 1,
@@ -501,6 +520,12 @@ export default function ServicesScreen({ session }) {
     error: "",
     profile: null,
   });
+  const [selectedDiaristProfile, setSelectedDiaristProfile] = useState(null);
+  const [diaristProfileModalOpen, setDiaristProfileModalOpen] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
+  const [allReviews, setAllReviews] = useState([]);
   const [busyState, setBusyState] = useState({ serviceId: null, action: "" });
   const [transitioningTab, setTransitioningTab] = useState("");
   const [resourceState, setResourceState] = useState({
@@ -641,12 +666,17 @@ export default function ServicesScreen({ session }) {
     hasCachedPage && resourceState.refreshing;
   const interactionsDisabled =
     resourceState.loading || resourceState.refreshing || isTabTransitionLoading || Boolean(busyState.action);
-  const diaristServices = useMemo(
-    () => services.filter((service) => Boolean(service?.client || service?.client_id)),
-    [services],
+  const visibleServices = useMemo(
+    () =>
+      services.filter((service) =>
+        viewerRole === "diarista"
+          ? Boolean(service?.client || service?.client_id)
+          : Boolean(service?.diarist || service?.diarist_id),
+      ),
+    [services, viewerRole],
   );
   const modalService = selectedService
-    ? diaristServices.find((service) => {
+    ? visibleServices.find((service) => {
         const currentId = service?.id || service?.ID;
         const selectedId = selectedService?.id || selectedService?.ID;
         return currentId === selectedId;
@@ -920,6 +950,188 @@ export default function ServicesScreen({ session }) {
     }
   };
 
+  const loadDiaristReviews = async (diaristId) => {
+    setReviewsLoading(true);
+    try {
+      const response = await apiFetch(`/diarist-reviews/${diaristId}`, {
+        authenticated: true,
+      });
+
+      if (!response.ok) {
+        setAllReviews([]);
+        return;
+      }
+
+      const data = await response.json().catch(() => []);
+      const reviews = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+      setAllReviews(reviews.map(normalizeDiaristReview));
+    } catch (_error) {
+      setAllReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleOpenDiaristProfile = async (service) => {
+    const diarist = service?.diarist || service?.Diarist || {};
+    const embeddedDiaristProfile =
+      service?.diarist_profile ||
+      service?.DiaristProfile ||
+      diarist?.diarist_profile ||
+      diarist?.DiaristProfile ||
+      {};
+    const diaristId = service?.diarist_id || service?.DiaristID || diarist?.id || diarist?.ID;
+    const diaristProfileId = embeddedDiaristProfile?.id || embeddedDiaristProfile?.ID || null;
+
+    if (!diaristId) {
+      return;
+    }
+
+    setProfileLoading(true);
+    setSelectedDiaristProfile(null);
+    setDiaristProfileModalOpen(true);
+    setReviewsModalOpen(false);
+    setAllReviews([]);
+
+    try {
+      const [profileResponse] = await Promise.all([
+        diaristProfileId
+          ? apiFetch(`/diarists/${diaristProfileId}`, { authenticated: true })
+          : Promise.resolve({ ok: false }),
+        loadDiaristReviews(diaristId),
+      ]);
+
+      const profile = profileResponse.ok ? await profileResponse.json().catch(() => ({})) : embeddedDiaristProfile;
+
+      setSelectedDiaristProfile({
+        id: diaristId,
+        role: "diarista",
+        name: diarist?.name || diarist?.Name || `Diarista #${diaristId}`,
+        email: diarist?.email || diarist?.Email || "",
+        email_verified:
+          typeof diarist?.email_verified === "boolean"
+            ? diarist.email_verified
+            : typeof diarist?.EmailVerified === "boolean"
+              ? diarist.EmailVerified
+              : false,
+        photo:
+          diarist?.photo ||
+          diarist?.Photo ||
+          embeddedDiaristProfile?.photo ||
+          embeddedDiaristProfile?.Photo ||
+          "",
+        bio: profile?.bio || profile?.Bio || "",
+        averageRating: Number(
+          diarist?.average_rating ||
+            diarist?.AverageRating ||
+            service?.diarist_rating ||
+            service?.DiaristRating ||
+            0,
+        ),
+        totalReviews: Number(
+          diarist?.total_reviews ||
+            diarist?.TotalReviews ||
+            service?.diarist_total_reviews ||
+            service?.DiaristTotalReviews ||
+            0,
+        ),
+        city: diarist?.city || diarist?.City || "",
+        neighborhood:
+          formatProfileNeighborhood(profile) ||
+          formatProfileNeighborhood(embeddedDiaristProfile) ||
+          formatProfileNeighborhood(diarist) ||
+          formatProfileNeighborhood(service),
+        distance:
+          service?.distance_text ||
+          service?.distance ||
+          diarist?.distance_text ||
+          diarist?.distance ||
+          "",
+        experienceYears: Number(profile?.experience_years || profile?.ExperienceYears || 0),
+        pricePerHour: Number(profile?.price_per_hour || profile?.PricePerHour || 0),
+        pricePerDay: Number(profile?.price_per_day || profile?.PricePerDay || 0),
+        available:
+          typeof profile?.available === "boolean"
+            ? profile.available
+            : typeof profile?.Available === "boolean"
+              ? profile.Available
+              : null,
+        specialties: Array.isArray(profile?.specialties)
+          ? profile.specialties
+          : Array.isArray(profile?.Specialties)
+            ? profile.Specialties
+            : [],
+      });
+    } catch (_error) {
+      setSelectedDiaristProfile({
+        id: diaristId,
+        role: "diarista",
+        name: diarist?.name || diarist?.Name || `Diarista #${diaristId}`,
+        email: diarist?.email || diarist?.Email || "",
+        email_verified:
+          typeof diarist?.email_verified === "boolean"
+            ? diarist.email_verified
+            : typeof diarist?.EmailVerified === "boolean"
+              ? diarist.EmailVerified
+              : false,
+        photo:
+          diarist?.photo ||
+          diarist?.Photo ||
+          embeddedDiaristProfile?.photo ||
+          embeddedDiaristProfile?.Photo ||
+          "",
+        bio: embeddedDiaristProfile?.bio || embeddedDiaristProfile?.Bio || "",
+        averageRating: Number(
+          diarist?.average_rating ||
+            diarist?.AverageRating ||
+            service?.diarist_rating ||
+            service?.DiaristRating ||
+            0,
+        ),
+        totalReviews: Number(
+          diarist?.total_reviews ||
+            diarist?.TotalReviews ||
+            service?.diarist_total_reviews ||
+            service?.DiaristTotalReviews ||
+            0,
+        ),
+        city: diarist?.city || diarist?.City || "",
+        neighborhood:
+          formatProfileNeighborhood(embeddedDiaristProfile) ||
+          formatProfileNeighborhood(diarist) ||
+          formatProfileNeighborhood(service),
+        distance:
+          service?.distance_text ||
+          service?.distance ||
+          diarist?.distance_text ||
+          diarist?.distance ||
+          "",
+        experienceYears: Number(
+          embeddedDiaristProfile?.experience_years || embeddedDiaristProfile?.ExperienceYears || 0,
+        ),
+        pricePerHour: Number(
+          embeddedDiaristProfile?.price_per_hour || embeddedDiaristProfile?.PricePerHour || 0,
+        ),
+        pricePerDay: Number(
+          embeddedDiaristProfile?.price_per_day || embeddedDiaristProfile?.PricePerDay || 0,
+        ),
+        available:
+          typeof embeddedDiaristProfile?.available === "boolean"
+            ? embeddedDiaristProfile.available
+            : typeof embeddedDiaristProfile?.Available === "boolean"
+              ? embeddedDiaristProfile.Available
+              : null,
+        specialties: Array.isArray(embeddedDiaristProfile?.specialties)
+          ? embeddedDiaristProfile.specialties
+          : Array.isArray(embeddedDiaristProfile?.Specialties)
+            ? embeddedDiaristProfile.Specialties
+            : [],
+      });
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   return (
     <ScrollView
       style={styles.screenScroll}
@@ -956,7 +1168,7 @@ export default function ServicesScreen({ session }) {
           </View>
         }
       >
-        {tab === "history" && diaristServices.length > 0 && !resourceState.loading ? (
+        {tab === "history" && visibleServices.length > 0 && !resourceState.loading ? (
           <View
             style={{
               marginBottom: 12,
@@ -1026,7 +1238,7 @@ export default function ServicesScreen({ session }) {
           />
         ) : resourceState.error ? (
           <Text style={styles.errorText}>{resourceState.error}</Text>
-        ) : diaristServices.length === 0 ? (
+        ) : visibleServices.length === 0 ? (
           <EmptyState
             title="Nenhum servico nesta aba"
             description="Quando houver servicos vinculados a sua conta, eles aparecerao aqui."
@@ -1035,7 +1247,7 @@ export default function ServicesScreen({ session }) {
           <ServicesCardsPaginationSkeleton />
         ) : (
           <View>
-            {diaristServices.map((service, index) => {
+            {visibleServices.map((service, index) => {
               const serviceId = service?.id || service?.ID || index;
               const busyAction =
                 busyState.serviceId === (service?.id || service?.ID) ? busyState.action : "";
@@ -1044,7 +1256,7 @@ export default function ServicesScreen({ session }) {
                 <ServiceCard
                   key={serviceId}
                   service={service}
-                  role="diarista"
+                  role={viewerRole}
                   activeTab={tab}
                   busyAction={busyAction}
                   disabled={interactionsDisabled}
@@ -1053,7 +1265,7 @@ export default function ServicesScreen({ session }) {
                   onCancel={handleCancel}
                   onStart={setSelectedService}
                   onComplete={handleComplete}
-                  onOpenClientProfile={handleOpenClientProfile}
+                  onOpenClientProfile={viewerRole === "diarista" ? handleOpenClientProfile : handleOpenDiaristProfile}
                   onOpenChat={isServiceChatAvailable(service) ? openChat : null}
                   chatLabel={session?.role === "cliente" ? "Falar com a diarista" : "Falar com cliente"}
                 />
@@ -1067,7 +1279,7 @@ export default function ServicesScreen({ session }) {
       <ServiceDetailsModal
         visible={Boolean(modalService)}
         service={modalService}
-        role="diarista"
+        role={viewerRole}
         busyAction={
           modalService && busyState.serviceId === (modalService?.id || modalService?.ID)
             ? busyState.action
@@ -1077,7 +1289,7 @@ export default function ServicesScreen({ session }) {
         onAccept={handleAccept}
         onCancel={handleCancel}
         onComplete={handleComplete}
-        onOpenClientProfile={handleOpenClientProfile}
+        onOpenClientProfile={viewerRole === "diarista" ? handleOpenClientProfile : handleOpenDiaristProfile}
         onStartWithPin={handleStartWithPin}
         onOpenChat={isServiceChatAvailable(modalService) ? openChat : null}
         chatLabel={session?.role === "cliente" ? "Falar com a diarista" : "Falar com cliente"}
@@ -1097,6 +1309,283 @@ export default function ServicesScreen({ session }) {
           })
         }
       />
+
+      <Modal
+        visible={diaristProfileModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDiaristProfileModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, styles.mapProfileModalCard]}>
+            {profileLoading ? (
+              <LoadingState label="Carregando perfil..." />
+            ) : selectedDiaristProfile ? (
+              <>
+                <TouchableOpacity
+                  style={styles.mapModalClose}
+                  onPress={() => setDiaristProfileModalOpen(false)}
+                >
+                  <Text style={styles.mapModalCloseText}>x</Text>
+                </TouchableOpacity>
+
+                <View style={styles.mapProfileHeader}>
+                  <View style={styles.mapProfileAvatarWrapper}>
+                    {selectedDiaristProfile.photo ? (
+                      <Image source={{ uri: selectedDiaristProfile.photo }} style={styles.mapProfileAvatar} />
+                    ) : (
+                      <View style={styles.mapProfileAvatarFallback}>
+                        <Text style={styles.mapProfileAvatarFallbackText}>
+                          {String(selectedDiaristProfile?.name || "D").trim().charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <Text style={styles.mapProfileName}>
+                    {selectedDiaristProfile.name || "Diarista"}
+                  </Text>
+                  <View style={styles.mapHeaderMetaRow}>
+                    <View style={styles.mapRatingPillLarge}>
+                      <Feather name="star" size={14} color="#f59e0b" />
+                      <Text style={styles.mapRatingPillLargeText}>
+                        {formatAverageRatingText(selectedDiaristProfile.averageRating || 0)}
+                      </Text>
+                      <Text style={styles.mapRatingPillLargeCount}>
+                        ({Number(selectedDiaristProfile.totalReviews || allReviews.length || 0)} avaliacoes)
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.mapVerificationPill,
+                        selectedDiaristProfile.email_verified
+                          ? styles.mapVerificationPillVerified
+                          : styles.mapVerificationPillUnverified,
+                      ]}
+                    >
+                      <Feather
+                        name={selectedDiaristProfile.email_verified ? "check-circle" : "x-circle"}
+                        size={13}
+                        color={selectedDiaristProfile.email_verified ? "#16a34a" : "#dc2626"}
+                      />
+                      <Text
+                        style={[
+                          styles.mapVerificationPillText,
+                          selectedDiaristProfile.email_verified
+                            ? styles.mapVerificationPillTextVerified
+                            : styles.mapVerificationPillTextUnverified,
+                        ]}
+                      >
+                        {getEmailVerificationLabel(Boolean(selectedDiaristProfile.email_verified))}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <ScrollView
+                  style={styles.mapProfileBody}
+                  contentContainerStyle={styles.mapProfileBodyContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <View style={styles.mapProfileSection}>
+                    <View style={styles.mapProfileSectionHeading}>
+                      <Feather name="user" size={16} color="#3167e3" />
+                      <Text style={styles.mapProfileSectionTitle}>Sobre a Profissional</Text>
+                    </View>
+                    <Text style={styles.mapProfileSectionCopy}>
+                      {selectedDiaristProfile.bio || "A diarista ainda nao cadastrou uma bio."}
+                    </Text>
+                  </View>
+
+                  <View style={styles.mapProfileSection}>
+                    <View style={styles.mapProfileSectionHeading}>
+                      <Feather name="award" size={16} color="#f59e0b" />
+                      <Text style={styles.mapProfileSectionTitle}>Informacoes reais</Text>
+                    </View>
+                    <View style={styles.mapStatsGrid}>
+                      <View style={styles.mapStatCard}>
+                        <Feather name="map-pin" size={15} color="#3167e3" />
+                        <Text style={styles.mapStatLabel}>Distancia</Text>
+                        <Text style={styles.mapStatValue}>
+                          {[selectedDiaristProfile.neighborhood, selectedDiaristProfile.distance]
+                            .filter(Boolean)
+                            .join(" • ") || "-"}
+                        </Text>
+                      </View>
+                      <View style={styles.mapStatCard}>
+                        <Feather name="shield" size={15} color="#3167e3" />
+                        <Text style={styles.mapStatLabel}>Experiencia</Text>
+                        <Text style={styles.mapStatValue}>
+                          {Number(selectedDiaristProfile.experienceYears || 0)} anos
+                        </Text>
+                      </View>
+                      <View style={styles.mapStatCard}>
+                        <Feather name="star" size={15} color="#f59e0b" />
+                        <Text style={styles.mapStatLabel}>Avaliacao</Text>
+                        <Text style={styles.mapStatValue}>
+                          {formatAverageRatingText(selectedDiaristProfile.averageRating || 0)}
+                        </Text>
+                      </View>
+                      <View style={styles.mapStatCard}>
+                        <Feather
+                          name="check-circle"
+                          size={15}
+                          color={selectedDiaristProfile.available ? "#10b981" : "#94a3b8"}
+                        />
+                        <Text style={styles.mapStatLabel}>Disponibilidade</Text>
+                        <Text style={styles.mapStatValue}>
+                          {selectedDiaristProfile.available === null
+                            ? "Nao informada"
+                            : selectedDiaristProfile.available
+                              ? "Disponivel"
+                              : "Indisponivel"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.mapProfileSection}>
+                    <View style={styles.mapProfileSectionHeading}>
+                      <Feather name="dollar-sign" size={16} color="#f59e0b" />
+                      <Text style={styles.mapProfileSectionTitle}>Valores informados</Text>
+                    </View>
+                    <View style={styles.mapDrawerPricing}>
+                      <View style={styles.mapDrawerPriceCard}>
+                        <Text style={styles.mapDrawerPriceLabel}>Preco por hora</Text>
+                        <Text style={styles.mapDrawerPriceValue}>
+                          {formatCurrency(selectedDiaristProfile.pricePerHour || 0)}
+                        </Text>
+                      </View>
+                      <View style={styles.mapDrawerPriceCard}>
+                        <Text style={styles.mapDrawerPriceLabel}>Preco por diaria</Text>
+                        <Text style={styles.mapDrawerPriceValue}>
+                          {formatCurrency(selectedDiaristProfile.pricePerDay || 0)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.mapProfileSection}>
+                    <View style={styles.mapProfileSectionHeading}>
+                      <Feather name="check-circle" size={16} color="#3167e3" />
+                      <Text style={styles.mapProfileSectionTitle}>Especialidades</Text>
+                    </View>
+                    <View style={styles.mapSpecialtiesWrap}>
+                      {Array.isArray(selectedDiaristProfile.specialties) && selectedDiaristProfile.specialties.length > 0 ? (
+                        selectedDiaristProfile.specialties.map((specialty) => {
+                          const presentation = getSpecialtyPresentation(specialty);
+                          return (
+                            <View key={specialty} style={styles.mapSpecialtyCard}>
+                              <Feather name={presentation.icon} size={14} color="#3167e3" />
+                              <Text style={styles.mapSpecialtyText}>{presentation.label}</Text>
+                            </View>
+                          );
+                        })
+                      ) : (
+                        <Text style={styles.mapProfileSectionCopy}>Nenhuma especialidade informada.</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.mapProfileSection}>
+                    <View style={styles.mapProfileSectionHeading}>
+                      <Feather name="star" size={16} color="#f59e0b" />
+                      <Text style={styles.mapProfileSectionTitle}>Avaliacoes</Text>
+                    </View>
+                    {reviewsLoading ? (
+                      <Text style={styles.mapProfileSectionCopy}>Carregando avaliacoes...</Text>
+                    ) : allReviews.length === 0 ? (
+                      <Text style={styles.mapProfileSectionCopy}>Nenhuma avaliacao ainda.</Text>
+                    ) : (
+                      allReviews.slice(0, 3).map((review, index) => (
+                        <View key={review?.id || review?.ID || index} style={styles.mapReviewCard}>
+                          <View style={styles.mapReviewHeader}>
+                            <Text style={styles.mapReviewStars}>
+                              {"*".repeat(
+                                Math.max(
+                                  0,
+                                  Math.min(5, Math.round(Number(review?.client_rating || review?.rating || 0))),
+                                ),
+                              )}
+                            </Text>
+                            <Text style={styles.mapReviewDate}>
+                              {formatShortDate(review?.created_at || review?.CreatedAt)}
+                            </Text>
+                          </View>
+                          <Text style={styles.mapReviewComment}>
+                            {review?.client_comment ||
+                              review?.comment ||
+                              review?.Comment ||
+                              "Sem comentario informado."}
+                          </Text>
+                        </View>
+                      ))
+                    )}
+
+                    {!reviewsLoading && allReviews.length > 3 ? (
+                      <TouchableOpacity
+                        style={styles.profilePreviewButton}
+                        onPress={() => setReviewsModalOpen(true)}
+                      >
+                        <Text style={styles.profilePreviewButtonText}>
+                          Ver todas as {allReviews.length} avaliacoes
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </ScrollView>
+              </>
+            ) : (
+              <Text style={styles.secondaryLine}>Nao foi possivel carregar o perfil.</Text>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={reviewsModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReviewsModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, styles.reviewsModalCard]}>
+            <Text style={styles.modalTitle}>Todas as avaliacoes</Text>
+            <ScrollView style={styles.reviewsScroll}>
+              {allReviews.length === 0 ? (
+                <Text style={styles.secondaryLine}>Nenhuma avaliacao ainda.</Text>
+              ) : (
+                allReviews.map((review, index) => (
+                  <View key={review?.id || review?.ID || index} style={styles.reviewCard}>
+                    <View style={styles.reviewHeader}>
+                      <Text style={styles.reviewStars}>
+                        {"★".repeat(Math.max(0, Math.min(5, Math.round(Number(review?.client_rating || review?.rating || 0)))))}
+                      </Text>
+                      <Text style={styles.reviewDate}>
+                        {formatShortDate(review?.created_at || review?.CreatedAt)}
+                      </Text>
+                    </View>
+                    <Text style={styles.secondaryLine}>
+                      {review?.client_comment ||
+                        review?.comment ||
+                        review?.Comment ||
+                        "Sem comentario informado."}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+            <View style={styles.modalActionRow}>
+              <TouchableOpacity
+                style={styles.modalGhostButton}
+                onPress={() => setReviewsModalOpen(false)}
+              >
+                <Text style={styles.modalGhostButtonText}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }

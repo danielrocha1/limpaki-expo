@@ -3,10 +3,12 @@ import {
   Animated,
   Image,
   Modal,
+  PanResponder,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,6 +20,11 @@ const MobileChatCenterContext = createContext(null);
 const CHAT_SEEN_STORAGE_KEY = "mobile_chat_seen_by_service";
 const CHAT_POLL_INTERVAL_MS = 5000;
 const PRESENCE_POLL_INTERVAL_MS = 15000;
+const FLOATING_BUTTON_SIZE = 56;
+const FLOATING_BUTTON_BASE_RIGHT = 20;
+const FLOATING_BUTTON_BASE_BOTTOM = 88;
+const FLOATING_BUTTON_SCREEN_MARGIN = 8;
+const FLOATING_BUTTON_TOP_CLEARANCE = 96;
 
 const palette = {
   bg: "#2f5fe0",
@@ -347,6 +354,7 @@ export function useMobileChatCenter() {
 }
 
 function MobileChatFloatingButton({ session }) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const {
     activeChatServices,
     chatSummaries,
@@ -358,6 +366,60 @@ function MobileChatFloatingButton({ session }) {
     totalUnreadCount,
   } = useMobileChatCenter();
   const ringRotation = React.useRef(new Animated.Value(0)).current;
+  const dragPosition = React.useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const dragOffsetRef = React.useRef({ x: 0, y: 0 });
+  const dragDistanceRef = React.useRef(0);
+
+  const minTranslateX = -Math.max(
+    0,
+    screenWidth -
+      FLOATING_BUTTON_SIZE -
+      FLOATING_BUTTON_BASE_RIGHT -
+      FLOATING_BUTTON_SCREEN_MARGIN,
+  );
+  const maxTranslateX = 0;
+  const minTranslateY = -Math.max(
+    0,
+    screenHeight -
+      FLOATING_BUTTON_SIZE -
+      FLOATING_BUTTON_BASE_BOTTOM -
+      FLOATING_BUTTON_TOP_CLEARANCE,
+  );
+  const maxTranslateY = 0;
+
+  const clampOffset = React.useCallback(
+    (x, y) => ({
+      x: Math.min(maxTranslateX, Math.max(minTranslateX, Number(x || 0))),
+      y: Math.min(maxTranslateY, Math.max(minTranslateY, Number(y || 0))),
+    }),
+    [maxTranslateX, minTranslateX, maxTranslateY, minTranslateY],
+  );
+
+  const animateToOffset = React.useCallback(
+    (x, y) => {
+      const nextOffset = clampOffset(x, y);
+      dragOffsetRef.current = nextOffset;
+      Animated.spring(dragPosition, {
+        toValue: nextOffset,
+        useNativeDriver: Platform.OS !== "web",
+        tension: 120,
+        friction: 11,
+      }).start();
+    },
+    [clampOffset, dragPosition],
+  );
+
+  useEffect(() => {
+    const clampedOffset = clampOffset(dragOffsetRef.current.x, dragOffsetRef.current.y);
+
+    if (
+      clampedOffset.x !== dragOffsetRef.current.x ||
+      clampedOffset.y !== dragOffsetRef.current.y
+    ) {
+      dragOffsetRef.current = clampedOffset;
+      dragPosition.setValue(clampedOffset);
+    }
+  }, [clampOffset, dragPosition]);
 
   useEffect(() => {
     let cancelled = false;
@@ -383,6 +445,57 @@ function MobileChatFloatingButton({ session }) {
       ringRotation.setValue(0);
     };
   }, [ringRotation]);
+
+  const panResponder = React.useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_event, gestureState) =>
+          Platform.OS !== "web" &&
+          (Math.abs(gestureState.dx) > 4 || Math.abs(gestureState.dy) > 4),
+        onPanResponderGrant: () => {
+          dragDistanceRef.current = 0;
+          dragPosition.stopAnimation((currentValue) => {
+            dragOffsetRef.current = clampOffset(currentValue.x, currentValue.y);
+            dragPosition.setOffset(dragOffsetRef.current);
+            dragPosition.setValue({ x: 0, y: 0 });
+          });
+        },
+        onPanResponderMove: (_event, gestureState) => {
+          dragDistanceRef.current = Math.max(
+            dragDistanceRef.current,
+            Math.abs(gestureState.dx) + Math.abs(gestureState.dy),
+          );
+          const previewOffset = clampOffset(
+            dragOffsetRef.current.x + gestureState.dx,
+            dragOffsetRef.current.y + gestureState.dy,
+          );
+          dragPosition.setValue({
+            x: previewOffset.x - dragOffsetRef.current.x,
+            y: previewOffset.y - dragOffsetRef.current.y,
+          });
+        },
+        onPanResponderRelease: () => {
+          dragPosition.flattenOffset();
+          const currentX = dragPosition.x.__getValue();
+          const currentY = dragPosition.y.__getValue();
+          const middleX = (minTranslateX + maxTranslateX) / 2;
+          const snappedX = currentX <= middleX ? minTranslateX : maxTranslateX;
+          dragDistanceRef.current = 0;
+          animateToOffset(snappedX, currentY);
+        },
+        onPanResponderTerminate: () => {
+          dragPosition.flattenOffset();
+          const currentX = dragPosition.x.__getValue();
+          const currentY = dragPosition.y.__getValue();
+          const middleX = (minTranslateX + maxTranslateX) / 2;
+          const snappedX = currentX <= middleX ? minTranslateX : maxTranslateX;
+          dragDistanceRef.current = 0;
+          animateToOffset(snappedX, currentY);
+        },
+      }),
+    [animateToOffset, clampOffset, dragPosition, maxTranslateX, minTranslateX],
+  );
 
   const summaryByServiceId = useMemo(
     () =>
@@ -426,8 +539,24 @@ function MobileChatFloatingButton({ session }) {
 
   return (
     <>
-      <View style={styles.floatingButtonWrap} pointerEvents="box-none">
-        <TouchableOpacity style={styles.floatingButton} onPress={() => setIsMenuOpen(true)}>
+      <Animated.View
+        style={[
+          styles.floatingButtonWrap,
+          {
+            transform: dragPosition.getTranslateTransform(),
+          },
+        ]}
+        pointerEvents="box-none"
+        {...(Platform.OS !== "web" ? panResponder.panHandlers : {})}
+      >
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => {
+            if (dragDistanceRef.current <= 6) {
+              setIsMenuOpen(true);
+            }
+          }}
+        >
           <Animated.View
             pointerEvents="none"
             style={[
@@ -444,14 +573,16 @@ function MobileChatFloatingButton({ session }) {
               },
             ]}
           />
-          <Feather name="message-circle" size={20} color="#ffffff" />
+          <View style={styles.floatingIconWrap}>
+            <Feather name="message-circle" size={20} color="#ffffff" />
+          </View>
           {totalUnreadCount > 0 ? (
             <View style={styles.floatingBadge}>
               <Text style={styles.floatingBadgeText}>{totalUnreadCount}</Text>
             </View>
           ) : null}
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       <Modal visible={isMenuOpen} transparent animationType="fade" onRequestClose={() => setIsMenuOpen(false)}>
         <View style={styles.menuBackdrop}>
@@ -530,6 +661,10 @@ const styles = StyleSheet.create({
     opacity: 1,
     zIndex: 1,
   },
+  floatingIconWrap: {
+    zIndex: 2,
+    elevation: 2,
+  },
   floatingButton: {
     width: 56,
     minHeight: 56,
@@ -562,6 +697,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
+    zIndex: 3,
+    elevation: 3,
   },
   floatingBadgeText: {
     color: palette.ink,

@@ -14,8 +14,10 @@ import {
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import { apiFetch } from "../config/api";
 import { createAuthenticatedWebSocket } from "../config/realtime";
+import LiveLocationMapCanvas from "./LiveLocationMapCanvas";
 
 const palette = {
   surface: "#ffffff",
@@ -48,6 +50,7 @@ const CONNECTION_LABELS = {
 const LOCATION_REQUEST_MESSAGE = "Pode habilitar sua localizacao em tempo real no chat, por favor?";
 const MESSAGE_PAGE_SIZE = 50;
 const BLOCKED_STATUSES = new Set(["cancelado", "concluido", "em servico"]);
+const LIVE_LOCATION_TTL_MS = 60 * 60 * 1000;
 
 const normalizeStatus = (value = "") =>
   String(value)
@@ -173,6 +176,202 @@ const formatMessageTime = (value) => {
   });
 };
 
+const formatLocationStatusTime = (value) => {
+  if (!value) {
+    return "Atualizacao recente";
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Atualizacao recente";
+  }
+
+  return parsedDate.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const isFreshLiveLocation = (location) => {
+  const updatedAt = location?.updatedAt;
+  if (!updatedAt) {
+    return false;
+  }
+
+  const parsedDate = new Date(updatedAt);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return false;
+  }
+
+  return Date.now() - parsedDate.getTime() <= LIVE_LOCATION_TTL_MS;
+};
+
+const formatLocationExpiresIn = (value) => {
+  if (!value) {
+    return "Disponivel por ate 1 hora";
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Disponivel por ate 1 hora";
+  }
+
+  const remainingMs = LIVE_LOCATION_TTL_MS - (Date.now() - parsedDate.getTime());
+  if (remainingMs <= 0) {
+    return "Compartilhamento expirado";
+  }
+
+  const remainingMinutes = Math.max(1, Math.ceil(remainingMs / 60000));
+  return `Disponivel por mais ${remainingMinutes} min`;
+};
+
+const resolveAddressPosition = (address) => {
+  const latitude = Number(address?.Latitude ?? address?.latitude ?? 0);
+  const longitude = Number(address?.Longitude ?? address?.longitude ?? 0);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude === 0 || longitude === 0) {
+    return null;
+  }
+
+  return {
+    latitude,
+    longitude,
+  };
+};
+
+const isDuplicateLocationConstraintError = (value) => {
+  const normalized = String(value || "").toLowerCase();
+  return normalized.includes("duplicate key") || normalized.includes("chat_locations_pkey");
+};
+
+const isNativePlatform = Platform.OS === "ios" || Platform.OS === "android";
+
+const clearLocationTracking = async (trackingRef) => {
+  const currentTracking = trackingRef.current;
+  if (!currentTracking) {
+    return;
+  }
+
+  if (currentTracking.kind === "web" && typeof navigator !== "undefined" && navigator?.geolocation) {
+    navigator.geolocation.clearWatch(currentTracking.value);
+  }
+
+  if (currentTracking.kind === "native" && currentTracking.value?.remove) {
+    await currentTracking.value.remove();
+  }
+
+  trackingRef.current = null;
+};
+
+function ChatLiveLocationCard({ item, isOwn, onPress }) {
+  return (
+    <View style={[styles.messageRow, isOwn && styles.messageRowOwn]}>
+      {!isOwn ? <ChatAvatar profile={item.author} size={34} /> : null}
+      <TouchableOpacity
+        activeOpacity={0.92}
+        onPress={onPress}
+        style={[
+          styles.locationMessageCard,
+          isOwn && styles.locationMessageCardOwn,
+        ]}
+      >
+        <View style={styles.locationMessageHeader}>
+          <View style={styles.locationMessageTitleWrap}>
+            <Feather name="map-pin" size={14} color={isOwn ? "#ffffff" : palette.accent} />
+            <Text style={[styles.locationMessageTitle, isOwn && styles.locationMessageTitleOwn]}>
+              {item.title}
+            </Text>
+          </View>
+          <Text style={[styles.locationMessageExpiry, isOwn && styles.locationMessageExpiryOwn]}>
+            {item.expiresLabel}
+          </Text>
+        </View>
+
+        <Text style={[styles.locationMessageBody, isOwn && styles.locationMessageBodyOwn]}>
+          {item.description}
+        </Text>
+
+        <View style={styles.locationMessageFooter}>
+          <Text style={[styles.locationMessageMeta, isOwn && styles.locationMessageMetaOwn]}>
+            Atualizado em {formatLocationStatusTime(item.location?.updatedAt)}
+          </Text>
+          <View style={[styles.locationMessageCta, isOwn && styles.locationMessageCtaOwn]}>
+            <Text style={[styles.locationMessageCtaText, isOwn && styles.locationMessageCtaTextOwn]}>
+              Ver mapa
+            </Text>
+            <Feather name="arrow-up-right" size={13} color={isOwn ? "#ffffff" : palette.accent} />
+          </View>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function LiveLocationMapModal({ visible, markers, onClose, onOpenExternalMap }) {
+  const availableMarkers = useMemo(
+    () =>
+      Array.isArray(markers)
+        ? markers.filter(
+            (marker) =>
+              Number.isFinite(marker?.latitude) &&
+              Number.isFinite(marker?.longitude),
+          )
+        : [],
+    [markers],
+  );
+
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
+      <View style={styles.liveMapBackdrop}>
+        <View style={styles.liveMapPanel}>
+          <View style={styles.liveMapHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.liveMapTitle}>Localizacao em tempo real</Text>
+              <Text style={styles.liveMapCopy}>
+                Acompanhe a diarista no mapa e veja tambem o pin da cliente.
+              </Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.liveMapClose}>
+              <Feather name="x" size={18} color={palette.ink} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.liveMapCanvas}>
+            <LiveLocationMapCanvas markers={availableMarkers} />
+          </View>
+
+          <View style={styles.liveMapLegend}>
+            {availableMarkers.map((marker) => (
+              <View key={marker.id} style={styles.liveMapLegendItem}>
+                <View style={[styles.liveMapLegendDot, { backgroundColor: marker.accentColor }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.liveMapLegendTitle}>{marker.name}</Text>
+                  <Text style={styles.liveMapLegendCopy}>{marker.statusText}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.liveMapActions}>
+            <TouchableOpacity onPress={onClose} style={styles.liveMapSecondaryButton}>
+              <Text style={styles.liveMapSecondaryButtonText}>Fechar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onOpenExternalMap} style={styles.liveMapPrimaryButton}>
+              <Text style={styles.liveMapPrimaryButtonText}>Abrir mapa externo</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function ChatAvatar({ profile, size = 42 }) {
   const [hasImageError, setHasImageError] = useState(false);
 
@@ -201,6 +400,7 @@ export function useMobileServiceChat({ service, userRole, active }) {
   const serviceId = useMemo(() => Number(service?.ID ?? service?.id ?? 0) || null, [service]);
   const currentUser = useMemo(() => resolveCurrentUser(service, userRole), [service, userRole]);
   const participant = useMemo(() => resolveParticipant(service, userRole), [service, userRole]);
+  const currentUserId = Number(currentUser?.id || 0) || null;
   const usersById = useMemo(() => {
     const registry = {};
 
@@ -226,6 +426,16 @@ export function useMobileServiceChat({ service, userRole, active }) {
   const socketRef = useRef(null);
   const reconnectTimerRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
+  const usersByIdRef = useRef(usersById);
+  const currentUserIdRef = useRef(currentUserId);
+
+  useEffect(() => {
+    usersByIdRef.current = usersById;
+  }, [usersById]);
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
 
   useEffect(() => {
     if (!active) {
@@ -290,10 +500,10 @@ export function useMobileServiceChat({ service, userRole, active }) {
 
         if (!cancelled) {
           const nextMessages = Array.isArray(messagesPayload?.items)
-            ? messagesPayload.items.map((message) => normalizeMessage(message, usersById))
+            ? messagesPayload.items.map((message) => normalizeMessage(message, usersByIdRef.current))
             : [];
           const nextLocations = Array.isArray(locationsPayload?.items)
-            ? locationsPayload.items.map((location) => normalizeLocation(location, usersById))
+            ? locationsPayload.items.map((location) => normalizeLocation(location, usersByIdRef.current))
             : [];
 
           setMessages(nextMessages);
@@ -322,7 +532,7 @@ export function useMobileServiceChat({ service, userRole, active }) {
     return () => {
       cancelled = true;
     };
-  }, [active, service?.status, serviceId, usersById]);
+  }, [active, service?.status, serviceId]);
 
   useEffect(() => {
     if (!active || !serviceId) {
@@ -398,9 +608,9 @@ export function useMobileServiceChat({ service, userRole, active }) {
 
           switch (parsedEvent?.type) {
             case CHAT_EVENT_TYPES.MESSAGE: {
-              const nextMessage = normalizeMessage(parsedEvent, usersById);
+              const nextMessage = normalizeMessage(parsedEvent, usersByIdRef.current);
               setMessages((currentMessages) => upsertMessages(currentMessages, [nextMessage]));
-              if (nextMessage.senderId && nextMessage.senderId !== currentUser?.id) {
+              if (nextMessage.senderId && nextMessage.senderId !== currentUserIdRef.current) {
                 sendReadReceipt();
               }
               break;
@@ -411,7 +621,7 @@ export function useMobileServiceChat({ service, userRole, active }) {
               break;
 
             case CHAT_EVENT_TYPES.LOCATION: {
-              const nextLocation = normalizeLocation(parsedEvent, usersById);
+              const nextLocation = normalizeLocation(parsedEvent, usersByIdRef.current);
               if (nextLocation?.userId) {
                 setLocationsByUserId((currentRegistry) => ({
                   ...currentRegistry,
@@ -441,9 +651,31 @@ export function useMobileServiceChat({ service, userRole, active }) {
               );
               break;
 
-            case CHAT_EVENT_TYPES.ERROR:
-              setSocketError(parsedEvent?.error || "Erro ao processar evento do chat.");
+            case CHAT_EVENT_TYPES.ERROR: {
+              const socketMessage = parsedEvent?.error || "Erro ao processar evento do chat.";
+
+              if (isDuplicateLocationConstraintError(socketMessage)) {
+                void refreshLocations()
+                  .then((nextRegistry) => {
+                    const currentUserLocation = currentUserIdRef.current
+                      ? nextRegistry[currentUserIdRef.current]
+                      : null;
+                    if (currentUserLocation) {
+                      setSocketError("");
+                      return;
+                    }
+
+                    setSocketError(socketMessage);
+                  })
+                  .catch(() => {
+                    setSocketError(socketMessage);
+                  });
+                break;
+              }
+
+              setSocketError(socketMessage);
               break;
+            }
 
             default:
               break;
@@ -489,7 +721,7 @@ export function useMobileServiceChat({ service, userRole, active }) {
       appStateSubscription.remove();
       closeSocket();
     };
-  }, [active, currentUser?.id, service?.status, serviceId, usersById]);
+  }, [active, currentUserId, service?.status, serviceId]);
 
   const sendMessage = async (content) => {
     const normalizedContent = String(content || "").trim();
@@ -523,6 +755,22 @@ export function useMobileServiceChat({ service, userRole, active }) {
       throw new Error("Chat desconectado. Aguarde a reconexao para compartilhar localizacao.");
     }
 
+    const optimisticLocation = {
+      userId: currentUserIdRef.current,
+      serviceId,
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      updatedAt: new Date().toISOString(),
+      user: usersByIdRef.current[currentUserIdRef.current] || currentUser || {},
+    };
+
+    if (optimisticLocation.userId) {
+      setLocationsByUserId((currentRegistry) => ({
+        ...currentRegistry,
+        [optimisticLocation.userId]: optimisticLocation,
+      }));
+    }
+
     socketRef.current.send(
       JSON.stringify({
         type: CHAT_EVENT_TYPES.LOCATION,
@@ -531,6 +779,35 @@ export function useMobileServiceChat({ service, userRole, active }) {
         longitude,
       }),
     );
+  };
+
+  const refreshLocations = async () => {
+    if (!serviceId) {
+      return {};
+    }
+
+    const response = await apiFetch(`/locations?service_id=${serviceId}`, {
+      authenticated: true,
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload?.error || "Nao foi possivel atualizar as localizacoes.");
+    }
+
+    const nextLocations = Array.isArray(payload?.items)
+      ? payload.items.map((location) => normalizeLocation(location, usersByIdRef.current))
+      : [];
+
+    const nextRegistry = nextLocations.reduce((registry, location) => {
+      if (location?.userId) {
+        registry[location.userId] = location;
+      }
+      return registry;
+    }, {});
+
+    setLocationsByUserId(nextRegistry);
+    return nextRegistry;
   };
 
   return {
@@ -546,6 +823,7 @@ export function useMobileServiceChat({ service, userRole, active }) {
     onlineUserIds,
     sendMessage,
     sendLocation,
+    refreshLocations,
   };
 }
 
@@ -554,6 +832,7 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
   const [submitError, setSubmitError] = useState("");
   const [locationState, setLocationState] = useState("idle");
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const scrollRef = useRef(null);
   const locationWatchIdRef = useRef(null);
 
@@ -570,6 +849,7 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
     onlineUserIds,
     sendMessage,
     sendLocation,
+    refreshLocations,
   } = useMobileServiceChat({ service, userRole, active: visible });
 
   const participantOnline = participant?.id ? onlineUserIds.includes(participant.id) : false;
@@ -577,20 +857,94 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
   const serviceLabel = service?.ID || service?.id || "-";
   const participantLocation = participant?.id ? locationsByUserId[participant.id] : null;
   const ownLocation = currentUser?.id ? locationsByUserId[currentUser.id] : null;
+  const diaristProfile = userRole === "cliente" ? participant : currentUser;
+  const clientProfile = userRole === "cliente" ? currentUser : participant;
+  const clientAddressPosition = resolveAddressPosition(service?.address || service?.Address);
+  const diaristLiveLocation = userRole === "cliente" ? participantLocation : ownLocation;
   const serviceStatus = normalizeStatus(service?.status || service?.Status || "");
   const canShareLiveLocation =
     userRole === "diarista" && !["em servico", "cancelado", "concluido"].includes(serviceStatus);
-  const canRequestLiveLocation = userRole === "cliente" && !participantLocation;
+  const activeParticipantLocation = isFreshLiveLocation(participantLocation) ? participantLocation : null;
+  const activeDiaristLocation = isFreshLiveLocation(diaristLiveLocation) ? diaristLiveLocation : null;
+  const canRequestLiveLocation = userRole === "cliente" && !activeParticipantLocation;
   const hasSharedLiveLocation =
-    userRole === "diarista" ? Boolean(ownLocation) || locationState === "sharing" : Boolean(participantLocation);
+    userRole === "diarista" ? Boolean(activeDiaristLocation) || locationState === "sharing" : Boolean(activeParticipantLocation);
+  const displayChatError = useMemo(() => {
+    const candidate = error || socketError || submitError;
+    return isDuplicateLocationConstraintError(candidate) ? "" : candidate;
+  }, [error, socketError, submitError]);
+  const locationMarkers = useMemo(
+    () =>
+      [
+        clientAddressPosition && {
+          id: `client-${clientProfile?.id || "service-client"}`,
+          name: clientProfile?.name || "Cliente",
+          label: "Cliente",
+          statusText: "Endereco do servico",
+          photo: clientProfile?.photo || "",
+          accentColor: "#0f766e",
+          latitude: clientAddressPosition.latitude,
+          longitude: clientAddressPosition.longitude,
+        },
+        activeDiaristLocation && {
+          id: `diarist-${diaristProfile?.id || "service-diarist"}`,
+          name: diaristProfile?.name || "Diarista",
+          label: "Diarista",
+          statusText: `Atualizado em ${formatLocationStatusTime(activeDiaristLocation.updatedAt)}`,
+          photo: diaristProfile?.photo || "",
+          accentColor: "#1d4ed8",
+          latitude: activeDiaristLocation.latitude,
+          longitude: activeDiaristLocation.longitude,
+        },
+      ].filter(Boolean),
+    [activeDiaristLocation, clientAddressPosition, clientProfile, diaristProfile],
+  );
+  const timelineItems = useMemo(() => {
+    const items = messages.map((message) => ({ type: "message", sortAt: message?.createdAt || "", data: message }));
+
+    if (activeDiaristLocation) {
+      items.push({
+        type: "location",
+        sortAt: activeDiaristLocation.updatedAt || new Date().toISOString(),
+        data: {
+          id: `location-${activeDiaristLocation.userId || "diarist"}`,
+          author: diaristProfile,
+          location: activeDiaristLocation,
+          title:
+            userRole === "cliente"
+              ? `${diaristProfile?.name || "A diarista"} compartilhou a localizacao`
+              : "Voce compartilhou sua localizacao",
+          description:
+            userRole === "cliente"
+              ? "Toque para acompanhar a diarista no mapa em tempo real. A visualizacao fica disponivel por ate 1 hora."
+              : "Toque para visualizar o mapa com o pin da cliente e a sua posicao atual.",
+          expiresLabel: formatLocationExpiresIn(activeDiaristLocation.updatedAt),
+          isOwn: userRole === "diarista",
+        },
+      });
+    }
+
+    return items.sort((left, right) => {
+      const leftDate = new Date(left.sortAt || 0).getTime();
+      const rightDate = new Date(right.sortAt || 0).getTime();
+      return leftDate - rightDate;
+    });
+  }, [activeDiaristLocation, diaristProfile, messages, userRole]);
 
   useEffect(() => {
     if (!visible) {
       setDraft("");
       setSubmitError("");
       setLocationState("idle");
+      setIsLocationModalOpen(false);
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (activeDiaristLocation && isDuplicateLocationConstraintError(submitError)) {
+      setSubmitError("");
+    }
+  }, [activeDiaristLocation, submitError]);
 
   useEffect(() => {
     if (!visible) {
@@ -606,10 +960,7 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
 
   useEffect(() => {
     return () => {
-      if (locationWatchIdRef.current !== null && navigator?.geolocation) {
-        navigator.geolocation.clearWatch(locationWatchIdRef.current);
-        locationWatchIdRef.current = null;
-      }
+      void clearLocationTracking(locationWatchIdRef);
     };
   }, []);
 
@@ -638,39 +989,106 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
   };
 
   const handleShareLocation = async () => {
-    if (!navigator?.geolocation) {
-      setSubmitError("Geolocalizacao nao esta disponivel neste ambiente.");
+    setSubmitError("");
+
+    if (locationState === "sharing") {
+      void clearLocationTracking(locationWatchIdRef);
+      setLocationState("idle");
       return;
     }
 
-    setSubmitError("");
-
-    if (locationWatchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(locationWatchIdRef.current);
-      locationWatchIdRef.current = null;
-      setLocationState("idle");
+    if (locationsByUserId[currentUser?.id]) {
+      setLocationState("sharing");
+      setSubmitError("");
       return;
     }
 
     setLocationState("sending");
 
-    locationWatchIdRef.current = navigator.geolocation.watchPosition(
-      async (position) => {
-        try {
-          await sendLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-          setLocationState("sharing");
-        } catch (locationError) {
-          setSubmitError(locationError.message || "Nao foi possivel compartilhar a localizacao.");
-          setLocationState("idle");
+    const handleLocationSuccess = async (coords) => {
+      try {
+        await sendLocation({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        });
+        setLocationState("sharing");
+      } catch (locationError) {
+        const normalizedError = String(locationError?.message || "");
+        if (
+          normalizedError.toLowerCase().includes("duplicate key") ||
+          normalizedError.toLowerCase().includes("chat_locations_pkey")
+        ) {
+          try {
+            const refreshedLocations = await refreshLocations();
+            const currentUserLocation = currentUser?.id ? refreshedLocations[currentUser.id] : null;
+            if (currentUserLocation) {
+              setLocationState("sharing");
+              setSubmitError("");
+              return;
+            }
+          } catch (_refreshError) {
+          }
         }
-      },
-      (geoError) => {
-        setSubmitError(geoError.message || "Nao foi possivel obter sua localizacao.");
+
+        setSubmitError(locationError.message || "Nao foi possivel compartilhar a localizacao.");
         setLocationState("idle");
+      }
+    };
+
+    const handleLocationError = (geoError) => {
+      setSubmitError(geoError?.message || "Nao foi possivel obter sua localizacao.");
+      setLocationState("idle");
+    };
+
+    if (isNativePlatform) {
+      try {
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (permission.status !== "granted") {
+          setSubmitError("Permita o acesso a localizacao para compartilhar em tempo real.");
+          setLocationState("idle");
+          return;
+        }
+
+        const currentPosition = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Highest,
+        });
+
+        try {
+          await handleLocationSuccess(currentPosition.coords);
+          const subscription = await Location.watchPositionAsync(
+            {
+              accuracy: Location.Accuracy.Highest,
+              timeInterval: 15000,
+              distanceInterval: 50,
+            },
+            async (position) => {
+              await handleLocationSuccess(position.coords);
+            },
+          );
+          locationWatchIdRef.current = {
+            kind: "native",
+            value: subscription,
+          };
+        } catch (nativeError) {
+          handleLocationError(nativeError);
+        }
+      } catch (permissionError) {
+        handleLocationError(permissionError);
+      }
+      return;
+    }
+
+    if (!navigator?.geolocation) {
+      setSubmitError("Geolocalizacao nao esta disponivel neste ambiente.");
+      setLocationState("idle");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        await handleLocationSuccess(position.coords);
       },
+      handleLocationError,
       {
         enableHighAccuracy: true,
         timeout: 10000,
@@ -680,7 +1098,18 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
   };
 
   const handleOpenMap = async () => {
-    const targetLocation = userRole === "cliente" ? participantLocation : ownLocation || participantLocation;
+    const targetLocation = activeDiaristLocation || activeParticipantLocation || ownLocation || participantLocation;
+
+    if (!targetLocation?.latitude || !targetLocation?.longitude) {
+      setSubmitError("Nenhuma localizacao disponivel ainda.");
+      return;
+    }
+
+    setIsLocationModalOpen(true);
+  };
+
+  const handleOpenExternalMap = async () => {
+    const targetLocation = activeDiaristLocation || activeParticipantLocation || ownLocation || participantLocation;
 
     if (!targetLocation?.latitude || !targetLocation?.longitude) {
       setSubmitError("Nenhuma localizacao disponivel ainda.");
@@ -738,7 +1167,7 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
             </View>
           </View>
 
-          {(canShareLiveLocation || canRequestLiveLocation || hasSharedLiveLocation) && (
+          {(canShareLiveLocation || canRequestLiveLocation) && (
             <View style={styles.locationActions}>
               {canShareLiveLocation ? (
                 <TouchableOpacity style={styles.locationActionButton} onPress={handleShareLocation}>
@@ -765,19 +1194,12 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
                   </Text>
                 </TouchableOpacity>
               ) : null}
-
-              {hasSharedLiveLocation ? (
-                <TouchableOpacity style={styles.locationActionButton} onPress={handleOpenMap}>
-                  <Feather name="external-link" size={14} color={palette.accent} />
-                  <Text style={styles.locationActionText}>Abrir mapa</Text>
-                </TouchableOpacity>
-              ) : null}
             </View>
           )}
 
-          {error || socketError || submitError ? (
+          {displayChatError ? (
             <View style={styles.chatAlert}>
-              <Text style={styles.chatAlertText}>{error || socketError || submitError}</Text>
+              <Text style={styles.chatAlertText}>{displayChatError}</Text>
             </View>
           ) : null}
 
@@ -792,7 +1214,7 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
                 <ActivityIndicator color={palette.accent} />
                 <Text style={styles.loadingCopy}>Carregando conversa...</Text>
               </View>
-            ) : messages.length === 0 ? (
+            ) : timelineItems.length === 0 ? (
               <View style={styles.emptyShell}>
                 <Text style={styles.emptyTitle}>Nenhuma mensagem ainda</Text>
                 <Text style={styles.emptyCopy}>
@@ -800,7 +1222,20 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
                 </Text>
               </View>
             ) : (
-              messages.map((message, index) => {
+              timelineItems.map((entry, index) => {
+                if (entry.type === "location") {
+                  const locationItem = entry.data;
+                  return (
+                    <ChatLiveLocationCard
+                      key={locationItem.id || `location-${index}`}
+                      item={locationItem}
+                      isOwn={Boolean(locationItem.isOwn)}
+                      onPress={handleOpenMap}
+                    />
+                  );
+                }
+
+                const message = entry.data;
                 const isOwnMessage = Number(message?.senderId || 0) === Number(currentUser?.id || 0);
                 const messageKey = message?.id || `${message?.createdAt || "msg"}-${index}`;
                 const author = isOwnMessage ? currentUser : participant;
@@ -850,6 +1285,13 @@ export function MobileChatModal({ visible, service, userRole, onClose }) {
           </View>
         </View>
       </View>
+
+      <LiveLocationMapModal
+        visible={isLocationModalOpen}
+        markers={locationMarkers}
+        onClose={() => setIsLocationModalOpen(false)}
+        onOpenExternalMap={handleOpenExternalMap}
+      />
     </Modal>
   );
 }
@@ -1111,6 +1553,93 @@ const styles = StyleSheet.create({
   messageMetaOwn: {
     color: "rgba(255,255,255,0.78)",
   },
+  locationMessageCard: {
+    maxWidth: "84%",
+    backgroundColor: "#eff6ff",
+    borderRadius: 20,
+    borderBottomLeftRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+    shadowColor: "#1d4ed8",
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  locationMessageCardOwn: {
+    backgroundColor: "#1d4ed8",
+    borderColor: "rgba(255,255,255,0.18)",
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 8,
+  },
+  locationMessageHeader: {
+    gap: 8,
+    marginBottom: 8,
+  },
+  locationMessageTitleWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  locationMessageTitle: {
+    color: palette.accent,
+    fontSize: 13,
+    fontWeight: "900",
+    flex: 1,
+  },
+  locationMessageTitleOwn: {
+    color: "#ffffff",
+  },
+  locationMessageExpiry: {
+    color: "#1e40af",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  locationMessageExpiryOwn: {
+    color: "rgba(255,255,255,0.86)",
+  },
+  locationMessageBody: {
+    color: "#1e293b",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  locationMessageBodyOwn: {
+    color: "#ffffff",
+  },
+  locationMessageFooter: {
+    marginTop: 12,
+    gap: 8,
+  },
+  locationMessageMeta: {
+    color: "#475569",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  locationMessageMetaOwn: {
+    color: "rgba(255,255,255,0.76)",
+  },
+  locationMessageCta: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  locationMessageCtaOwn: {
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  locationMessageCtaText: {
+    color: palette.accent,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  locationMessageCtaTextOwn: {
+    color: "#ffffff",
+  },
   composerShell: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -1165,5 +1694,112 @@ const styles = StyleSheet.create({
     color: palette.accent,
     fontSize: 16,
     fontWeight: "800",
+  },
+  liveMapBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.58)",
+    justifyContent: "center",
+    padding: 18,
+  },
+  liveMapPanel: {
+    borderRadius: 24,
+    backgroundColor: "#ffffff",
+    padding: 16,
+    gap: 14,
+  },
+  liveMapHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  liveMapTitle: {
+    color: palette.ink,
+    fontSize: 18,
+    fontWeight: "900",
+    marginBottom: 4,
+  },
+  liveMapCopy: {
+    color: palette.muted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  liveMapClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#eef2f7",
+  },
+  liveMapCanvas: {
+    height: 310,
+    borderRadius: 22,
+    overflow: "hidden",
+    backgroundColor: "#dbeafe",
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+    position: "relative",
+  },
+  liveMapLegend: {
+    gap: 10,
+  },
+  liveMapLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  liveMapLegendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  liveMapLegendTitle: {
+    color: palette.ink,
+    fontSize: 13,
+    fontWeight: "800",
+    marginBottom: 2,
+  },
+  liveMapLegendCopy: {
+    color: palette.muted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  liveMapActions: {
+    gap: 10,
+  },
+  liveMapPrimaryButton: {
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: palette.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  liveMapPrimaryButtonText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  liveMapSecondaryButton: {
+    minHeight: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#dbe3ee",
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  liveMapSecondaryButtonText: {
+    color: palette.ink,
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
