@@ -3,7 +3,18 @@ export const ORDER_END_HOUR = 16;
 export const ORDER_HOUR_OPTIONS = Array.from({ length: ORDER_END_HOUR - ORDER_START_HOUR + 1 }, (_, index) =>
   String(ORDER_START_HOUR + index).padStart(2, "0"),
 );
-export const ORDER_MINUTE_OPTIONS = ["00", "30"];
+export const ORDER_MINUTE_OPTIONS = Array.from({ length: 7 }, (_, index) => String(index * 10).padStart(2, "0"));
+
+export function normalizeOrderTimeSelection(selectedHour, selectedMinute) {
+  const safeHour = Number(selectedHour || ORDER_START_HOUR);
+  const safeMinute = Number(selectedMinute || 0);
+  const normalizedDate = new Date(2000, 0, 1, safeHour, safeMinute, 0, 0);
+
+  return {
+    hour: String(normalizedDate.getHours()).padStart(2, "0"),
+    minute: String(normalizedDate.getMinutes()).padStart(2, "0"),
+  };
+}
 
 export function formatCurrency(value) {
   const amount = Number(value || 0);

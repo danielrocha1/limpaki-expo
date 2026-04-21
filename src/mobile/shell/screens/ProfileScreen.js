@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Animated,
+  Easing,
   Image,
   Modal,
   Platform,
@@ -18,7 +20,6 @@ import { apiFetch } from "../../../config/api";
 import MapConfirmModal from "../../MapConfirmModal";
 import { palette, styles } from "../AppShell.styles";
 import EmptyState from "../components/EmptyState";
-import LoadingState from "../components/LoadingState";
 import SectionCard from "../components/SectionCard";
 
 const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
@@ -50,6 +51,17 @@ const defaultAddressForm = {
   latitude: 0,
   longitude: 0,
   rooms: [],
+};
+
+const diaristSpecialtyMeta = {
+  basic_cleaning: { label: "Limpeza Basica", icon: "wind" },
+  heavy_cleaning: { label: "Limpeza Pesada", icon: "droplet" },
+  ironing: { label: "Passar Roupa", icon: "shopping-bag" },
+  post_work: { label: "Pos-obra", icon: "tool" },
+  organization: { label: "Organizacao", icon: "folder" },
+  window_cleaning: { label: "Janelas", icon: "layout" },
+  carpet_cleaning: { label: "Tapetes", icon: "grid" },
+  cooking: { label: "Cozinhar", icon: "coffee" },
 };
 
 const residenceTypeLabels = {
@@ -178,6 +190,16 @@ function formatCurrency(value) {
   });
 }
 
+function getAddressRooms(address = {}) {
+  return Array.isArray(address?.rooms || address?.Rooms) ? address.rooms || address.Rooms : [];
+}
+
+function getTotalRoomCount(address = {}) {
+  return getAddressRooms(address).reduce((total, room) => {
+    return total + Math.max(0, Number(room?.quantity || room?.Quantity || 0));
+  }, 0);
+}
+
 function buildProfileForm(profile = {}) {
   const diaristProfile = profile?.diarist_profile || profile?.DiaristProfile || {};
   const userProfile = profile?.user_profile || profile?.UserProfile || {};
@@ -219,6 +241,131 @@ function buildAddressForm(address = {}) {
   };
 }
 
+function SkeletonBlock({ style, animatedStyle }) {
+  return <Animated.View style={[profileStyles.skeletonBlock, animatedStyle, style]} />;
+}
+
+function ProfileLoadingSkeleton() {
+  const shimmer = React.useRef(new Animated.Value(0.56)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, {
+          toValue: 0.92,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0.56,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    animation.start();
+    return () => animation.stop();
+  }, [shimmer]);
+
+  const animatedStyle = { opacity: shimmer };
+
+  return (
+    <ScrollView style={styles.screenScroll} contentContainerStyle={styles.screenContent}>
+      <SectionCard title="Meu perfil">
+        <View style={profileStyles.heroRow}>
+          <View style={profileStyles.avatarShell}>
+            <SkeletonBlock style={profileStyles.skeletonAvatar} animatedStyle={animatedStyle} />
+            <SkeletonBlock style={profileStyles.skeletonAvatarBadge} animatedStyle={animatedStyle} />
+          </View>
+
+          <View style={profileStyles.heroCopy}>
+            <View style={profileStyles.heroHeadRow}>
+              <View style={profileStyles.heroHeadMain}>
+                <SkeletonBlock style={profileStyles.skeletonKicker} animatedStyle={animatedStyle} />
+                <SkeletonBlock style={profileStyles.skeletonHeroTitle} animatedStyle={animatedStyle} />
+              </View>
+            </View>
+
+            <SkeletonBlock style={profileStyles.skeletonHeroEmail} animatedStyle={animatedStyle} />
+
+            <View style={profileStyles.skeletonBadgeRow}>
+              <SkeletonBlock style={profileStyles.skeletonBadgeShort} animatedStyle={animatedStyle} />
+              <SkeletonBlock style={profileStyles.skeletonBadgeLong} animatedStyle={animatedStyle} />
+              <SkeletonBlock style={profileStyles.skeletonBadgeMedium} animatedStyle={animatedStyle} />
+            </View>
+
+            <View style={profileStyles.metricRow}>
+              <View style={profileStyles.metricCard}>
+                <SkeletonBlock style={profileStyles.skeletonMetricLabel} animatedStyle={animatedStyle} />
+                <SkeletonBlock style={profileStyles.skeletonMetricValue} animatedStyle={animatedStyle} />
+              </View>
+              <View style={profileStyles.metricCard}>
+                <SkeletonBlock style={profileStyles.skeletonMetricLabel} animatedStyle={animatedStyle} />
+                <SkeletonBlock style={profileStyles.skeletonMetricValueShort} animatedStyle={animatedStyle} />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <SkeletonBlock style={profileStyles.skeletonSecondaryButton} animatedStyle={animatedStyle} />
+
+        <View style={profileStyles.sectionTabs}>
+          <SkeletonBlock style={profileStyles.skeletonTabActive} animatedStyle={animatedStyle} />
+          <SkeletonBlock style={profileStyles.skeletonTab} animatedStyle={animatedStyle} />
+        </View>
+      </SectionCard>
+
+      <SectionCard title="Resumo da conta">
+        {[0, 1, 2].map((item) => (
+          <View key={item} style={profileStyles.infoRow}>
+            <SkeletonBlock style={profileStyles.skeletonInfoLabel} animatedStyle={animatedStyle} />
+            <SkeletonBlock style={profileStyles.skeletonInfoValue} animatedStyle={animatedStyle} />
+          </View>
+        ))}
+      </SectionCard>
+
+      <SectionCard
+        title="Dados do perfil"
+        right={<SkeletonBlock style={profileStyles.skeletonSectionAction} animatedStyle={animatedStyle} />}
+      >
+        <View style={profileStyles.formGroup}>
+          <SkeletonBlock style={profileStyles.skeletonFieldLabel} animatedStyle={animatedStyle} />
+          <SkeletonBlock style={profileStyles.skeletonInput} animatedStyle={animatedStyle} />
+        </View>
+
+        <View style={profileStyles.formGroup}>
+          <SkeletonBlock style={profileStyles.skeletonFieldLabelShort} animatedStyle={animatedStyle} />
+          <SkeletonBlock style={profileStyles.skeletonInput} animatedStyle={animatedStyle} />
+        </View>
+
+        <View style={profileStyles.inlineFields}>
+          <View style={profileStyles.inlineField}>
+            <SkeletonBlock style={profileStyles.skeletonFieldLabel} animatedStyle={animatedStyle} />
+            <SkeletonBlock style={profileStyles.skeletonInput} animatedStyle={animatedStyle} />
+          </View>
+          <View style={profileStyles.inlineField}>
+            <SkeletonBlock style={profileStyles.skeletonFieldLabelShort} animatedStyle={animatedStyle} />
+            <SkeletonBlock style={profileStyles.skeletonInput} animatedStyle={animatedStyle} />
+          </View>
+        </View>
+
+        <View style={profileStyles.formGroup}>
+          <SkeletonBlock style={profileStyles.skeletonFieldLabelMedium} animatedStyle={animatedStyle} />
+          <SkeletonBlock style={profileStyles.skeletonTextarea} animatedStyle={animatedStyle} />
+        </View>
+
+        <View style={profileStyles.actionRow}>
+          <SkeletonBlock style={profileStyles.skeletonPrimaryButton} animatedStyle={animatedStyle} />
+          <SkeletonBlock style={profileStyles.skeletonSecondaryBlockButton} animatedStyle={animatedStyle} />
+        </View>
+      </SectionCard>
+    </ScrollView>
+  );
+}
+
 export default function ProfileScreen({ session, profileIntent }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -256,6 +403,7 @@ export default function ProfileScreen({ session, profileIntent }) {
   const isDiarist = session.role === "diarista";
   const diaristProfile = user?.diarist_profile || user?.DiaristProfile || {};
   const userProfile = user?.user_profile || user?.UserProfile || {};
+  const diaristSpecialties = parseSpecialties(profileForm.specialties);
   const profilePhoto = getProfilePhoto(user);
   const profileName = user?.name || user?.Name || "Usuario";
   const profileEmail = user?.email || user?.Email || "E-mail nao informado";
@@ -678,6 +826,10 @@ export default function ProfileScreen({ session, profileIntent }) {
     setShowAddressMap(false);
   }
 
+  function toggleAddressRooms(addressId) {
+    setExpandedAddressRooms((prev) => ({ ...prev, [addressId]: !prev[addressId] }));
+  }
+
   useEffect(() => {
     if (!profileIntent?.stamp) {
       return;
@@ -840,7 +992,7 @@ export default function ProfileScreen({ session, profileIntent }) {
   }
 
   if (loading && !user?.id && !user?.ID) {
-    return <LoadingState label="Carregando perfil..." />;
+    return <ProfileLoadingSkeleton />;
   }
 
   return (
@@ -883,9 +1035,6 @@ export default function ProfileScreen({ session, profileIntent }) {
                   <Text style={profileStyles.kicker}>Conta</Text>
                   <Text style={profileStyles.heroName}>{profileName}</Text>
                 </View>
-                <TouchableOpacity style={profileStyles.iconButton} onPress={handleEditToggle}>
-                  <Feather name={editMode ? "x" : "edit-2"} size={16} color={palette.accent} />
-                </TouchableOpacity>
               </View>
 
               <Text style={profileStyles.heroEmail}>{profileEmail}</Text>
@@ -970,7 +1119,14 @@ export default function ProfileScreen({ session, profileIntent }) {
                   )}
             </SectionCard>
 
-            <SectionCard title={editMode ? "Editar perfil" : "Dados do perfil"}>
+            <SectionCard
+              title={editMode ? "Editar perfil" : "Dados do perfil"}
+              right={
+                <TouchableOpacity style={profileStyles.iconButton} onPress={handleEditToggle}>
+                  <Feather name={editMode ? "x" : "edit-2"} size={16} color={palette.accent} />
+                </TouchableOpacity>
+              }
+            >
               <View style={profileStyles.formGroup}>
                 <Text style={profileStyles.fieldLabel}>Nome</Text>
                 {editMode ? (
@@ -1021,112 +1177,157 @@ export default function ProfileScreen({ session, profileIntent }) {
 
               {isDiarist ? (
                 <>
-                  <View style={profileStyles.formGroup}>
-                    <Text style={profileStyles.fieldLabel}>Bio</Text>
-                    {editMode ? (
-                      <TextInput
-                        value={profileForm.bio}
-                        onChangeText={(value) => handleProfileChange("bio", value)}
-                        style={[profileStyles.input, profileStyles.textarea]}
-                        multiline
-                        textAlignVertical="top"
-                        placeholder="Conte um pouco sobre voce"
-                        placeholderTextColor="#9ca3af"
-                      />
-                    ) : (
-                      <Text style={profileStyles.fieldValue}>{profileForm.bio || "Nao informado"}</Text>
-                    )}
-                  </View>
-
-                  <View style={profileStyles.inlineFields}>
-                    <View style={profileStyles.inlineField}>
-                      <Text style={profileStyles.fieldLabel}>Experiencia (anos)</Text>
-                      {editMode ? (
+                  {editMode ? (
+                    <>
+                      <View style={profileStyles.formGroup}>
+                        <Text style={profileStyles.fieldLabel}>Bio</Text>
                         <TextInput
-                          value={profileForm.experience_years}
-                          onChangeText={(value) => handleProfileChange("experience_years", value.replace(/\D/g, ""))}
-                          style={profileStyles.input}
-                          keyboardType="numeric"
-                          placeholder="0"
+                          value={profileForm.bio}
+                          onChangeText={(value) => handleProfileChange("bio", value)}
+                          style={[profileStyles.input, profileStyles.textarea]}
+                          multiline
+                          textAlignVertical="top"
+                          placeholder="Conte um pouco sobre voce"
                           placeholderTextColor="#9ca3af"
                         />
-                      ) : (
-                        <Text style={profileStyles.fieldValue}>
-                          {`${profileForm.experience_years || 0} anos`}
-                        </Text>
-                      )}
-                    </View>
+                      </View>
 
-                    <View style={profileStyles.inlineField}>
-                      <Text style={profileStyles.fieldLabel}>Disponivel</Text>
-                      {editMode ? (
-                        <View style={profileStyles.switchRow}>
-                          <Switch
-                            value={Boolean(profileForm.available)}
-                            onValueChange={(value) => handleProfileChange("available", value)}
-                            trackColor={{ false: "#cbd5e1", true: "#93c5fd" }}
-                            thumbColor={profileForm.available ? palette.accent : "#f8fafc"}
+                      <View style={profileStyles.inlineFields}>
+                        <View style={profileStyles.inlineField}>
+                          <Text style={profileStyles.fieldLabel}>Experiencia (anos)</Text>
+                          <TextInput
+                            value={profileForm.experience_years}
+                            onChangeText={(value) => handleProfileChange("experience_years", value.replace(/\D/g, ""))}
+                            style={profileStyles.input}
+                            keyboardType="numeric"
+                            placeholder="0"
+                            placeholderTextColor="#9ca3af"
                           />
-                          <Text style={profileStyles.switchText}>{profileForm.available ? "Sim" : "Nao"}</Text>
                         </View>
-                      ) : (
-                        <Text style={profileStyles.fieldValue}>{profileForm.available ? "Sim" : "Nao"}</Text>
-                      )}
-                    </View>
-                  </View>
 
-                  <View style={profileStyles.inlineFields}>
-                    <View style={profileStyles.inlineField}>
-                      <Text style={profileStyles.fieldLabel}>Valor por hora</Text>
-                      {editMode ? (
+                        <View style={profileStyles.inlineField}>
+                          <Text style={profileStyles.fieldLabel}>Disponivel</Text>
+                          <View style={profileStyles.switchRow}>
+                            <Switch
+                              value={Boolean(profileForm.available)}
+                              onValueChange={(value) => handleProfileChange("available", value)}
+                              trackColor={{ false: "#cbd5e1", true: "#93c5fd" }}
+                              thumbColor={profileForm.available ? palette.accent : "#f8fafc"}
+                            />
+                            <Text style={profileStyles.switchText}>{profileForm.available ? "Sim" : "Nao"}</Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      <View style={profileStyles.inlineFields}>
+                        <View style={profileStyles.inlineField}>
+                          <Text style={profileStyles.fieldLabel}>Valor por hora</Text>
+                          <TextInput
+                            value={profileForm.price_per_hour}
+                            onChangeText={(value) => handleProfileChange("price_per_hour", value.replace(/[^\d.,]/g, ""))}
+                            style={profileStyles.input}
+                            keyboardType="decimal-pad"
+                            placeholder="0"
+                            placeholderTextColor="#9ca3af"
+                          />
+                        </View>
+
+                        <View style={profileStyles.inlineField}>
+                          <Text style={profileStyles.fieldLabel}>Valor por dia</Text>
+                          <TextInput
+                            value={profileForm.price_per_day}
+                            onChangeText={(value) => handleProfileChange("price_per_day", value.replace(/[^\d.,]/g, ""))}
+                            style={profileStyles.input}
+                            keyboardType="decimal-pad"
+                            placeholder="0"
+                            placeholderTextColor="#9ca3af"
+                          />
+                        </View>
+                      </View>
+
+                      <View style={profileStyles.formGroup}>
+                        <Text style={profileStyles.fieldLabel}>Especialidades</Text>
                         <TextInput
-                          value={profileForm.price_per_hour}
-                          onChangeText={(value) => handleProfileChange("price_per_hour", value.replace(/[^\d.,]/g, ""))}
-                          style={profileStyles.input}
-                          keyboardType="decimal-pad"
-                          placeholder="0"
+                          value={profileForm.specialties}
+                          onChangeText={(value) => handleProfileChange("specialties", value)}
+                          style={[profileStyles.input, profileStyles.textarea]}
+                          multiline
+                          textAlignVertical="top"
+                          placeholder="Ex.: basic_cleaning, heavy_cleaning"
                           placeholderTextColor="#9ca3af"
                         />
-                      ) : (
-                        <Text style={profileStyles.fieldValue}>{formatCurrency(profileForm.price_per_hour || 0)}</Text>
-                      )}
-                    </View>
+                      </View>
+                    </>
+                  ) : (
+                    <View style={profileStyles.proProfileCard}>
+                      <View style={profileStyles.proProfileHeader}>
+                        <View style={profileStyles.proProfileHeaderIcon}>
+                          <Feather name="briefcase" size={16} color={palette.accent} />
+                        </View>
+                        <View style={profileStyles.proProfileHeaderCopy}>
+                          <Text style={profileStyles.proProfileTitle}>Perfil profissional</Text>
+                          <Text style={profileStyles.proProfileSubtitle}>
+                            Resumo da sua apresentacao, experiencia, precificacao e disponibilidade.
+                          </Text>
+                        </View>
+                      </View>
 
-                    <View style={profileStyles.inlineField}>
-                      <Text style={profileStyles.fieldLabel}>Valor por dia</Text>
-                      {editMode ? (
-                        <TextInput
-                          value={profileForm.price_per_day}
-                          onChangeText={(value) => handleProfileChange("price_per_day", value.replace(/[^\d.,]/g, ""))}
-                          style={profileStyles.input}
-                          keyboardType="decimal-pad"
-                          placeholder="0"
-                          placeholderTextColor="#9ca3af"
-                        />
-                      ) : (
-                        <Text style={profileStyles.fieldValue}>{formatCurrency(profileForm.price_per_day || 0)}</Text>
-                      )}
-                    </View>
-                  </View>
+                      <View style={profileStyles.proProfileSection}>
+                        <Text style={profileStyles.proProfileSectionTitle}>Apresentacao</Text>
+                        <Text style={profileStyles.proProfileBody}>
+                          {profileForm.bio || "Nenhuma apresentacao preenchida ainda."}
+                        </Text>
+                      </View>
 
-                  <View style={profileStyles.formGroup}>
-                    <Text style={profileStyles.fieldLabel}>Especialidades</Text>
-                    {editMode ? (
-                      <TextInput
-                        value={profileForm.specialties}
-                        onChangeText={(value) => handleProfileChange("specialties", value)}
-                        style={[profileStyles.input, profileStyles.textarea]}
-                        multiline
-                        textAlignVertical="top"
-                        placeholder="Ex.: basic_cleaning, heavy_cleaning"
-                        placeholderTextColor="#9ca3af"
-                      />
-                    ) : (
-                      <Text style={profileStyles.fieldValue}>
-                        {parseSpecialties(profileForm.specialties).join(", ") || "Nao informado"}
-                      </Text>
-                    )}
-                  </View>
+                      <View style={profileStyles.proProfileStats}>
+                        <View style={profileStyles.proProfileStatRow}>
+                          <Text style={profileStyles.proProfileStatLabel}>Anos de experiencia</Text>
+                          <Text style={profileStyles.proProfileStatValue}>{`${profileForm.experience_years || 0} anos`}</Text>
+                        </View>
+                        <View style={profileStyles.proProfileStatRow}>
+                          <Text style={profileStyles.proProfileStatLabel}>Preco por hora</Text>
+                          <Text style={profileStyles.proProfileStatValue}>{formatCurrency(profileForm.price_per_hour || 0)}</Text>
+                        </View>
+                        <View style={profileStyles.proProfileStatRow}>
+                          <Text style={profileStyles.proProfileStatLabel}>Preco por diaria</Text>
+                          <Text style={profileStyles.proProfileStatValue}>{formatCurrency(profileForm.price_per_day || 0)}</Text>
+                        </View>
+                        <View style={profileStyles.proProfileStatRow}>
+                          <Text style={profileStyles.proProfileStatLabel}>Disponibilidade</Text>
+                          <Text style={profileStyles.proProfileStatValue}>
+                            {profileForm.available ? "Disponivel para servicos" : "Indisponivel no momento"}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={profileStyles.proProfileSection}>
+                        <Text style={profileStyles.proProfileSectionTitle}>Especialidades</Text>
+                        <Text style={profileStyles.proProfileSectionHint}>
+                          Servicos e contextos em que voce atua melhor.
+                        </Text>
+                        <View style={profileStyles.proProfileTags}>
+                          {diaristSpecialties.length ? (
+                            diaristSpecialties.map((specialty, index) => (
+                              <View key={`${specialty}-${index}`} style={profileStyles.proProfileTag}>
+                                <View style={profileStyles.proProfileTagIcon}>
+                                  <Feather
+                                    name={diaristSpecialtyMeta[specialty]?.icon || "star"}
+                                    size={14}
+                                    color={palette.accent}
+                                  />
+                                </View>
+                                <Text style={profileStyles.proProfileTagText}>
+                                  {diaristSpecialtyMeta[specialty]?.label || specialty}
+                                </Text>
+                              </View>
+                            ))
+                          ) : (
+                            <Text style={profileStyles.proProfileEmptyText}>Nenhuma especialidade cadastrada.</Text>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  )}
                 </>
               ) : (
                 <>
@@ -1458,7 +1659,9 @@ export default function ProfileScreen({ session, profileIntent }) {
               ) : (
                 addresses.map((address) => {
                   const isEditingRooms = editingRoomsAddressId === address.id;
-                  const totalRooms = Array.isArray(address.rooms) ? address.rooms.length : 0;
+                  const totalRooms = getTotalRoomCount(address);
+                  const hasRooms = getAddressRooms(address).length > 0;
+                  const isRoomsExpanded = Boolean(expandedAddressRooms[address.id]);
 
                   return (
                     <View key={address.id} style={profileStyles.addressCard}>
@@ -1495,8 +1698,21 @@ export default function ProfileScreen({ session, profileIntent }) {
                       {!isDiarist ? (
                         <View style={profileStyles.roomsSummaryBox}>
                           <View style={profileStyles.roomsHeader}>
-                            <Text style={profileStyles.roomsTitle}>Comodos da residencia</Text>
-                            <Text style={profileStyles.roomsCounter}>{totalRooms}</Text>
+                            <TouchableOpacity
+                              activeOpacity={0.85}
+                              style={profileStyles.roomsDropdownButton}
+                              onPress={() => toggleAddressRooms(address.id)}
+                            >
+                              <Text style={profileStyles.roomsTitle}>Comodos da residencia</Text>
+                              <View style={profileStyles.roomsHeaderMeta}>
+                                <Text style={profileStyles.roomsCounter}>{totalRooms}</Text>
+                                <Feather
+                                  name={isRoomsExpanded ? "chevron-up" : "chevron-down"}
+                                  size={16}
+                                  color={palette.accent}
+                                />
+                              </View>
+                            </TouchableOpacity>
                           </View>
 
                           {isEditingRooms ? (
@@ -1551,18 +1767,10 @@ export default function ProfileScreen({ session, profileIntent }) {
                                 </TouchableOpacity>
                               </View>
                             </>
-                          ) : (
+                          ) : isRoomsExpanded ? (
                             <>
-                              <TouchableOpacity
-                                style={profileStyles.secondaryMiniButton}
-                                onPress={() => openInlineRoomsEditor(address)}
-                              >
-                                <Feather name="plus" size={14} color={palette.accent} />
-                                <Text style={profileStyles.secondaryMiniButtonText}>Editar comodos</Text>
-                              </TouchableOpacity>
-
-                              {totalRooms > 0 ? (
-                                address.rooms.map((room, index) => (
+                              {hasRooms ? (
+                                getAddressRooms(address).map((room, index) => (
                                   <View key={room.id || index} style={profileStyles.roomSummaryRow}>
                                     <View style={profileStyles.roomSummaryMain}>
                                       <Feather name="home" size={14} color={palette.accent} />
@@ -1576,7 +1784,17 @@ export default function ProfileScreen({ session, profileIntent }) {
                               ) : (
                                 <Text style={profileStyles.helperText}>Nenhum comodo cadastrado neste endereco.</Text>
                               )}
+
+                              <TouchableOpacity
+                                style={[profileStyles.secondaryMiniButton, profileStyles.secondaryMiniButtonFull]}
+                                onPress={() => openInlineRoomsEditor(address)}
+                              >
+                                <Feather name="plus" size={14} color={palette.accent} />
+                                <Text style={profileStyles.secondaryMiniButtonText}>Editar comodos</Text>
+                              </TouchableOpacity>
                             </>
+                          ) : (
+                            <Text style={profileStyles.roomsCollapsedHint}>Toque para visualizar os comodos deste endereco.</Text>
                           )}
                         </View>
                       ) : null}
@@ -1661,6 +1879,161 @@ export default function ProfileScreen({ session, profileIntent }) {
 }
 
 const profileStyles = StyleSheet.create({
+  skeletonBlock: {
+    backgroundColor: "#dfe8f5",
+    overflow: "hidden",
+  },
+  skeletonAvatar: {
+    width: 78,
+    height: 78,
+    borderRadius: 20,
+    alignSelf: "center",
+  },
+  skeletonAvatarBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginTop: -18,
+    alignSelf: "center",
+    borderWidth: 2,
+    borderColor: "#ffffff",
+    backgroundColor: "#c9daf7",
+  },
+  skeletonKicker: {
+    width: 52,
+    height: 10,
+    borderRadius: 999,
+    marginBottom: 8,
+  },
+  skeletonHeroTitle: {
+    width: "72%",
+    height: 22,
+    borderRadius: 10,
+  },
+  skeletonHeroEmail: {
+    width: "82%",
+    height: 14,
+    borderRadius: 999,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  skeletonIconButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#e4edfb",
+  },
+  skeletonBadgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  skeletonBadgeShort: {
+    width: 78,
+    height: 24,
+    borderRadius: 999,
+  },
+  skeletonBadgeMedium: {
+    width: 112,
+    height: 24,
+    borderRadius: 999,
+  },
+  skeletonBadgeLong: {
+    width: 138,
+    height: 24,
+    borderRadius: 999,
+  },
+  skeletonMetricLabel: {
+    width: "58%",
+    height: 10,
+    borderRadius: 999,
+    marginBottom: 10,
+  },
+  skeletonMetricValue: {
+    width: "72%",
+    height: 15,
+    borderRadius: 999,
+  },
+  skeletonMetricValueShort: {
+    width: "34%",
+    height: 15,
+    borderRadius: 999,
+  },
+  skeletonSecondaryButton: {
+    width: 140,
+    height: 42,
+    borderRadius: 12,
+    marginBottom: 14,
+    backgroundColor: "#e4edfb",
+  },
+  skeletonSectionAction: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#e4edfb",
+  },
+  skeletonTabActive: {
+    flex: 1,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#cddfff",
+  },
+  skeletonTab: {
+    flex: 1,
+    height: 42,
+    borderRadius: 12,
+  },
+  skeletonInfoLabel: {
+    flex: 1,
+    height: 12,
+    borderRadius: 999,
+    maxWidth: "42%",
+  },
+  skeletonInfoValue: {
+    width: "38%",
+    height: 12,
+    borderRadius: 999,
+  },
+  skeletonFieldLabel: {
+    width: 96,
+    height: 10,
+    borderRadius: 999,
+    marginBottom: 8,
+  },
+  skeletonFieldLabelShort: {
+    width: 68,
+    height: 10,
+    borderRadius: 999,
+    marginBottom: 8,
+  },
+  skeletonFieldLabelMedium: {
+    width: 120,
+    height: 10,
+    borderRadius: 999,
+    marginBottom: 8,
+  },
+  skeletonInput: {
+    minHeight: 46,
+    borderRadius: 12,
+    backgroundColor: "#eef3fb",
+  },
+  skeletonTextarea: {
+    minHeight: 104,
+    borderRadius: 12,
+    backgroundColor: "#eef3fb",
+  },
+  skeletonPrimaryButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 14,
+    backgroundColor: "#cddfff",
+  },
+  skeletonSecondaryBlockButton: {
+    width: 120,
+    minHeight: 46,
+    borderRadius: 14,
+    backgroundColor: "#e7edf6",
+  },
   heroRow: {
     flexDirection: "row",
     gap: 14,
@@ -1823,6 +2196,125 @@ const profileStyles = StyleSheet.create({
     color: palette.ink,
     fontSize: 15,
     lineHeight: 22,
+  },
+  proProfileCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#dbe7ff",
+    backgroundColor: "#f8fbff",
+    padding: 14,
+    gap: 12,
+  },
+  proProfileHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5edf8",
+  },
+  proProfileHeaderIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "#eef4ff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  proProfileHeaderCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  proProfileTitle: {
+    color: palette.ink,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  proProfileSubtitle: {
+    color: "#94a3b8",
+    fontSize: 10,
+    lineHeight: 15,
+  },
+  proProfileSection: {
+    gap: 6,
+  },
+  proProfileSectionTitle: {
+    color: palette.ink,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  proProfileSectionHint: {
+    color: "#94a3b8",
+    fontSize: 10,
+    lineHeight: 15,
+  },
+  proProfileBody: {
+    color: "#475569",
+    fontSize: 12,
+    lineHeight: 19,
+  },
+  proProfileStats: {
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#e5edf8",
+  },
+  proProfileStatRow: {
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eef3fb",
+  },
+  proProfileStatLabel: {
+    color: "#64748b",
+    fontSize: 11,
+    fontWeight: "700",
+    flex: 1,
+  },
+  proProfileStatValue: {
+    color: palette.ink,
+    fontSize: 11,
+    fontWeight: "900",
+    textAlign: "right",
+    flexShrink: 1,
+  },
+  proProfileTags: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  proProfileTag: {
+    minWidth: "47%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#dbe7ff",
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  proProfileTagIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    backgroundColor: "#eef4ff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  proProfileTagText: {
+    color: palette.ink,
+    fontSize: 11,
+    fontWeight: "800",
+    flex: 1,
+  },
+  proProfileEmptyText: {
+    color: "#64748b",
+    fontSize: 11,
+    lineHeight: 17,
   },
   input: {
     minHeight: 46,
@@ -2031,11 +2523,18 @@ const profileStyles = StyleSheet.create({
     padding: 12,
   },
   roomsHeader: {
+    marginBottom: 10,
+  },
+  roomsDropdownButton: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     gap: 10,
-    marginBottom: 10,
+  },
+  roomsHeaderMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   roomsTitle: {
     color: palette.ink,
@@ -2055,6 +2554,11 @@ const profileStyles = StyleSheet.create({
     textAlign: "center",
     overflow: "hidden",
   },
+  roomsCollapsedHint: {
+    color: "#64748b",
+    fontSize: 12,
+    lineHeight: 18,
+  },
   secondaryMiniButton: {
     minHeight: 34,
     borderRadius: 999,
@@ -2067,6 +2571,10 @@ const profileStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
+  },
+  secondaryMiniButtonFull: {
+    alignSelf: "stretch",
+    marginTop: 12,
   },
   secondaryMiniButtonText: {
     color: palette.accent,

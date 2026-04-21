@@ -232,6 +232,84 @@ html, body {
   animation: slideDown 0.3s ease-out;
 }
 
+.login-aux-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+  margin-bottom: 8px;
+}
+
+.forgot-password-link {
+  border: none;
+  background: transparent;
+  color: var(--primary-color);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.forgot-password-link:hover:not(:disabled) {
+  color: var(--primary-dark);
+}
+
+.forgot-password-link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.forgot-password-panel {
+  text-align: left;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #dbeafe;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+  border-radius: var(--radius-lg);
+}
+
+.forgot-password-panel__copy strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  margin-bottom: 6px;
+}
+
+.forgot-password-panel__copy p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.forgot-password-form {
+  display: grid;
+  gap: 10px;
+}
+
+.forgot-password-submit {
+  margin-top: 0 !important;
+  padding: 12px 16px !important;
+  font-size: var(--font-size-sm) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18) !important;
+}
+
+.forgot-password-feedback {
+  margin-bottom: 12px !important;
+}
+
+.success-inline-message {
+  background: #edfdf3;
+  border: 1px solid #86efac;
+  color: #166534;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;

@@ -14,6 +14,11 @@ export default function Login() {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState("");
+  const [forgotPasswordError, setForgotPasswordError] = useState("");
   const navigate = useNavigate();
 
   const validateForm = () => {
@@ -48,6 +53,52 @@ export default function Login() {
         ...prev,
         [name]: ""
       }));
+    }
+  };
+
+  const handleForgotPasswordToggle = () => {
+    setForgotPasswordOpen((prev) => !prev);
+    setForgotPasswordError("");
+    setForgotPasswordMessage("");
+    setForgotPasswordEmail((current) => current || formData.email);
+  };
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+
+    const email = String(forgotPasswordEmail || formData.email || "").trim();
+    if (!email) {
+      setForgotPasswordError("Informe seu e-mail para recuperar a senha.");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setForgotPasswordError("Digite um e-mail valido.");
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    setForgotPasswordError("");
+    setForgotPasswordMessage("");
+
+    try {
+      const response = await fetch(buildApiUrl("/forgot-password"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Nao foi possivel enviar o e-mail de recuperacao agora.");
+      }
+
+      setForgotPasswordMessage(
+        data.message || "Se o e-mail existir em nossa base, enviaremos as instrucoes de recuperacao.",
+      );
+    } catch (err) {
+      setForgotPasswordError(err.message);
+    } finally {
+      setForgotPasswordLoading(false);
     }
   };
 
@@ -179,6 +230,50 @@ export default function Login() {
           />
           {errors.password && <span className="field-error">{errors.password}</span>}
         </div>
+
+        <div className="login-aux-row">
+          <button
+            type="button"
+            className="forgot-password-link"
+            onClick={handleForgotPasswordToggle}
+            disabled={isLoading || forgotPasswordLoading}
+          >
+            {forgotPasswordOpen ? "Fechar recuperacao" : "Esqueceu a senha?"}
+          </button>
+        </div>
+
+        {forgotPasswordOpen && (
+          <div className="forgot-password-panel">
+            <div className="forgot-password-panel__copy">
+              <strong>Recuperar acesso</strong>
+              <p>Informe seu e-mail e enviaremos um link para criar uma nova senha.</p>
+            </div>
+
+            {forgotPasswordError ? (
+              <div className="error-message forgot-password-feedback">
+                <span className="error-icon">{"\u26A0\uFE0F"}</span>
+                {forgotPasswordError}
+              </div>
+            ) : null}
+
+            {forgotPasswordMessage ? (
+              <div className="success-inline-message">{forgotPasswordMessage}</div>
+            ) : null}
+
+            <div className="forgot-password-form">
+              <input
+                type="email"
+                placeholder="Digite seu e-mail"
+                value={forgotPasswordEmail}
+                onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                disabled={forgotPasswordLoading}
+              />
+              <button type="button" className="forgot-password-submit" disabled={forgotPasswordLoading} onClick={handleForgotPasswordSubmit}>
+                {forgotPasswordLoading ? "Enviando..." : "Enviar link"}
+              </button>
+            </div>
+          </div>
+        )}
         
         <button 
           type="submit" 

@@ -396,6 +396,51 @@ function RoleSelection({ onSelectRole, onBackToLogin }) {
   );
 }
 
+function RoleSelectionSplit({ onSelectRole, onBackToLogin }) {
+  return (
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.roleHeader}>
+        <Text style={styles.roleTitle}>Bem-vindo ao Limpae</Text>
+        <Text style={styles.roleCopy}>Escolha como voce deseja usar nossa plataforma.</Text>
+      </View>
+
+      <View style={styles.roleRow}>
+        <TouchableOpacity
+          onPress={() => onSelectRole("cliente")}
+          style={[styles.roleCard, styles.roleCardClient]}
+        >
+          <View style={styles.roleIconBadge}>
+            <Text style={styles.roleEmoji}>{"\u{1F464}"}</Text>
+          </View>
+          <Text style={styles.roleCardTitle}>Sou Cliente</Text>
+          <Text style={styles.roleCardCopy}>Procuro contratar servicos de limpeza profissional.</Text>
+          <View style={[styles.roleCardButton, styles.roleCardButtonClient]}>
+            <Text style={styles.roleCardButtonText}>REGISTRAR COMO CLIENTE</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => onSelectRole("diarista")}
+          style={[styles.roleCard, styles.roleCardDiarist]}
+        >
+          <View style={styles.roleIconBadge}>
+            <Text style={styles.roleEmoji}>{"\u{1F9F9}"}</Text>
+          </View>
+          <Text style={styles.roleCardTitle}>Sou Diarista</Text>
+          <Text style={styles.roleCardCopy}>Quero oferecer meus servicos de limpeza.</Text>
+          <View style={[styles.roleCardButton, styles.roleCardButtonDiarist]}>
+            <Text style={styles.roleCardButtonText}>REGISTRAR COMO DIARISTA</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity onPress={onBackToLogin} style={[styles.secondaryButton, { marginTop: 10 }]}>
+        <Text style={styles.secondaryButtonText}>Voltar para login</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
 function RegisterClientForm({ onBack, onComplete }) {
   const [openSection, setOpenSection] = useState("personal");
   const [isRoomsOpen, setIsRoomsOpen] = useState(true);
@@ -627,7 +672,7 @@ function RegisterClientForm({ onBack, onComplete }) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.formHeader}>
           <TouchableOpacity onPress={onBack} style={styles.backLink}>
-            <Feather name="arrow-left" size={16} color={palette.accent} />
+            <Feather name="arrow-left" size={16} color="#ffffff" />
             <Text style={styles.backLinkText}>Voltar</Text>
           </TouchableOpacity>
           <Text style={styles.formTitle}>Registre-se como Cliente</Text>
@@ -953,7 +998,7 @@ function RegisterDiaristForm({ onBack, onComplete }) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.formHeader}>
           <TouchableOpacity onPress={onBack} style={styles.backLink}>
-            <Feather name="arrow-left" size={16} color={palette.accent} />
+            <Feather name="arrow-left" size={16} color="#ffffff" />
             <Text style={styles.backLinkText}>Voltar</Text>
           </TouchableOpacity>
           <Text style={styles.formTitle}>Registre-se como Diarista</Text>
@@ -1175,15 +1220,15 @@ export default function RegisterFlow({ onBackToLogin, onRegistrationSuccess }) {
       );
     }
 
-    return (
-      <RoleSelection
-        onBackToLogin={onBackToLogin}
-        onSelectRole={(nextRole) => {
-          setRole(nextRole);
-          setStep(nextRole);
-        }}
-      />
-    );
+      return (
+        <RoleSelectionSplit
+          onBackToLogin={onBackToLogin}
+          onSelectRole={(nextRole) => {
+            setRole(nextRole);
+            setStep(nextRole);
+          }}
+        />
+      );
   }, [handlePlanSelected, onBackToLogin, planError, processingPlanId, role, step]);
 
   return (
@@ -1202,72 +1247,150 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   roleHeader: {
-    marginBottom: 18,
+    marginBottom: 20,
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   roleTitle: {
-    color: palette.ink,
-    fontSize: 24,
-    fontWeight: "800",
+    color: "#ffffff",
+    fontSize: 28,
+    fontWeight: "900",
     textAlign: "center",
+    textShadowColor: "rgba(15, 23, 42, 0.22)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   roleCopy: {
-    color: palette.muted,
-    fontSize: 14,
-    lineHeight: 20,
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 15,
+    lineHeight: 22,
     textAlign: "center",
+    fontWeight: "600",
+  },
+  roleRow: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "stretch",
+    marginBottom: 4,
   },
   roleCard: {
-    borderRadius: 16,
+    flex: 1,
+    borderRadius: 22,
     backgroundColor: palette.surface,
-    borderWidth: 1,
-    borderColor: palette.border,
-    padding: 18,
-    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: "#dbe7ff",
+    paddingHorizontal: 16,
+    paddingVertical: 22,
     alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 276,
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+  roleCardClient: {
+    borderColor: "#2563eb",
+    backgroundColor: "#ffffff",
+  },
+  roleCardDiarist: {
+    borderColor: "#10b981",
+    backgroundColor: "#ffffff",
+  },
+  roleIconBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "#eef4ff",
+    borderWidth: 1,
+    borderColor: "#dbe7ff",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    marginTop: 2,
   },
   roleEmoji: {
-    fontSize: 30,
-    marginBottom: 12,
+    fontSize: 26,
   },
   roleCardTitle: {
     color: palette.ink,
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 6,
+    fontSize: 15,
+    fontWeight: "900",
+    marginBottom: 10,
+    textAlign: "center",
   },
   roleCardCopy: {
     color: palette.muted,
-    fontSize: 14,
+    fontSize: 11,
     lineHeight: 20,
     textAlign: "center",
+    marginBottom: 18,
+  },
+  roleCardButton: {
+    width: "100%",
+    minHeight: 56,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+  roleCardButtonClient: {
+    backgroundColor: "#2563eb",
+    shadowColor: "#2563eb",
+  },
+  roleCardButtonDiarist: {
+    backgroundColor: "#10b981",
+    shadowColor: "#10b981",
+  },
+  roleCardButtonText: {
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "900",
+    textAlign: "center",
+    letterSpacing: 0.3,
   },
   formHeader: {
-    gap: 8,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 18,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
   },
   backLink: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     alignSelf: "flex-start",
-    marginBottom: 6,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.12)",
   },
   backLinkText: {
-    color: palette.accent,
+    color: "#ffffff",
     fontSize: 14,
-    fontWeight: "700",
-  },
-  formTitle: {
-    color: palette.ink,
-    fontSize: 22,
     fontWeight: "800",
   },
+  formTitle: {
+    color: "#ffffff",
+    fontSize: 23,
+    fontWeight: "900",
+    lineHeight: 29,
+    textShadowColor: "rgba(15, 23, 42, 0.28)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 10,
+  },
   formCopy: {
-    color: palette.muted,
-    fontSize: 14,
-    lineHeight: 20,
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 10,
+    lineHeight: 18,
+    fontWeight: "600",
+    maxWidth: 340,
   },
   section: {
     borderRadius: 16,

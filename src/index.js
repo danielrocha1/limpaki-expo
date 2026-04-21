@@ -24,6 +24,7 @@ const MapPage = lazy(() => import("./diaristmap"));
 const ServicesPage = lazy(() => import("./services"));
 const OffersBoard = lazy(() => import("./offers"));
 const VerifyEmailPage = lazy(() => import("./auth/VerifyEmailPage"));
+const ResetPasswordPage = lazy(() => import("./auth/ResetPasswordPage"));
 const SubscriptionPlansPage = lazy(() =>
   import("./subscription/SubscriptionPages").then((module) => ({
     default: module.SubscriptionPlansPage,
@@ -135,6 +136,7 @@ const AppRoutes = React.memo(() => (
       <Route path="/login" element={<PublicOnlyRoute element={<Login />} />} />
       <Route path="/register" element={<PublicOnlyRoute element={<MultiStepForm />} />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/assinatura/planos" element={<PrivateRoute element={<SubscriptionPlansPage />} />} />
       <Route path="/assinatura/success" element={<SubscriptionSuccessPage />} />
       <Route path="/assinatura/sucess" element={<SubscriptionSuccessPage />} />

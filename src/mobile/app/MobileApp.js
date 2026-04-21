@@ -42,6 +42,11 @@ function MobileAppContent() {
   const headerHeight = MOBILE_HEADER_HEIGHT + insets.top;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState("");
+  const [forgotPasswordError, setForgotPasswordError] = useState("");
   const [authMode, setAuthMode] = useState("login");
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +59,8 @@ function MobileAppContent() {
   const [activeAddressId, setActiveAddressId] = useState(null);
   const [activeAddressLabel, setActiveAddressLabel] = useState("");
   const [isAddressLoading, setIsAddressLoading] = useState(false);
-  const shouldShowHeader = isBootstrappingSession || authMode !== "login";
+  const shouldShowHeader =
+    isBootstrappingSession || (authMode !== "login" && authMode !== "register");
 
   const resetSessionState = () => {
     setSession(null);
@@ -67,6 +73,11 @@ function MobileAppContent() {
     setSuccessMessage("");
     setEmail("");
     setPassword("");
+    setForgotPasswordOpen(false);
+    setForgotPasswordEmail("");
+    setForgotPasswordLoading(false);
+    setForgotPasswordMessage("");
+    setForgotPasswordError("");
     setErrors({});
     setAuthMode("login");
   };
@@ -212,6 +223,60 @@ function MobileAppContent() {
       setErrors({ general: error.message || "Nao foi possivel entrar agora." });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleForgotPasswordToggle = () => {
+    setForgotPasswordOpen((current) => !current);
+    setForgotPasswordError("");
+    setForgotPasswordMessage("");
+    setForgotPasswordEmail((current) => current || email.trim());
+  };
+
+  const handleForgotPasswordSubmit = async () => {
+    const requestEmail = String(forgotPasswordEmail || email || "").trim();
+    if (!requestEmail) {
+      setForgotPasswordError("Informe seu e-mail para recuperar a senha.");
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(requestEmail)) {
+      setForgotPasswordError("Digite um e-mail valido.");
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    setForgotPasswordError("");
+    setForgotPasswordMessage("");
+
+    try {
+      const response = await fetch(buildApiUrl("/forgot-password"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: requestEmail,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "Nao foi possivel enviar o e-mail de recuperacao agora.",
+        );
+      }
+
+      setForgotPasswordMessage(
+        data?.message ||
+          "Se o e-mail existir em nossa base, enviaremos as instrucoes de recuperacao.",
+      );
+    } catch (error) {
+      setForgotPasswordError(
+        error?.message || "Nao foi possivel enviar o e-mail de recuperacao agora.",
+      );
+    } finally {
+      setForgotPasswordLoading(false);
     }
   };
 
@@ -390,13 +455,25 @@ function MobileAppContent() {
             }}
           />
         ) : authMode === "register" ? (
-          <RegisterFlow
-            onBackToLogin={() => setAuthMode("login")}
-            onRegistrationSuccess={(message) => {
-              setSuccessMessage(message);
-              setAuthMode("login");
-            }}
-          />
+          <View style={styles.authShell}>
+            <View style={styles.authBrandBlock}>
+              <Image
+                source={require("../../../public/limpae-logo.png")}
+                resizeMode="contain"
+                style={styles.authLogo}
+              />
+            </View>
+
+            <View style={styles.registerShell}>
+              <RegisterFlow
+                onBackToLogin={() => setAuthMode("login")}
+                onRegistrationSuccess={(message) => {
+                  setSuccessMessage(message);
+                  setAuthMode("login");
+                }}
+              />
+            </View>
+          </View>
         ) : (
           <View style={styles.authShell}>
             <View style={styles.authBrandBlock}>
@@ -425,55 +502,125 @@ function MobileAppContent() {
                 </View>
               ) : null}
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>E-mail</Text>
-                <TextInput
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  onChangeText={setEmail}
-                  placeholder="Digite seu e-mail"
-                  placeholderTextColor={palette.placeholder}
-                  style={[styles.input, errors.email && styles.inputError]}
-                  value={email}
-                  editable={!isLoading}
-                />
-                {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
+              {!forgotPasswordOpen ? (
+                <>
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>E-mail</Text>
+                    <TextInput
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      keyboardType="email-address"
+                      onChangeText={setEmail}
+                      placeholder="Digite seu e-mail"
+                      placeholderTextColor={palette.placeholder}
+                      style={[styles.input, errors.email && styles.inputError]}
+                      value={email}
+                      editable={!isLoading}
+                    />
+                    {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
+                  </View>
+
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Senha</Text>
+                    <TextInput
+                      autoCapitalize="none"
+                      onChangeText={setPassword}
+                      placeholder="Digite sua senha"
+                      placeholderTextColor={palette.placeholder}
+                      secureTextEntry
+                      style={[styles.input, errors.password && styles.inputError]}
+                      value={password}
+                      editable={!isLoading}
+                    />
+                    {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
+                  </View>
+                </>
+              ) : null}
+
+              <View style={styles.auxRow}>
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  disabled={isLoading || forgotPasswordLoading}
+                  onPress={handleForgotPasswordToggle}
+                >
+                  <Text style={styles.forgotPasswordLink}>
+                    {forgotPasswordOpen ? "Fechar recuperacao" : "Esqueceu a senha?"}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Senha</Text>
-                <TextInput
-                  autoCapitalize="none"
-                  onChangeText={setPassword}
-                  placeholder="Digite sua senha"
-                  placeholderTextColor={palette.placeholder}
-                  secureTextEntry
-                  style={[styles.input, errors.password && styles.inputError]}
-                  value={password}
-                  editable={!isLoading}
-                />
-                {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
-              </View>
+              {forgotPasswordOpen ? (
+                <View style={styles.forgotPasswordPanel}>
+                  <Text style={styles.forgotPasswordTitle}>Recuperar acesso</Text>
+                  <Text style={styles.forgotPasswordCopy}>
+                    Informe seu e-mail e enviaremos um link para criar uma nova senha.
+                  </Text>
 
-              <TouchableOpacity
-                activeOpacity={0.9}
-                disabled={isLoading}
-                onPress={handleLogin}
-                style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.primaryButtonText}>Entrar</Text>
-                )}
-              </TouchableOpacity>
+                  {forgotPasswordError ? (
+                    <View style={styles.errorBanner}>
+                      <Text style={styles.errorBannerText}>{forgotPasswordError}</Text>
+                    </View>
+                  ) : null}
 
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>
-                  Nao tem uma conta? <Text style={styles.footerLink}>Cadastre-se</Text>
-                </Text>
-              </View>
+                  {forgotPasswordMessage ? (
+                    <View style={styles.successBanner}>
+                      <Text style={styles.successBannerText}>{forgotPasswordMessage}</Text>
+                    </View>
+                  ) : null}
+
+                  <TextInput
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    onChangeText={setForgotPasswordEmail}
+                    placeholder="Digite seu e-mail"
+                    placeholderTextColor={palette.placeholder}
+                    style={styles.input}
+                    value={forgotPasswordEmail}
+                    editable={!forgotPasswordLoading}
+                  />
+
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    disabled={forgotPasswordLoading}
+                    onPress={handleForgotPasswordSubmit}
+                    style={[
+                      styles.secondaryActionButton,
+                      forgotPasswordLoading && styles.primaryButtonDisabled,
+                    ]}
+                  >
+                    {forgotPasswordLoading ? (
+                      <ActivityIndicator color={palette.accent} />
+                    ) : (
+                      <Text style={styles.secondaryActionButtonText}>Enviar link</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              {!forgotPasswordOpen ? (
+                <>
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    disabled={isLoading}
+                    onPress={handleLogin}
+                    style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
+                  >
+                    {isLoading ? (
+                      <ActivityIndicator color="#ffffff" />
+                    ) : (
+                      <Text style={styles.primaryButtonText}>Entrar</Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <View style={styles.footer}>
+                    <Text style={styles.footerText}>Nao tem uma conta?</Text>
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => setAuthMode("register")}>
+                      <Text style={styles.footerLink}>Cadastre-se</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : null}
             </View>
           </View>
         )}
@@ -526,6 +673,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 22,
+  },
+  registerShell: {
+    flex: 1,
   },
   authLogo: {
     width: 238,
@@ -602,8 +752,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
+  auxRow: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -2,
+    marginBottom: 12,
+  },
+  forgotPasswordLink: {
+    color: palette.accent,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  forgotPasswordPanel: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#dbeafe",
+    backgroundColor: "#f8fbff",
+    padding: 14,
+    marginBottom: 14,
+    gap: 10,
+  },
+  forgotPasswordTitle: {
+    color: palette.ink,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  forgotPasswordCopy: {
+    color: palette.muted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  secondaryActionButton: {
+    minHeight: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+    backgroundColor: "#eff6ff",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  secondaryActionButtonText: {
+    color: palette.accent,
+    fontSize: 14,
+    fontWeight: "800",
+  },
   primaryButton: {
-    marginTop: 6,
+    marginTop: 10,
     borderRadius: 14,
     paddingVertical: 18,
     alignItems: "center",
