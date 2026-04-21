@@ -522,6 +522,24 @@ export default function ProfileScreen({ session, profileIntent }) {
     }));
   }
 
+  function adjustAddressRoomQuantity(roomId, delta) {
+    setAddressForm((prev) => ({
+      ...prev,
+      rooms: prev.rooms.map((room) => {
+        if (room.id !== roomId) {
+          return room;
+        }
+
+        const currentQuantity = Number(room.quantity || 0);
+        const nextQuantity = Math.max(0, currentQuantity + delta);
+        return {
+          ...room,
+          quantity: String(nextQuantity),
+        };
+      }),
+    }));
+  }
+
   function handleEditToggle() {
     if (editMode) {
       setProfileForm(buildProfileForm(user));
@@ -1612,6 +1630,26 @@ export default function ProfileScreen({ session, profileIntent }) {
                               placeholderTextColor="#9ca3af"
                             />
                             <TouchableOpacity
+                              style={profileStyles.roomAdjustButton}
+                              onPress={() => adjustAddressRoomQuantity(room.id, -1)}
+                            >
+                              <Text style={profileStyles.roomAdjustButtonText}>-</Text>
+                            </TouchableOpacity>
+                            <TextInput
+                              value={String(room.quantity || "")}
+                              onChangeText={(value) => handleAddressRoomChange(room.id, "quantity", value)}
+                              style={[profileStyles.input, profileStyles.roomQtyInput]}
+                              keyboardType="numeric"
+                              placeholder="Qtd"
+                              placeholderTextColor="#9ca3af"
+                            />
+                            <TouchableOpacity
+                              style={profileStyles.roomAdjustButton}
+                              onPress={() => adjustAddressRoomQuantity(room.id, 1)}
+                            >
+                              <Text style={profileStyles.roomAdjustButtonText}>+</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
                               style={profileStyles.deleteRoomButton}
                               onPress={() => handleRemoveAddressRoom(room.id)}
                             >
@@ -1726,6 +1764,12 @@ export default function ProfileScreen({ session, profileIntent }) {
                                     placeholder="Nome do comodo"
                                     placeholderTextColor="#9ca3af"
                                   />
+                                  <TouchableOpacity
+                                    style={profileStyles.roomAdjustButton}
+                                    onPress={() => adjustAddressRoomQuantity(room.id, -1)}
+                                  >
+                                    <Text style={profileStyles.roomAdjustButtonText}>-</Text>
+                                  </TouchableOpacity>
                                   <TextInput
                                     value={String(room.quantity || "")}
                                     onChangeText={(value) => handleAddressRoomChange(room.id, "quantity", value)}
@@ -1734,6 +1778,12 @@ export default function ProfileScreen({ session, profileIntent }) {
                                     placeholder="Qtd"
                                     placeholderTextColor="#9ca3af"
                                   />
+                                  <TouchableOpacity
+                                    style={profileStyles.roomAdjustButton}
+                                    onPress={() => adjustAddressRoomQuantity(room.id, 1)}
+                                  >
+                                    <Text style={profileStyles.roomAdjustButtonText}>+</Text>
+                                  </TouchableOpacity>
                                   <TouchableOpacity
                                     style={profileStyles.deleteRoomButton}
                                     onPress={() => handleRemoveAddressRoom(room.id)}
@@ -2588,10 +2638,29 @@ const profileStyles = StyleSheet.create({
     marginBottom: 10,
   },
   roomNameInput: {
-    flex: 1,
+    width: "50%",
+    flexGrow: 0,
+    flexShrink: 1,
   },
   roomQtyInput: {
-    width: 76,
+    width: 50,
+    textAlign: "center",
+  },
+  roomAdjustButton: {
+    width: 34,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#eef4ff",
+    borderWidth: 1,
+    borderColor: "#dbe7ff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roomAdjustButtonText: {
+    color: palette.accent,
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 20,
   },
   deleteRoomButton: {
     width: 42,
