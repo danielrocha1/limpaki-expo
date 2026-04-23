@@ -23,6 +23,12 @@ import EmptyState from "../components/EmptyState";
 import SectionCard from "../components/SectionCard";
 
 const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
+const NOMINATIM_USER_AGENT = "LimpaeExpo/1.0 (+https://limpae.app; contato: suporte@limpae.app)";
+const NOMINATIM_HEADERS = {
+  Accept: "application/json",
+  "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+  "User-Agent": NOMINATIM_USER_AGENT,
+};
 
 const defaultProfileForm = {
   name: "",
@@ -169,6 +175,15 @@ function formatAddressWithComplement(address = {}) {
   ]
     .filter(Boolean)
     .join(", ");
+}
+
+function formatAddressStreetLine(address = {}) {
+  return [address?.street, address?.number, address?.complement].filter(Boolean).join(", ");
+}
+
+function formatAddressDistrictLine(address = {}) {
+  const district = [address?.neighborhood, address?.city].filter(Boolean).join(" • ");
+  return [district, address?.state].filter(Boolean).join(" - ");
 }
 
 function formatCoordinates(latitude, longitude) {
@@ -747,7 +762,9 @@ export default function ProfileScreen({ session, profileIntent }) {
         countrycodes: "br",
       });
 
-      const geoResponse = await fetch(`${NOMINATIM_BASE}/search?${params.toString()}`);
+      const geoResponse = await fetch(`${NOMINATIM_BASE}/search?${params.toString()}`, {
+        headers: NOMINATIM_HEADERS,
+      });
       const geoData = await geoResponse.json().catch(() => []);
       const match = Array.isArray(geoData) ? geoData[0] : null;
 
@@ -1621,14 +1638,6 @@ export default function ProfileScreen({ session, profileIntent }) {
                               placeholder="Nome do comodo"
                               placeholderTextColor="#9ca3af"
                             />
-                            <TextInput
-                              value={String(room.quantity || "")}
-                              onChangeText={(value) => handleAddressRoomChange(room.id, "quantity", value)}
-                              style={[profileStyles.input, profileStyles.roomQtyInput]}
-                              keyboardType="numeric"
-                              placeholder="Qtd"
-                              placeholderTextColor="#9ca3af"
-                            />
                             <TouchableOpacity
                               style={profileStyles.roomAdjustButton}
                               onPress={() => adjustAddressRoomQuantity(room.id, -1)}
@@ -1706,9 +1715,7 @@ export default function ProfileScreen({ session, profileIntent }) {
                       <View style={profileStyles.addressCardHead}>
                         <View style={profileStyles.addressCardHeadCopy}>
                           <Text style={profileStyles.addressCardKicker}>Endereco cadastrado</Text>
-                          <Text style={profileStyles.addressCardTitle}>
-                            {formatAddressWithComplement(address) || "Endereco sem detalhes"}
-                          </Text>
+                          <Text style={profileStyles.addressCardTitle}>Detalhes do endereco</Text>
                         </View>
 
                         <View style={profileStyles.addressActionGroup}>
@@ -1728,6 +1735,12 @@ export default function ProfileScreen({ session, profileIntent }) {
                         </View>
                       </View>
 
+                      {renderProfileInfoRow("Rua", address.street || "Nao informado")}
+                      {renderProfileInfoRow("Numero", address.number || "Nao informado")}
+                      {renderProfileInfoRow("Complemento", address.complement || "Nao informado")}
+                      {renderProfileInfoRow("Bairro", address.neighborhood || "Nao informado")}
+                      {renderProfileInfoRow("Cidade", address.city || "Nao informado")}
+                      {renderProfileInfoRow("Estado", address.state || "Nao informado")}
                       {renderProfileInfoRow("Tipo", residenceTypeLabels[address.residence_type] || "Nao informado")}
                       {renderProfileInfoRow("CEP", formatCep(address.zipcode || ""))}
                       {renderProfileInfoRow("Referencia", address.reference_point || "Nao informado")}
@@ -2843,3 +2856,6 @@ const profileStyles = StyleSheet.create({
     marginBottom: 16,
   },
 });
+
+
+

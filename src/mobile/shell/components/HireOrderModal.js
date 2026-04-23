@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { apiFetch } from "../../../config/api";
@@ -18,6 +18,58 @@ import {
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 const TIME_WHEEL_ITEM_HEIGHT = 40;
+
+const TimeWheel = memo(function TimeWheel({
+  label,
+  wheelRef,
+  options,
+  selectedValue,
+  onItemPress,
+  onScroll,
+  onScrollEndDrag,
+  onMomentumScrollEnd,
+}) {
+  return (
+    <View style={styles.orderTimeWheelColumn}>
+      <Text style={styles.orderTimeWheelLabel}>{label}</Text>
+      <View style={styles.orderTimeWheelWindow}>
+        <View pointerEvents="none" style={styles.orderTimeWheelFadeTop} />
+        <View pointerEvents="none" style={styles.orderTimeWheelHighlight} />
+        <View pointerEvents="none" style={styles.orderTimeWheelFadeBottom} />
+        <ScrollView
+          ref={wheelRef}
+          showsVerticalScrollIndicator={false}
+          snapToInterval={TIME_WHEEL_ITEM_HEIGHT}
+          snapToAlignment="start"
+          disableIntervalMomentum
+          decelerationRate="fast"
+          scrollEventThrottle={16}
+          contentContainerStyle={styles.orderTimeWheelContent}
+          onScroll={onScroll}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+        >
+          {options.map((option) => (
+            <TouchableOpacity
+              key={option}
+              style={styles.orderTimeWheelItem}
+              onPress={() => onItemPress(option)}
+            >
+              <Text
+                style={[
+                  styles.orderTimeWheelItemText,
+                  selectedValue === option && styles.orderTimeWheelItemTextActive,
+                ]}
+              >
+                {option}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    </View>
+  );
+});
 
 function getDayStart(value) {
   const date = value instanceof Date ? new Date(value) : new Date(value);
@@ -200,12 +252,10 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
     };
   };
 
-  const handleTimeWheelScroll = (event, options, onSelect) => {
+  const handleTimeWheelScroll = (event, options) => {
     const offsetY = event?.nativeEvent?.contentOffset?.y || 0;
     const offsetRef = options === ORDER_HOUR_OPTIONS ? hourWheelOffsetRef : minuteWheelOffsetRef;
     offsetRef.current = offsetY;
-    const { value } = getTimeWheelValueFromOffset(offsetY, options);
-    onSelect(value);
   };
 
   const scheduleTimeWheelSnap = (options, onSelect, ref, delay = 0) => {
@@ -232,7 +282,7 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
     const offsetY = event?.nativeEvent?.contentOffset?.y || 0;
     const offsetRef = options === ORDER_HOUR_OPTIONS ? hourWheelOffsetRef : minuteWheelOffsetRef;
     offsetRef.current = offsetY;
-    const { index, value } = getTimeWheelValueFromOffset(offsetY, options);
+    const { value } = getTimeWheelValueFromOffset(offsetY, options);
     onSelect(value);
     scheduleTimeWheelSnap(options, onSelect, ref, delay);
   };
@@ -244,6 +294,16 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
     scrollWheelToValue(hourWheelRef, ORDER_HOUR_OPTIONS, hour, false);
     scrollWheelToValue(minuteWheelRef, ORDER_MINUTE_OPTIONS, minute, false);
   }, [visible, currentStep, hireType]);
+
+  const handleHourPress = (option) => {
+    setHour(option);
+    scrollWheelToValue(hourWheelRef, ORDER_HOUR_OPTIONS, option);
+  };
+
+  const handleMinutePress = (option) => {
+    setMinute(option);
+    scrollWheelToValue(minuteWheelRef, ORDER_MINUTE_OPTIONS, option);
+  };
 
   useEffect(() => {
     return () => {
@@ -518,101 +578,39 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
                   <Text style={styles.orderSectionCopy}>Selecione inicio e duracao do servico.</Text>
                   <View style={styles.orderTimePickerCard}>
                     <View style={styles.orderTimeWheelRow}>
-                      <View style={styles.orderTimeWheelColumn}>
-                        <Text style={styles.orderTimeWheelLabel}>Hora</Text>
-                        <View style={styles.orderTimeWheelWindow}>
-                          <View pointerEvents="none" style={styles.orderTimeWheelFadeTop} />
-                          <View pointerEvents="none" style={styles.orderTimeWheelHighlight} />
-                          <View pointerEvents="none" style={styles.orderTimeWheelFadeBottom} />
-                          <ScrollView
-                            ref={hourWheelRef}
-                            showsVerticalScrollIndicator={false}
-                            snapToInterval={TIME_WHEEL_ITEM_HEIGHT}
-                            snapToAlignment="start"
-                            disableIntervalMomentum
-                            decelerationRate="fast"
-                            scrollEventThrottle={16}
-                            contentContainerStyle={styles.orderTimeWheelContent}
-                            onScroll={(event) => handleTimeWheelScroll(event, ORDER_HOUR_OPTIONS, setHour)}
-                            onScrollEndDrag={(event) =>
-                              handleTimeWheelScrollEnd(event, ORDER_HOUR_OPTIONS, setHour, hourWheelRef, 60)
-                            }
-                            onMomentumScrollEnd={(event) =>
-                              handleTimeWheelScrollEnd(event, ORDER_HOUR_OPTIONS, setHour, hourWheelRef)
-                            }
-                          >
-                            {ORDER_HOUR_OPTIONS.map((option) => (
-                              <TouchableOpacity
-                                key={option}
-                                style={styles.orderTimeWheelItem}
-                                onPress={() => {
-                                  setHour(option);
-                                  scrollWheelToValue(hourWheelRef, ORDER_HOUR_OPTIONS, option);
-                                }}
-                              >
-                                <Text
-                                  style={[
-                                    styles.orderTimeWheelItemText,
-                                    hour === option && styles.orderTimeWheelItemTextActive,
-                                  ]}
-                                >
-                                  {option}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </ScrollView>
-                        </View>
-                      </View>
+                      <TimeWheel
+                        label="Hora"
+                        wheelRef={hourWheelRef}
+                        options={ORDER_HOUR_OPTIONS}
+                        selectedValue={hour}
+                        onItemPress={handleHourPress}
+                        onScroll={(event) => handleTimeWheelScroll(event, ORDER_HOUR_OPTIONS)}
+                        onScrollEndDrag={(event) =>
+                          handleTimeWheelScrollEnd(event, ORDER_HOUR_OPTIONS, setHour, hourWheelRef, 60)
+                        }
+                        onMomentumScrollEnd={(event) =>
+                          handleTimeWheelScrollEnd(event, ORDER_HOUR_OPTIONS, setHour, hourWheelRef)
+                        }
+                      />
 
                       <View style={styles.orderTimeWheelMiddle}>
                         <Text style={styles.orderTimeWheelMiddleText}>:</Text>
                       </View>
 
-                      <View style={styles.orderTimeWheelColumn}>
-                        <Text style={styles.orderTimeWheelLabel}>Minuto</Text>
-                        <View style={styles.orderTimeWheelWindow}>
-                          <View pointerEvents="none" style={styles.orderTimeWheelFadeTop} />
-                          <View pointerEvents="none" style={styles.orderTimeWheelHighlight} />
-                          <View pointerEvents="none" style={styles.orderTimeWheelFadeBottom} />
-                          <ScrollView
-                            ref={minuteWheelRef}
-                            showsVerticalScrollIndicator={false}
-                            snapToInterval={TIME_WHEEL_ITEM_HEIGHT}
-                            snapToAlignment="start"
-                            disableIntervalMomentum
-                            decelerationRate="fast"
-                            scrollEventThrottle={16}
-                            contentContainerStyle={styles.orderTimeWheelContent}
-                            onScroll={(event) => handleTimeWheelScroll(event, ORDER_MINUTE_OPTIONS, setMinute)}
-                            onScrollEndDrag={(event) =>
-                              handleTimeWheelScrollEnd(event, ORDER_MINUTE_OPTIONS, setMinute, minuteWheelRef, 60)
-                            }
-                            onMomentumScrollEnd={(event) =>
-                              handleTimeWheelScrollEnd(event, ORDER_MINUTE_OPTIONS, setMinute, minuteWheelRef)
-                            }
-                          >
-                            {ORDER_MINUTE_OPTIONS.map((option) => (
-                              <TouchableOpacity
-                                key={option}
-                                style={styles.orderTimeWheelItem}
-                                onPress={() => {
-                                  setMinute(option);
-                                  scrollWheelToValue(minuteWheelRef, ORDER_MINUTE_OPTIONS, option);
-                                }}
-                              >
-                                <Text
-                                  style={[
-                                    styles.orderTimeWheelItemText,
-                                    minute === option && styles.orderTimeWheelItemTextActive,
-                                  ]}
-                                >
-                                  {option}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </ScrollView>
-                        </View>
-                      </View>
+                      <TimeWheel
+                        label="Minuto"
+                        wheelRef={minuteWheelRef}
+                        options={ORDER_MINUTE_OPTIONS}
+                        selectedValue={minute}
+                        onItemPress={handleMinutePress}
+                        onScroll={(event) => handleTimeWheelScroll(event, ORDER_MINUTE_OPTIONS)}
+                        onScrollEndDrag={(event) =>
+                          handleTimeWheelScrollEnd(event, ORDER_MINUTE_OPTIONS, setMinute, minuteWheelRef, 60)
+                        }
+                        onMomentumScrollEnd={(event) =>
+                          handleTimeWheelScrollEnd(event, ORDER_MINUTE_OPTIONS, setMinute, minuteWheelRef)
+                        }
+                      />
                     </View>
                   </View>
                   {!isHourOptionValid && hour ? (
@@ -760,3 +758,6 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
     </Modal>
   );
 }
+
+
+

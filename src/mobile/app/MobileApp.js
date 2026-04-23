@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AppHeader, { MOBILE_HEADER_HEIGHT } from "../layout/AppHeader";
@@ -439,9 +440,23 @@ function MobileAppContent() {
         ])}
       >
         {isBootstrappingSession ? (
-          <View style={styles.bootSplash}>
+          <LinearGradient
+            colors={["#3d73ff", "#2f5fe0", "#2146b7", "#132a78"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.bootSplash}
+          >
+            <View style={styles.bootGlowPrimary} />
+            <View style={styles.bootGlowSecondary} />
+            <View style={styles.bootBrandLockup}>
+              <Image
+                source={require("../../../public/limpae-logo.png")}
+                resizeMode="contain"
+                style={styles.bootLogo}
+              />
+            </View>
             <ActivityIndicator color="#ffffff" size="large" />
-          </View>
+          </LinearGradient>
         ) : authMode === "app" && session ? (
           <AppShell
             forcedRoute={appRoute}
@@ -652,6 +667,34 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  bootGlowPrimary: {
+    position: "absolute",
+    top: -90,
+    left: -70,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  bootGlowSecondary: {
+    position: "absolute",
+    right: -120,
+    bottom: -110,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(6, 16, 61, 0.26)",
+  },
+  bootBrandLockup: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 22,
+  },
+  bootLogo: {
+    width: 250,
+    height: 104,
   },
   card: {
     borderRadius: 16,
@@ -672,7 +715,8 @@ const styles = StyleSheet.create({
   authBrandBlock: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 22,
+    marginTop: 18,
+    marginBottom: 10,
   },
   registerShell: {
     flex: 1,
@@ -834,3 +878,4 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+

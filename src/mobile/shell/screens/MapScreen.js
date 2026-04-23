@@ -608,3 +608,6 @@ export default function MapScreen({ session }) {
     </ScrollView>
   );
 }
+
+
+

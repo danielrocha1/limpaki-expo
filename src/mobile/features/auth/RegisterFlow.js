@@ -18,6 +18,12 @@ import MapConfirmModal from "../map/MapConfirmModal";
 const STRIPE_PUBLIC_KEY =
   process.env.EXPO_PUBLIC_STRIPE_PUBLIC_KEY || process.env.REACT_APP_STRIPE_PUBLIC_KEY || "";
 const isStripeConfigured = !!STRIPE_PUBLIC_KEY && STRIPE_PUBLIC_KEY !== "SUA_CHAVE_PUBLICA_AQUI";
+const NOMINATIM_USER_AGENT = "LimpaeExpo/1.0 (+https://limpae.app; contato: suporte@limpae.app)";
+const NOMINATIM_HEADERS = {
+  Accept: "application/json",
+  "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+  "User-Agent": NOMINATIM_USER_AGENT,
+};
 
 const palette = {
   surface: "#ffffff",
@@ -153,6 +159,25 @@ function normalizePhone(value = "") {
 
 function normalizeCpf(value = "") {
   return value.replace(/\D/g, "");
+}
+
+async function parseJsonResponseSafely(response) {
+  const rawText = await response.text();
+
+  if (!rawText) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawText);
+  } catch (_error) {
+    const preview = rawText.slice(0, 120).replace(/\s+/g, " ").trim();
+    throw new Error(preview || "Resposta invalida");
+  }
+}
+
+function isNominatimAccessDenied(error) {
+  return /access denied|nominatim/i.test(String(error?.message || error || ""));
 }
 
 function Field({ label, error, children, hint }) {
@@ -413,7 +438,7 @@ function RoleSelectionSplit({ onSelectRole, onBackToLogin }) {
             <Text style={styles.roleEmoji}>{"\u{1F464}"}</Text>
           </View>
           <Text style={styles.roleCardTitle}>Sou Cliente</Text>
-          <Text style={styles.roleCardCopy}>Procuro contratar servicos de limpeza profissional.</Text>
+          <Text style={styles.roleCardCopy}>Quero contratar meus servicos de limpeza profissional.</Text>
           <View style={[styles.roleCardButton, styles.roleCardButtonClient]}>
             <Text style={styles.roleCardButtonText}>REGISTRAR COMO CLIENTE</Text>
           </View>
@@ -427,7 +452,7 @@ function RoleSelectionSplit({ onSelectRole, onBackToLogin }) {
             <Text style={styles.roleEmoji}>{"\u{1F9F9}"}</Text>
           </View>
           <Text style={styles.roleCardTitle}>Sou Diarista</Text>
-          <Text style={styles.roleCardCopy}>Quero oferecer meus servicos de limpeza.</Text>
+          <Text style={styles.roleCardCopy}>Quero oferecer meus servicos de limpeza profissional.</Text>
           <View style={[styles.roleCardButton, styles.roleCardButtonDiarist]}>
             <Text style={styles.roleCardButtonText}>REGISTRAR COMO DIARISTA</Text>
           </View>
@@ -457,6 +482,7 @@ function RegisterClientForm({ onBack, onComplete }) {
     /\S+@\S+\.\S+/.test(formData.email) &&
     normalizePhone(formData.phone).length >= 10 &&
     normalizeCpf(formData.cpf).length === 11;
+  const locationConfirmationOptional = cepMessage?.code === "geocode_blocked";
   const addressComplete =
     formData.zip.length === 8 &&
     Boolean(formData.street.trim()) &&
@@ -467,8 +493,7 @@ function RegisterClientForm({ onBack, onComplete }) {
     Boolean(formData.state.trim()) &&
     formData.rooms.length > 0 &&
     formData.rooms.every((room) => room.name.trim() && Number(room.quantity) > 0) &&
-    formData.latitude !== 0 &&
-    formData.longitude !== 0;
+    (locationConfirmationOptional || (formData.latitude !== 0 && formData.longitude !== 0));
   const preferencesComplete = Boolean(formData.hasPets && formData.desiredFrequency);
   const securityComplete =
     formData.password.length >= 6 &&
@@ -499,7 +524,7 @@ function RegisterClientForm({ onBack, onComplete }) {
     ) {
       nextErrors.rooms = "Adicione pelo menos um cômodo com nome e quantidade válidos";
     }
-    if (formData.latitude === 0 || formData.longitude === 0) {
+    if (!locationConfirmationOptional && (formData.latitude === 0 || formData.longitude === 0)) {
       nextErrors.location = "Localize seu endereço no mapa antes de prosseguir";
     }
     if (!formData.password.trim()) nextErrors.password = "Senha é obrigatória";
@@ -516,7 +541,15 @@ function RegisterClientForm({ onBack, onComplete }) {
 
     try {
       const response = await fetch(`https://viacep.com.br/ws/${zip}/json/`);
-      const data = await response.json();
+      const data = await parseJsonResponseSafely(response);
+
+      if (!response.ok || !data) {
+        setCepMessage({
+          type: "error",
+          text: "Nao foi possivel consultar o CEP agora. Preencha o endereco manualmente e confirme no mapa.",
+        });
+        return;
+      }
 
       if (data?.erro) {
         setCepMessage({ type: "error", text: "CEP não encontrado. Confira os dígitos." });
@@ -539,24 +572,42 @@ function RegisterClientForm({ onBack, onComplete }) {
         limit: "1",
         countrycodes: "br",
       });
-      const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
-      const nominatimData = await nominatimRes.json();
+      try {
+        const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+          headers: NOMINATIM_HEADERS,
+        });
+        const nominatimData = await parseJsonResponseSafely(nominatimRes);
 
-      if (Array.isArray(nominatimData) && nominatimData.length > 0) {
-        const match = nominatimData[0];
-        const lat = Number(match.lat);
-        const lon = Number(match.lon);
+        if (Array.isArray(nominatimData) && nominatimData.length > 0) {
+          const match = nominatimData[0];
+          const lat = Number(match.lat);
+          const lon = Number(match.lon);
 
-        setMapCoords({ lat, lon });
-        setFormData((prev) => ({ ...prev, latitude: lat, longitude: lon }));
-        setCepMessage({ type: "success", text: "Localização encontrada! Confirme no mapa." });
-        setShowMap(true);
-      } else {
-        setCepMessage({ type: "warning", text: "Não consegui localizar no mapa. Tente confirmar manualmente." });
+          setMapCoords({ lat, lon });
+          setFormData((prev) => ({ ...prev, latitude: lat, longitude: lon }));
+          setCepMessage({ type: "success", text: "Localização encontrada! Confirme no mapa." });
+          setShowMap(true);
+        } else {
+          setCepMessage({ type: "warning", text: "Não consegui localizar no mapa. Tente confirmar manualmente." });
+        }
+      } catch (error) {
+        if (isNominatimAccessDenied(error)) {
+          setCepMessage({
+            type: "warning",
+            code: "geocode_blocked",
+            text: "Endereco encontrado, mas a localizacao automatica foi bloqueada neste ambiente. Voce pode concluir o cadastro e ajustar a localizacao depois no perfil.",
+          });
+          return;
+        }
+
+        throw error;
       }
     } catch (error) {
       console.error("Erro ao buscar CEP:", error);
-      setCepMessage({ type: "error", text: "Erro ao buscar CEP. Tente novamente." });
+      setCepMessage({
+        type: "error",
+        text: "Erro ao buscar CEP. Se continuar, preencha o endereco manualmente e confirme no mapa.",
+      });
     } finally {
       setCepLoading(false);
     }
@@ -809,6 +860,7 @@ function RegisterDiaristForm({ onBack, onComplete }) {
     /\S+@\S+\.\S+/.test(formData.email) &&
     normalizePhone(formData.phone).length >= 10 &&
     normalizeCpf(formData.cpf).length === 11;
+  const locationConfirmationOptional = cepMessage?.code === "geocode_blocked";
   const addressComplete =
     formData.zip.length === 8 &&
     Boolean(formData.street.trim()) &&
@@ -816,8 +868,7 @@ function RegisterDiaristForm({ onBack, onComplete }) {
     Boolean(formData.neighborhood.trim()) &&
     Boolean(formData.city.trim()) &&
     Boolean(formData.state.trim()) &&
-    formData.latitude !== 0 &&
-    formData.longitude !== 0;
+    (locationConfirmationOptional || (formData.latitude !== 0 && formData.longitude !== 0));
   const professionalComplete =
     formData.bio.trim().length >= 10 &&
     String(formData.experienceYears).trim() !== "" &&
@@ -848,7 +899,7 @@ function RegisterDiaristForm({ onBack, onComplete }) {
     if (!formData.number.trim()) nextErrors.number = "Número é obrigatório";
     if (!formData.city.trim()) nextErrors.city = "Cidade é obrigatória";
     if (!formData.state.trim()) nextErrors.state = "Estado é obrigatório";
-    if (formData.latitude === 0 || formData.longitude === 0) nextErrors.location = "Localize seu endereço no mapa antes de prosseguir";
+    if (!locationConfirmationOptional && (formData.latitude === 0 || formData.longitude === 0)) nextErrors.location = "Localize seu endereço no mapa antes de prosseguir";
     if (!formData.bio.trim()) nextErrors.bio = "Bio/resumo profissional é obrigatório";
     else if (formData.bio.trim().length < 10) nextErrors.bio = "Bio deve ter pelo menos 10 caracteres";
     if (!formData.experienceYears) nextErrors.experienceYears = "Anos de experiência é obrigatório";
@@ -871,7 +922,16 @@ function RegisterDiaristForm({ onBack, onComplete }) {
     setCepMessage(null);
     try {
       const response = await fetch(`https://viacep.com.br/ws/${zip}/json/`);
-      const data = await response.json();
+      const data = await parseJsonResponseSafely(response);
+
+      if (!response.ok || !data) {
+        setCepMessage({
+          type: "error",
+          text: "Nao foi possivel consultar o CEP agora. Preencha o endereco manualmente e confirme no mapa.",
+        });
+        return;
+      }
+
       if (data?.erro) {
         setCepMessage({ type: "error", text: "CEP não encontrado. Confira os dígitos." });
         return;
@@ -890,22 +950,40 @@ function RegisterDiaristForm({ onBack, onComplete }) {
         limit: "1",
         countrycodes: "br",
       });
-      const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
-      const nominatimData = await nominatimRes.json();
-      if (Array.isArray(nominatimData) && nominatimData.length > 0) {
-        const match = nominatimData[0];
-        const lat = Number(match.lat);
-        const lon = Number(match.lon);
-        setMapCoords({ lat, lon });
-        setFormData((prev) => ({ ...prev, latitude: lat, longitude: lon }));
-        setCepMessage({ type: "success", text: "Localização encontrada! Confirme no mapa." });
-        setShowMap(true);
-      } else {
-        setCepMessage({ type: "warning", text: "Não consegui localizar no mapa. Tente confirmar manualmente." });
+      try {
+        const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+          headers: NOMINATIM_HEADERS,
+        });
+        const nominatimData = await parseJsonResponseSafely(nominatimRes);
+        if (Array.isArray(nominatimData) && nominatimData.length > 0) {
+          const match = nominatimData[0];
+          const lat = Number(match.lat);
+          const lon = Number(match.lon);
+          setMapCoords({ lat, lon });
+          setFormData((prev) => ({ ...prev, latitude: lat, longitude: lon }));
+          setCepMessage({ type: "success", text: "Localização encontrada! Confirme no mapa." });
+          setShowMap(true);
+        } else {
+          setCepMessage({ type: "warning", text: "Não consegui localizar no mapa. Tente confirmar manualmente." });
+        }
+      } catch (error) {
+        if (isNominatimAccessDenied(error)) {
+          setCepMessage({
+            type: "warning",
+            code: "geocode_blocked",
+            text: "Endereco encontrado, mas a localizacao automatica foi bloqueada neste ambiente. Voce pode concluir o cadastro e ajustar a localizacao depois no perfil.",
+          });
+          return;
+        }
+
+        throw error;
       }
     } catch (error) {
       console.error("Erro ao buscar CEP:", error);
-      setCepMessage({ type: "error", text: "Erro ao buscar CEP. Tente novamente." });
+      setCepMessage({
+        type: "error",
+        text: "Erro ao buscar CEP. Se continuar, preencha o endereco manualmente e confirme no mapa.",
+      });
     } finally {
       setCepLoading(false);
     }
@@ -1268,22 +1346,22 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   roleRow: {
-    flexDirection: "row",
+    flexDirection: "column",
     gap: 12,
     alignItems: "stretch",
     marginBottom: 4,
   },
   roleCard: {
-    flex: 1,
     borderRadius: 22,
     backgroundColor: palette.surface,
     borderWidth: 2,
     borderColor: "#dbe7ff",
-    paddingHorizontal: 16,
-    paddingVertical: 22,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: 276,
+    width: "100%",
+    minHeight: 188,
     shadowColor: "#0f172a",
     shadowOpacity: 0.12,
     shadowRadius: 16,
@@ -1311,25 +1389,26 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   roleEmoji: {
-    fontSize: 26,
+    fontSize: 31,
   },
   roleCardTitle: {
     color: palette.ink,
-    fontSize: 15,
+    fontSize: 20,
     fontWeight: "900",
-    marginBottom: 10,
+    marginBottom: 8,
     textAlign: "center",
   },
   roleCardCopy: {
     color: palette.muted,
-    fontSize: 11,
+    fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
-    marginBottom: 18,
+    marginBottom: 16,
+    paddingHorizontal: 8,
   },
   roleCardButton: {
     width: "100%",
-    minHeight: 56,
+    minHeight: 48,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
@@ -1349,7 +1428,7 @@ const styles = StyleSheet.create({
   },
   roleCardButtonText: {
     color: "#ffffff",
-    fontSize: 10,
+    fontSize: 15,
     fontWeight: "900",
     textAlign: "center",
     letterSpacing: 0.3,
@@ -1740,3 +1819,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 });
+
+
+

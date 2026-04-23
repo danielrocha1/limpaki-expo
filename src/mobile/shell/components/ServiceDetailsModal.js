@@ -117,6 +117,20 @@ const getFullAddress = (service) => {
 
 const formatRoomCountLabel = (quantity) => `${quantity} ${quantity === 1 ? "ambiente" : "ambientes"}`;
 
+const isSameLocalDay = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
+};
+
 const formatReviewBadge = (rating, emptyText) => {
   const numeric = Number(rating || 0);
   if (!numeric) {
@@ -143,7 +157,8 @@ export default function ServiceDetailsModal({
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const safeService = service || {};
-  const normalizedStatus = normalizeServiceStatus(safeService.status);
+  const serviceStatus = safeService?.status || safeService?.Status || "";
+  const normalizedStatus = normalizeServiceStatus(serviceStatus);
   const isClient = role === "cliente";
   const isDiarist = role === "diarista";
   const isAccepted =
@@ -152,7 +167,8 @@ export default function ServiceDetailsModal({
   const isInJourney =
     normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.IN_JOURNEY) ||
     normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.IN_SERVICE);
-  const displayStatus = getDisplayStatusLabel(safeService.status);
+  const isCompleted = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.COMPLETED);
+  const displayStatus = getDisplayStatusLabel(serviceStatus);
   const statusPresentation = getStatusPresentation(displayStatus);
   const counterpart = isClient ? safeService.diarist : safeService.client;
   const counterpartName =
@@ -164,6 +180,14 @@ export default function ServiceDetailsModal({
   const counterpartPhoto =
     counterpart?.photo || counterpart?.Photo || counterpart?.avatar || counterpart?.Avatar || "";
   const counterpartInitial = String(counterpartName || "?").trim().charAt(0).toUpperCase() || "?";
+  const serviceId = safeService?.id || safeService?.ID || "-";
+  const clientPin =
+    safeService?.start_pin ||
+    safeService?.startPin ||
+    safeService?.StartPin ||
+    safeService?.pin ||
+    safeService?.Pin ||
+    "";
   const locationText = isAccepted ? getFullAddress(safeService) : getNeighborhood(safeService);
   const serviceDescription = safeService.service_type || "Detalhes do servico";
   const referencePoint =
@@ -213,6 +237,14 @@ export default function ServiceDetailsModal({
     reviewData?.diarist_rating || reviewData?.DiaristRating,
     "Ainda nao avaliada",
   );
+  const isScheduledForToday = isSameLocalDay(safeService?.scheduled_at || safeService?.ScheduledAt);
+  const isPending = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.PENDING);
+  const canClientCancel =
+    isClient &&
+    !isScheduledForToday &&
+    !isInJourney &&
+    !isCompleted &&
+    (isPending || isAccepted);
 
   const submitPin = async () => {
     const normalizedPin = String(pin || "").replace(/\D/g, "");
@@ -340,17 +372,19 @@ export default function ServiceDetailsModal({
                 </View>
 
                 <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      color: "#111827",
+                      fontSize: 10,
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      marginBottom: 5,
+                    }}
+                  >
+                    Servico #{serviceId}
+                  </Text>
                   <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-                    <Text style={{ flex: 1, color: "#111827", fontSize: 18, fontWeight: "900" }}>
-                      {counterpartName}
-                    </Text>
-                    <Text style={{ color: "#111827", fontSize: 15, fontWeight: "900" }}>
-                      {formatCurrency(safeService.total_price || 0)}
-                    </Text>
-                  </View>
-
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 14, marginBottom: 14 }}>
-                    <View>
+                    <View style={{ flex: 1 }}>
                       <Text
                         style={{
                           color: "#64748b",
@@ -358,29 +392,16 @@ export default function ServiceDetailsModal({
                           fontWeight: "900",
                           textTransform: "uppercase",
                           letterSpacing: 0.8,
-                          marginBottom: 6,
+                          marginBottom: 5,
                         }}
                       >
-                        Status
+                        {isClient ? "Diarista" : "Cliente"}
                       </Text>
-                      <View
-                        style={{
-                          alignSelf: "flex-start",
-                          borderRadius: 8,
-                          paddingHorizontal: 8,
-                          paddingVertical: 4,
-                          backgroundColor: statusPresentation.bg,
-                          borderWidth: 1,
-                          borderColor: statusPresentation.border,
-                        }}
-                      >
-                        <Text style={{ color: statusPresentation.text, fontSize: 12, fontWeight: "900" }}>
-                          {displayStatus}
-                        </Text>
-                      </View>
+                      <Text style={{ color: "#111827", fontSize: 18, fontWeight: "900" }}>
+                        {counterpartName}
+                      </Text>
                     </View>
-
-                    <View>
+                    <View style={{ alignItems: "flex-end" }}>
                       <Text
                         style={{
                           color: "#64748b",
@@ -388,14 +409,64 @@ export default function ServiceDetailsModal({
                           fontWeight: "900",
                           textTransform: "uppercase",
                           letterSpacing: 0.8,
-                          marginBottom: 6,
+                          marginBottom: 5,
                         }}
                       >
-                        Duracao estimada
+                        Valor
                       </Text>
                       <Text style={{ color: "#111827", fontSize: 15, fontWeight: "900" }}>
+                        {formatCurrency(safeService.total_price || 0)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ gap: 8, marginTop: 14, marginBottom: 14 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                      <Text
+                        style={{
+                          color: "#64748b",
+                          fontSize: 11,
+                          fontWeight: "900",
+                          textTransform: "uppercase",
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        Status do servico
+                      </Text>
+                      <Text style={{ color: statusPresentation.text, fontSize: 12, fontWeight: "900" }}>
+                        {displayStatus}
+                      </Text>
+                    </View>
+
+                    <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                      <Text
+                        style={{
+                          color: "#64748b",
+                          fontSize: 11,
+                          fontWeight: "900",
+                          textTransform: "uppercase",
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        Horas a trabalhar
+                      </Text>
+                      <Text style={{ color: "#2563eb", fontSize: 15, fontWeight: "900" }}>
                         {safeService.duration_hours || 0}h
                       </Text>
+                      {isAccepted && clientPin ? (
+                        <View
+                          style={{
+                            borderRadius: 999,
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            backgroundColor: "#111827",
+                          }}
+                        >
+                          <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "900" }}>
+                            PIN {String(clientPin)}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
 
@@ -501,7 +572,7 @@ export default function ServiceDetailsModal({
                     Ponto de referencia: {referencePoint}
                   </Text>
                 ) : null}
-                {googleMapsUrl ? (
+                {googleMapsUrl && !isPending ? (
                   <TouchableOpacity
                     onPress={() => Linking.openURL(googleMapsUrl)}
                     style={{
@@ -789,7 +860,7 @@ export default function ServiceDetailsModal({
               </TouchableOpacity>
             ) : null}
 
-            {isDiarist && normalizeServiceStatus(safeService.status) === normalizeServiceStatus(SERVICE_STATUS.PENDING) ? (
+            {isDiarist && isPending ? (
               <View style={{ gap: 10, marginBottom: 14 }}>
                 <TouchableOpacity
                   onPress={() => onAccept?.(safeService)}
@@ -807,26 +878,13 @@ export default function ServiceDetailsModal({
                     {busyAction === "accept" ? "Aceitando..." : "Aceitar servico"}
                   </Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => onCancel?.(safeService)}
-                  disabled={Boolean(busyAction)}
-                  style={{
-                    minHeight: 46,
-                    borderRadius: 14,
-                    backgroundColor: "#fee2e2",
-                    borderWidth: 1,
-                    borderColor: "#fecaca",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: busyAction ? 0.7 : 1,
-                  }}
-                >
-                  <Text style={{ color: "#b91c1c", fontSize: 14, fontWeight: "800" }}>
-                    {busyAction === "cancel" ? "Salvando..." : "Recusar servico"}
-                  </Text>
-                </TouchableOpacity>
               </View>
+            ) : null}
+
+            {isClient && isScheduledForToday && (isPending || isAccepted) ? (
+              <Text style={{ color: "#64748b", fontSize: 13, lineHeight: 19, marginBottom: 14 }}>
+                Cancelamento indisponivel no dia agendado do servico.
+              </Text>
             ) : null}
 
             {isDiarist && isAccepted ? (
@@ -903,11 +961,55 @@ export default function ServiceDetailsModal({
                 </TouchableOpacity>
               ) : null}
 
+              {canClientCancel ? (
+                <TouchableOpacity
+                  onPress={() => onCancel?.(safeService)}
+                  disabled={Boolean(busyAction)}
+                  style={{
+                    flex: 1,
+                    minHeight: 46,
+                    borderRadius: 14,
+                    backgroundColor: "#fee2e2",
+                    borderWidth: 1,
+                    borderColor: "#fecaca",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: busyAction ? 0.7 : 1,
+                  }}
+                >
+                  <Text style={{ color: "#b91c1c", fontSize: 14, fontWeight: "800" }}>
+                    {busyAction === "cancel" ? "Cancelando..." : "Cancelar servico"}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
+              {isDiarist && isPending ? (
+                <TouchableOpacity
+                  onPress={() => onCancel?.(safeService)}
+                  disabled={Boolean(busyAction)}
+                  style={{
+                    flex: 1,
+                    minHeight: 46,
+                    borderRadius: 14,
+                    backgroundColor: "#fee2e2",
+                    borderWidth: 1,
+                    borderColor: "#fecaca",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: busyAction ? 0.7 : 1,
+                  }}
+                >
+                  <Text style={{ color: "#b91c1c", fontSize: 14, fontWeight: "800" }}>
+                    {busyAction === "cancel" ? "Salvando..." : "Recusar servico"}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
               <TouchableOpacity
                 onPress={onClose}
                 style={{
-                  flex: isDiarist && (isAccepted || isInJourney) ? 1 : undefined,
-                  minWidth: isDiarist && (isAccepted || isInJourney) ? undefined : "100%",
+                  flex: (isDiarist && (isAccepted || isInJourney)) || canClientCancel ? 1 : undefined,
+                  minWidth: (isDiarist && (isAccepted || isInJourney)) || canClientCancel ? undefined : "100%",
                   minHeight: 46,
                   borderRadius: 14,
                   backgroundColor: "#eff6ff",
@@ -929,3 +1031,6 @@ export default function ServiceDetailsModal({
     </Modal>
   );
 }
+
+
+

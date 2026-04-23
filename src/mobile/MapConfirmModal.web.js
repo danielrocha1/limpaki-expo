@@ -1,2 +1,1 @@
-export { default } from "./features/map/MapConfirmModal.web";
-
+export { default } from "./features/map/MapConfirmModal.web.js";

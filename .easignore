@@ -1,0 +1,29 @@
+# Dependencies and local state
+node_modules/
+.expo/
+.git/
+
+# Local preview/export artifacts
+dist-check*/
+dist-expo-web/
+build/
+dist/
+
+# Non-app workspace folders
+mockups/
+go/
+
+# Documentation and local reports
+*.md
+*.html
+build_log.txt
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

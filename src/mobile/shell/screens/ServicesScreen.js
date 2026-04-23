@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Image, Modal, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { apiFetch } from "../../../config/api";
 import { styles } from "../AppShell.styles";
@@ -508,6 +508,11 @@ function ServiceFileTab({ label, active, disabled, loading, icon, onPress }) {
 export default function ServicesScreen({ session }) {
   const { openChat } = useMobileChatCenter();
   const viewerRole = session?.role === "cliente" ? "cliente" : "diarista";
+  const [cancelReasonModal, setCancelReasonModal] = useState({
+    open: false,
+    service: null,
+  });
+  const [cancelReasonText, setCancelReasonText] = useState("");
   const [tab, setTab] = useState("active");
   const [pageByTab, setPageByTab] = useState({
     active: 1,
@@ -765,13 +770,46 @@ export default function ServicesScreen({ session }) {
     await executeServiceAction(service, SERVICE_ACTIONS.ACCEPT);
   };
 
+  const openCancelReasonModal = (service) => {
+    setCancelReasonText("");
+    setCancelReasonModal({
+      open: true,
+      service,
+    });
+  };
+
+  const closeCancelReasonModal = () => {
+    setCancelReasonText("");
+    setCancelReasonModal({
+      open: false,
+      service: null,
+    });
+  };
+
   const handleCancel = async (service) => {
-    const success = await executeServiceAction(service, SERVICE_ACTIONS.CANCEL, {
-      reason: "Cancelado pela diarista no aplicativo mobile.",
+    openCancelReasonModal(service);
+  };
+
+  const submitCancelReason = async () => {
+    if (!cancelReasonText.trim()) {
+      Alert.alert("Motivo obrigatorio", "Informe o motivo do cancelamento para continuar.");
+      return;
+    }
+
+    const targetService = cancelReasonModal.service;
+    if (!targetService) {
+      return;
+    }
+
+    const success = await executeServiceAction(targetService, SERVICE_ACTIONS.CANCEL, {
+      reason: cancelReasonText.trim(),
     });
 
-    if (success && modalService && (modalService?.id || modalService?.ID) === (service?.id || service?.ID)) {
+    if (success && modalService && (modalService?.id || modalService?.ID) === (targetService?.id || targetService?.ID)) {
       setSelectedService(null);
+    }
+    if (success) {
+      closeCancelReasonModal();
     }
   };
 
@@ -1295,6 +1333,36 @@ export default function ServicesScreen({ session }) {
         chatLabel={session?.role === "cliente" ? "Falar com a diarista" : "Falar com cliente"}
       />
 
+      <Modal
+        visible={cancelReasonModal.open}
+        transparent
+        animationType="fade"
+        onRequestClose={closeCancelReasonModal}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Cancelar servico</Text>
+            <TextInput
+              style={[styles.modalInput, styles.modalTextarea]}
+              placeholder="Informe o motivo do cancelamento"
+              multiline
+              value={cancelReasonText}
+              onChangeText={setCancelReasonText}
+            />
+            <View style={styles.modalActionRow}>
+              <TouchableOpacity style={styles.modalGhostButton} onPress={closeCancelReasonModal}>
+                <Text style={styles.modalGhostButtonText}>Fechar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.dangerInlineButton} onPress={submitCancelReason}>
+                <Text style={styles.dangerInlineButtonText}>
+                  {busyState.action === SERVICE_ACTIONS.CANCEL ? "Salvando..." : "Cancelar servico"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <ClientProfileModal
         visible={clientProfileModal.visible}
         loading={clientProfileModal.loading}
@@ -1589,3 +1657,6 @@ export default function ServicesScreen({ session }) {
     </ScrollView>
   );
 }
+
+
+

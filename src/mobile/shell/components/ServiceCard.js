@@ -93,6 +93,20 @@ const buildStars = (rating) => {
   return `${"\u2605".repeat(rounded)}${"\u2606".repeat(5 - rounded)}`;
 };
 
+const isSameLocalDay = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
+};
+
 const getServiceBusinessState = (status) => {
   const normalizedStatus = normalizeServiceStatus(status);
   const isPending = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.PENDING);
@@ -129,10 +143,11 @@ export default function ServiceCard({
   chatLabel = "Abrir chat",
 }) {
   const safeService = service || {};
-  const { isPending, isAccepted, isInJourney, canRevealPreciseLocation } =
-    getServiceBusinessState(safeService.status);
+  const serviceStatus = safeService?.status || safeService?.Status || "";
+  const { isPending, isAccepted, isInJourney, isCompleted, canRevealPreciseLocation } =
+    getServiceBusinessState(serviceStatus);
   const isHistoryCard = activeTab === "history";
-  const displayStatus = getDisplayStatusLabel(safeService.status);
+  const displayStatus = getDisplayStatusLabel(serviceStatus);
   const statusPresentation = getStatusPresentation(displayStatus);
   const serviceId = safeService?.id || safeService?.ID || "-";
   const counterpart = role === "diarista" ? safeService.client : safeService.diarist;
@@ -145,6 +160,13 @@ export default function ServiceCard({
   const counterpartPhoto =
     counterpart?.photo || counterpart?.Photo || counterpart?.avatar || counterpart?.Avatar || "";
   const counterpartInitial = String(counterpartName || "?").trim().charAt(0).toUpperCase() || "?";
+  const clientPin =
+    safeService?.start_pin ||
+    safeService?.startPin ||
+    safeService?.StartPin ||
+    safeService?.pin ||
+    safeService?.Pin ||
+    "";
   const neighborhood =
     safeService?.address?.neighborhood || safeService?.address?.Neighborhood || "Bairro nao informado";
   const street = safeService?.address?.street || safeService?.address?.Street || "";
@@ -164,13 +186,27 @@ export default function ServiceCard({
       : Number(reviewData.diarist_rating || reviewData.DiaristRating || 0);
   const nextStep = isHistoryCard
     ? ""
-    : isPending
-      ? "Aceite o servico para confirmar o atendimento."
-      : isAccepted
-        ? "Use o PIN da cliente para iniciar a jornada."
-        : isInJourney
-          ? "Finalize o servico quando a limpeza terminar."
-          : "";
+    : role === "cliente"
+      ? isPending
+        ? "Aguarde a diarista aceitar o servico."
+        : isAccepted
+          ? "Informe o pin para a diarista somente quando ela chegar na residencia."
+          : ""
+      : isPending
+        ? "Aceite o servico para confirmar o atendimento."
+        : isAccepted
+          ? "Use o PIN da cliente para iniciar a jornada."
+          : isInJourney
+            ? "Finalize o servico quando a limpeza terminar."
+            : "";
+  const isScheduledForToday = isSameLocalDay(safeService?.scheduled_at || safeService?.ScheduledAt);
+  const canClientCancel =
+    role === "cliente" &&
+    !isHistoryCard &&
+    !isScheduledForToday &&
+    !isInJourney &&
+    !isCompleted &&
+    (isPending || isAccepted);
 
   return (
     <TouchableOpacity
@@ -180,7 +216,7 @@ export default function ServiceCard({
       style={{
         borderRadius: 22,
         backgroundColor: "#ffffff",
-        padding: 16,
+        padding: 18,
         marginBottom: 14,
         shadowColor: "#0f172a",
         shadowOpacity: 0.12,
@@ -192,7 +228,7 @@ export default function ServiceCard({
         opacity: disabled ? 0.58 : 1,
       }}
     >
-      <View style={{ flexDirection: "row", gap: 14 }}>
+      <View style={{ flexDirection: "row", gap: 16 }}>
         <View style={{ width: 84, alignItems: "stretch" }}>
           <View
             style={{
@@ -278,26 +314,77 @@ export default function ServiceCard({
             }}
           >
             <View style={{ flex: 1 }}>
-              <Text style={{ color: "#6b7280", fontSize: 11, fontWeight: "800", marginBottom: 4 }}>
+              <Text
+                style={{
+                  color: "#111827",
+                  fontSize: 10,
+                  fontWeight: "900",
+                  textTransform: "uppercase",
+                  marginBottom: 5,
+                }}
+              >
+                Servico #{serviceId}
+              </Text>
+              <Text
+                style={{
+                  color: "#94a3b8",
+                  fontSize: 10,
+                  fontWeight: "900",
+                  textTransform: "uppercase",
+                  marginBottom: 5,
+                }}
+              >
+                Agendamento
+              </Text>
+              <Text style={{ color: "#6b7280", fontSize: 11, fontWeight: "800", marginBottom: 6 }}>
                 {formatShortSchedule(safeService.scheduled_at)}
               </Text>
-              <Text style={{ color: "#111827", fontSize: 17, fontWeight: "900", marginBottom: 4 }}>
-                {role === "diarista" ? "Cliente: " : "Diarista: "}
-                {counterpartName}
+              <Text
+                style={{
+                  color: "#94a3b8",
+                  fontSize: 10,
+                  fontWeight: "900",
+                  textTransform: "uppercase",
+                  marginBottom: 5,
+                }}
+              >
+                {role === "diarista" ? "Cliente" : "Diarista"}
               </Text>
-              <Text style={{ color: "#6b7280", fontSize: 12, fontWeight: "700" }}>
-                Servico #{serviceId}
+              <Text style={{ color: "#111827", fontSize: 17, fontWeight: "900", marginBottom: 6 }}>
+                {counterpartName}
               </Text>
             </View>
 
             <View style={{ alignItems: "flex-end", gap: 8 }}>
+              <Text
+                style={{
+                  color: "#94a3b8",
+                  fontSize: 10,
+                  fontWeight: "900",
+                  textTransform: "uppercase",
+                  marginBottom: 2,
+                }}
+              >
+                Valor
+              </Text>
               <Text style={{ color: "#111827", fontSize: 16, fontWeight: "900" }}>
                 {formatCurrency(safeService.total_price || 0)}
               </Text>
             </View>
           </View>
 
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <Text
+            style={{
+              color: "#94a3b8",
+              fontSize: 10,
+              fontWeight: "900",
+              textTransform: "uppercase",
+              marginBottom: 6,
+            }}
+          >
+            Local
+          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <Feather name="map-pin" size={14} color="#2563eb" />
             <Text style={{ color: "#374151", fontSize: 13, fontWeight: "700", flex: 1 }}>
               {locationText}
@@ -310,39 +397,71 @@ export default function ServiceCard({
             </Text>
           ) : null}
 
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: nextStep ? 10 : 0 }}>
-            <View
-              style={{
-                borderRadius: 999,
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                backgroundColor: statusPresentation.bg,
-                borderWidth: 1,
-                borderColor: statusPresentation.border,
-              }}
-            >
-              <Text style={{ color: statusPresentation.text, fontSize: 12, fontWeight: "800" }}>
-                {displayStatus}
+          <Text
+            style={{
+              color: "#94a3b8",
+              fontSize: 10,
+              fontWeight: "900",
+              textTransform: "uppercase",
+              marginBottom: 8,
+            }}
+          >
+            Resumo do servico
+          </Text>
+          <View style={{ gap: 8, marginBottom: nextStep ? 12 : 0 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+              <Text style={{ color: "#64748b", fontSize: 12, fontWeight: "800" }}>
+                Status do servico
               </Text>
+              <View
+                style={{
+                  borderRadius: 999,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                }}
+              >
+                <Text style={{ color: statusPresentation.text, fontSize: 12, fontWeight: "800" }}>
+                  {displayStatus}
+                </Text>
+              </View>
             </View>
-            <View
-              style={{
-                borderRadius: 999,
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                backgroundColor: "#eef4ff",
-              }}
-            >
-              <Text style={{ color: "#2563eb", fontSize: 12, fontWeight: "800" }}>
-                {safeService.duration_hours || 0}h
+
+            <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+              <Text style={{ color: "#64748b", fontSize: 12, fontWeight: "800" }}>
+                Horas a trabalhar
               </Text>
+              <View
+                style={{
+                  borderRadius: 999,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                }}
+              >
+                <Text style={{ color: "#2563eb", fontSize: 12, fontWeight: "800" }}>
+                  {safeService.duration_hours || 0}h
+                </Text>
+              </View>
+              {isAccepted && clientPin ? (
+                <View
+                  style={{
+                    borderRadius: 999,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    backgroundColor: "#111827",
+                  }}
+                >
+                  <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "900" }}>
+                    PIN {String(clientPin)}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </View>
 
           {nextStep ? (
             <View
               style={{
-                marginTop: 12,
+                marginTop: 14,
                 borderRadius: 14,
                 backgroundColor: "#f8fbff",
                 borderWidth: 1,
@@ -400,7 +519,7 @@ export default function ServiceCard({
         </View>
       </View>
 
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
         {role === "diarista" && isPending ? (
           <>
             <TouchableOpacity
@@ -422,6 +541,81 @@ export default function ServiceCard({
                 {busyAction === "accept" ? "Aceitando..." : "Aceitar"}
               </Text>
             </TouchableOpacity>
+          </>
+        ) : null}
+
+        {role === "diarista" && isAccepted ? (
+          <>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => onStart?.(safeService)}
+              disabled={Boolean(busyAction) || disabled}
+              style={{
+                flex: 1,
+                minWidth: 160,
+                minHeight: 42,
+                borderRadius: 12,
+                backgroundColor: "#111827",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: busyAction || disabled ? 0.7 : 1,
+              }}
+            >
+              <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
+                Iniciar jornada com PIN
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
+
+        {role === "diarista" && isInJourney ? (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => onComplete?.(safeService)}
+            disabled={Boolean(busyAction) || disabled}
+            style={{
+              flex: 1,
+              minHeight: 42,
+              borderRadius: 12,
+              backgroundColor: "#111827",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: busyAction || disabled ? 0.7 : 1,
+            }}
+          >
+            <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
+              {busyAction === "complete" ? "Concluindo..." : "Concluir servico"}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {onOpenChat ? (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => onOpenChat?.(safeService)}
+            disabled={Boolean(busyAction) || disabled}
+            style={{
+              width: "100%",
+              minHeight: 42,
+              paddingHorizontal: 14,
+              borderRadius: 12,
+              backgroundColor: "#2563eb",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 8,
+              opacity: busyAction || disabled ? 0.7 : 1,
+            }}
+          >
+            <Feather name="message-circle" size={15} color="#ffffff" />
+            <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
+              {chatLabel}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {role === "diarista" && isPending ? (
+          <>
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => onCancel?.(safeService)}
@@ -450,25 +644,6 @@ export default function ServiceCard({
           <>
             <TouchableOpacity
               activeOpacity={0.9}
-              onPress={() => onStart?.(safeService)}
-              disabled={Boolean(busyAction) || disabled}
-              style={{
-                flex: 1,
-                minWidth: 160,
-                minHeight: 42,
-                borderRadius: 12,
-                backgroundColor: "#111827",
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: busyAction || disabled ? 0.7 : 1,
-              }}
-            >
-              <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
-                Iniciar jornada com PIN
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.9}
               onPress={() => onCancel?.(safeService)}
               disabled={Boolean(busyAction) || disabled}
               style={{
@@ -489,28 +664,7 @@ export default function ServiceCard({
           </>
         ) : null}
 
-        {role === "diarista" && isInJourney ? (
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => onComplete?.(safeService)}
-            disabled={Boolean(busyAction) || disabled}
-            style={{
-              flex: 1,
-              minHeight: 42,
-              borderRadius: 12,
-              backgroundColor: "#111827",
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: busyAction || disabled ? 0.7 : 1,
-            }}
-          >
-            <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
-              {busyAction === "complete" ? "Concluindo..." : "Concluir servico"}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {role === "diarista" && isCompletedStatus(safeService.status) ? (
+        {role === "diarista" && isCompletedStatus(serviceStatus) ? (
           <View
             style={{
               minHeight: 40,
@@ -529,35 +683,36 @@ export default function ServiceCard({
           </View>
         ) : null}
 
-        {onOpenChat ? (
+        {canClientCancel ? (
           <TouchableOpacity
             activeOpacity={0.9}
-            onPress={() => onOpenChat?.(safeService)}
+            onPress={() => onCancel?.(safeService)}
             disabled={Boolean(busyAction) || disabled}
             style={{
               width: "100%",
               minHeight: 42,
-              paddingHorizontal: 14,
               borderRadius: 12,
-              backgroundColor: "#2563eb",
+              backgroundColor: "#fee2e2",
+              borderWidth: 1,
+              borderColor: "#fecaca",
               alignItems: "center",
               justifyContent: "center",
-              flexDirection: "row",
-              gap: 8,
               opacity: busyAction || disabled ? 0.7 : 1,
             }}
           >
-            <Feather name="message-circle" size={15} color="#ffffff" />
-            <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
-              {chatLabel}
+            <Text style={{ color: "#b91c1c", fontSize: 13, fontWeight: "800" }}>
+              {busyAction === "cancel" ? "Cancelando..." : "Cancelar servico"}
             </Text>
           </TouchableOpacity>
         ) : null}
       </View>
 
-      <Text style={{ color: "#6b7280", fontSize: 12, lineHeight: 18, marginTop: 12 }}>
+      <Text style={{ color: "#6b7280", fontSize: 12, lineHeight: 18, marginTop: 14 }}>
         {formatDate(safeService.scheduled_at)}
       </Text>
     </TouchableOpacity>
   );
 }
+
+
+

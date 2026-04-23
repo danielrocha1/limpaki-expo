@@ -11,6 +11,10 @@
 # production
 /build
 /dist
+/dist-check*
+/dist-expo-web
+/mockups
+/go
 
 .env
 .env.*
@@ -22,6 +26,7 @@
 .DS_Store
 .expo
 dist-expo
+build_log.txt
 .env.local
 .env.development.local
 .env.test.local
