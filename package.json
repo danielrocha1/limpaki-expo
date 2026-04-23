@@ -67,6 +67,7 @@
     ]
   },
   "devDependencies": {
-    "babel-preset-expo": "~54.0.6"
+    "babel-preset-expo": "~54.0.6",
+    "typescript": "5.9.3"
   }
 }
