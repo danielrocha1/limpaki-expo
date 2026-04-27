@@ -28,8 +28,8 @@ export default function AppShell({
     return session.role === "diarista" ? "offers" : "map";
   }, [session]);
 
-  // Paywall: bloqueia navegação para clientes sem assinatura
-  const isPaywallActive = !session.hasValidSubscription && !session.isTestUser && session.role === "cliente";
+  // Paywall: bloqueia navegação para usuários sem assinatura (clientes e diaristas)
+  const isPaywallActive = !session.hasValidSubscription && !session.isTestUser;
   const allowedRoutesForPaywall = ["subscription", "profile"];
 
   const [currentRoute, setCurrentRoute] = useState(initialRoute);
