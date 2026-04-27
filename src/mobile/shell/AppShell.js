@@ -28,6 +28,10 @@ export default function AppShell({
     return session.role === "diarista" ? "offers" : "map";
   }, [session]);
 
+  // Paywall: bloqueia navegação para clientes sem assinatura
+  const isPaywallActive = !session.hasValidSubscription && !session.isTestUser && session.role === "cliente";
+  const allowedRoutesForPaywall = ["subscription", "profile"];
+
   const [currentRoute, setCurrentRoute] = useState(initialRoute);
 
   useEffect(() => {
@@ -39,8 +43,13 @@ export default function AppShell({
       return;
     }
 
+    // Se o paywall está ativo, só permite rotas permitidas
+    if (isPaywallActive && !allowedRoutesForPaywall.includes(forcedRoute)) {
+      return;
+    }
+
     setCurrentRoute(forcedRoute);
-  }, [forcedRoute]);
+  }, [forcedRoute, isPaywallActive, allowedRoutesForPaywall]);
 
   useEffect(() => {
     onRouteChange?.(currentRoute);
@@ -72,9 +81,17 @@ export default function AppShell({
         <View style={[styles.screenArea, { paddingBottom: screenBottomPadding }]}>{screen}</View>
         <MobileBottomNavigation
           currentRoute={currentRoute}
-          onNavigate={setCurrentRoute}
+          onNavigate={(route) => {
+            // Paywall: bloqueia navegação para rotas não permitidas
+            if (isPaywallActive && !allowedRoutesForPaywall.includes(route)) {
+              return;
+            }
+            setCurrentRoute(route);
+          }}
           role={session.role}
           bottomOffset={bottomOffset}
+          isPaywallActive={isPaywallActive}
+          allowedRoutes={allowedRoutesForPaywall}
         />
       </View>
     </MobileChatCenterProvider>

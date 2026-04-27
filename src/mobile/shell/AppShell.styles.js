@@ -1544,6 +1544,12 @@ export const styles = StyleSheet.create({
   navLabelActive: {
     color: palette.accentAlt,
   },
+  navItemDisabled: {
+    opacity: 0.5,
+  },
+  navLabelDisabled: {
+    color: "rgba(255,255,255,0.35)",
+  },
   orderShell: {
     flex: 1,
     backgroundColor: "#f8fafc",
