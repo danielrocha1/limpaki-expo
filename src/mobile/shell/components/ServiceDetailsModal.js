@@ -132,6 +132,8 @@ export default function ServiceDetailsModal({
   role = "diarista",
   busyAction,
   onClose,
+  onAccept,
+  onCancel,
   onComplete,
   onOpenClientProfile,
   onStartWithPin,
@@ -152,6 +154,7 @@ export default function ServiceDetailsModal({
     normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.IN_JOURNEY) ||
     normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.IN_SERVICE);
   const isPending = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.PENDING);
+  const isCompleted = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.COMPLETED);
   const displayStatus = getDisplayStatusLabel(serviceStatus);
   const statusPresentation = getStatusPresentation(displayStatus);
   const counterpart = isClient ? safeService.diarist : safeService.client;
@@ -221,6 +224,7 @@ export default function ServiceDetailsModal({
     reviewData?.diarist_rating || reviewData?.DiaristRating,
     "Ainda nao avaliada",
   );
+  const canClientCancel = isClient && !isCompleted && (isPending || isAccepted || isInJourney);
   const submitPin = async () => {
     const normalizedPin = String(pin || "").replace(/\D/g, "");
     if (normalizedPin.length !== 4) {
@@ -869,6 +873,26 @@ export default function ServiceDetailsModal({
             ) : null}
 
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 8 }}>
+              {isDiarist && isPending ? (
+                <TouchableOpacity
+                  onPress={() => onAccept?.(safeService)}
+                  disabled={Boolean(busyAction)}
+                  style={{
+                    flex: 1,
+                    minHeight: 46,
+                    borderRadius: 14,
+                    backgroundColor: "#111827",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: busyAction ? 0.7 : 1,
+                  }}
+                >
+                  <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "800" }}>
+                    {busyAction === "accept" ? "Aceitando..." : "Aceitar servico"}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
               {isDiarist && isAccepted ? (
                 <TouchableOpacity
                   onPress={submitPin}
@@ -909,11 +933,83 @@ export default function ServiceDetailsModal({
                 </TouchableOpacity>
               ) : null}
 
+              {isDiarist && isPending ? (
+                <TouchableOpacity
+                  onPress={() => onCancel?.(safeService)}
+                  disabled={Boolean(busyAction)}
+                  style={{
+                    flex: 1,
+                    minHeight: 46,
+                    borderRadius: 14,
+                    backgroundColor: "#fee2e2",
+                    borderWidth: 1,
+                    borderColor: "#fecaca",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: busyAction ? 0.7 : 1,
+                  }}
+                >
+                  <Text style={{ color: "#b91c1c", fontSize: 14, fontWeight: "800" }}>
+                    {busyAction === "cancel" ? "Salvando..." : "Recusar servico"}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
+              {isDiarist && isAccepted ? (
+                <TouchableOpacity
+                  onPress={() => onCancel?.(safeService)}
+                  disabled={Boolean(busyAction)}
+                  style={{
+                    flex: 1,
+                    minHeight: 46,
+                    borderRadius: 14,
+                    backgroundColor: "#fee2e2",
+                    borderWidth: 1,
+                    borderColor: "#fecaca",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: busyAction ? 0.7 : 1,
+                  }}
+                >
+                  <Text style={{ color: "#b91c1c", fontSize: 14, fontWeight: "800" }}>
+                    {busyAction === "cancel" ? "Salvando..." : "Cancelar servico"}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
+              {canClientCancel ? (
+                <TouchableOpacity
+                  onPress={() => onCancel?.(safeService)}
+                  disabled={Boolean(busyAction)}
+                  style={{
+                    flex: 1,
+                    minHeight: 46,
+                    borderRadius: 14,
+                    backgroundColor: "#fee2e2",
+                    borderWidth: 1,
+                    borderColor: "#fecaca",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: busyAction ? 0.7 : 1,
+                  }}
+                >
+                  <Text style={{ color: "#b91c1c", fontSize: 14, fontWeight: "800" }}>
+                    {busyAction === "cancel" ? "Cancelando..." : "Cancelar servico"}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
               <TouchableOpacity
                 onPress={onClose}
                 style={{
-                  flex: isDiarist && (isAccepted || isInJourney) ? 1 : undefined,
-                  minWidth: isDiarist && (isAccepted || isInJourney) ? undefined : "100%",
+                  flex:
+                    (isDiarist && (isPending || isAccepted || isInJourney)) || canClientCancel
+                      ? 1
+                      : undefined,
+                  minWidth:
+                    (isDiarist && (isPending || isAccepted || isInJourney)) || canClientCancel
+                      ? undefined
+                      : "100%",
                   minHeight: 46,
                   borderRadius: 14,
                   backgroundColor: "#eff6ff",
