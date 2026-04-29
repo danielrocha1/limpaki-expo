@@ -93,20 +93,6 @@ const buildStars = (rating) => {
   return `${"\u2605".repeat(rounded)}${"\u2606".repeat(5 - rounded)}`;
 };
 
-const isSameLocalDay = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return false;
-  }
-
-  const today = new Date();
-  return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
-  );
-};
-
 const getServiceBusinessState = (status) => {
   const normalizedStatus = normalizeServiceStatus(status);
   const isPending = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.PENDING);
@@ -199,14 +185,11 @@ export default function ServiceCard({
           : isInJourney
             ? "Finalize o servico quando a limpeza terminar."
             : "";
-  const isScheduledForToday = isSameLocalDay(safeService?.scheduled_at || safeService?.ScheduledAt);
   const canClientCancel =
     role === "cliente" &&
     !isHistoryCard &&
-    !isScheduledForToday &&
-    !isInJourney &&
     !isCompleted &&
-    (isPending || isAccepted);
+    (isPending || isAccepted || isInJourney);
 
   return (
     <TouchableOpacity

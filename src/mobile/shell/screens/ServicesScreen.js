@@ -100,7 +100,7 @@ const normalizeStatus = (value = "") =>
 
 const isServiceChatAvailable = (service) => {
   const status = normalizeStatus(service?.status || service?.Status || "");
-  return status !== "cancelado" && status !== "concluido" && status !== "em servico";
+  return status !== "cancelado" && status !== "concluido";
 };
 
 function ServicesLoadingState({ switching = false, tabLabel = "ativos" }) {

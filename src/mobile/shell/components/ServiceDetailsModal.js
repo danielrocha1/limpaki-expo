@@ -117,20 +117,6 @@ const getFullAddress = (service) => {
 
 const formatRoomCountLabel = (quantity) => `${quantity} ${quantity === 1 ? "ambiente" : "ambientes"}`;
 
-const isSameLocalDay = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return false;
-  }
-
-  const today = new Date();
-  return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
-  );
-};
-
 const formatReviewBadge = (rating, emptyText) => {
   const numeric = Number(rating || 0);
   if (!numeric) {
@@ -146,8 +132,6 @@ export default function ServiceDetailsModal({
   role = "diarista",
   busyAction,
   onClose,
-  onAccept,
-  onCancel,
   onComplete,
   onOpenClientProfile,
   onStartWithPin,
@@ -167,7 +151,7 @@ export default function ServiceDetailsModal({
   const isInJourney =
     normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.IN_JOURNEY) ||
     normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.IN_SERVICE);
-  const isCompleted = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.COMPLETED);
+  const isPending = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.PENDING);
   const displayStatus = getDisplayStatusLabel(serviceStatus);
   const statusPresentation = getStatusPresentation(displayStatus);
   const counterpart = isClient ? safeService.diarist : safeService.client;
@@ -237,15 +221,6 @@ export default function ServiceDetailsModal({
     reviewData?.diarist_rating || reviewData?.DiaristRating,
     "Ainda nao avaliada",
   );
-  const isScheduledForToday = isSameLocalDay(safeService?.scheduled_at || safeService?.ScheduledAt);
-  const isPending = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.PENDING);
-  const canClientCancel =
-    isClient &&
-    !isScheduledForToday &&
-    !isInJourney &&
-    !isCompleted &&
-    (isPending || isAccepted);
-
   const submitPin = async () => {
     const normalizedPin = String(pin || "").replace(/\D/g, "");
     if (normalizedPin.length !== 4) {
@@ -860,33 +835,6 @@ export default function ServiceDetailsModal({
               </TouchableOpacity>
             ) : null}
 
-            {isDiarist && isPending ? (
-              <View style={{ gap: 10, marginBottom: 14 }}>
-                <TouchableOpacity
-                  onPress={() => onAccept?.(safeService)}
-                  disabled={Boolean(busyAction)}
-                  style={{
-                    minHeight: 46,
-                    borderRadius: 14,
-                    backgroundColor: "#111827",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: busyAction ? 0.7 : 1,
-                  }}
-                >
-                  <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "800" }}>
-                    {busyAction === "accept" ? "Aceitando..." : "Aceitar servico"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
-
-            {isClient && isScheduledForToday && (isPending || isAccepted) ? (
-              <Text style={{ color: "#64748b", fontSize: 13, lineHeight: 19, marginBottom: 14 }}>
-                Cancelamento indisponivel no dia agendado do servico.
-              </Text>
-            ) : null}
-
             {isDiarist && isAccepted ? (
               <View style={{ marginBottom: 14 }}>
                 <Text style={{ color: "#64748b", fontSize: 13, lineHeight: 19, marginBottom: 10 }}>
@@ -961,55 +909,11 @@ export default function ServiceDetailsModal({
                 </TouchableOpacity>
               ) : null}
 
-              {canClientCancel ? (
-                <TouchableOpacity
-                  onPress={() => onCancel?.(safeService)}
-                  disabled={Boolean(busyAction)}
-                  style={{
-                    flex: 1,
-                    minHeight: 46,
-                    borderRadius: 14,
-                    backgroundColor: "#fee2e2",
-                    borderWidth: 1,
-                    borderColor: "#fecaca",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: busyAction ? 0.7 : 1,
-                  }}
-                >
-                  <Text style={{ color: "#b91c1c", fontSize: 14, fontWeight: "800" }}>
-                    {busyAction === "cancel" ? "Cancelando..." : "Cancelar servico"}
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-
-              {isDiarist && isPending ? (
-                <TouchableOpacity
-                  onPress={() => onCancel?.(safeService)}
-                  disabled={Boolean(busyAction)}
-                  style={{
-                    flex: 1,
-                    minHeight: 46,
-                    borderRadius: 14,
-                    backgroundColor: "#fee2e2",
-                    borderWidth: 1,
-                    borderColor: "#fecaca",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: busyAction ? 0.7 : 1,
-                  }}
-                >
-                  <Text style={{ color: "#b91c1c", fontSize: 14, fontWeight: "800" }}>
-                    {busyAction === "cancel" ? "Salvando..." : "Recusar servico"}
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-
               <TouchableOpacity
                 onPress={onClose}
                 style={{
-                  flex: (isDiarist && (isAccepted || isInJourney)) || canClientCancel ? 1 : undefined,
-                  minWidth: (isDiarist && (isAccepted || isInJourney)) || canClientCancel ? undefined : "100%",
+                  flex: isDiarist && (isAccepted || isInJourney) ? 1 : undefined,
+                  minWidth: isDiarist && (isAccepted || isInJourney) ? undefined : "100%",
                   minHeight: 46,
                   borderRadius: 14,
                   backgroundColor: "#eff6ff",
