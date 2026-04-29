@@ -394,7 +394,7 @@ function MobileAppContent() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={palette.bgTop} />
+      <StatusBar hidden barStyle="light-content" backgroundColor={palette.bgTop} />
       {shouldShowHeader ? (
         <AppHeader
           topInset={insets.top}
