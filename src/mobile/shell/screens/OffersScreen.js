@@ -130,6 +130,7 @@ const formatNeighborhood = (offer = {}) =>
 
 const OFFER_START_HOUR = 8;
 const OFFER_END_HOUR = 20;
+const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 const OFFER_SERVICE_TYPES = [
   "Limpeza padrão",
   "Limpeza pesada",
@@ -186,6 +187,12 @@ const buildOfferSchedule = (serviceDate, serviceTime) => {
 
 const normalizeNumericInput = (value) => Number(String(value || "").replace(",", "."));
 
+const getDayStart = (value) => {
+  const date = value instanceof Date ? new Date(value) : new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
 const formatProfileNeighborhood = (source = {}) =>
   source?.neighborhood ||
   source?.Neighborhood ||
@@ -199,6 +206,10 @@ export default function OffersScreen({ session }) {
   const [clientTab, setClientTab] = useState("pendentes");
   const [diaristTab, setDiaristTab] = useState("offers");
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createCalendarMonth, setCreateCalendarMonth] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
   const [counterModalState, setCounterModalState] = useState({ open: false, offer: null });
   const [reasonModalState, setReasonModalState] = useState({
     open: false,
@@ -238,6 +249,7 @@ export default function OffersScreen({ session }) {
 
   const openCreateModal = () => {
     const defaultDateTime = getDefaultOfferDateTime();
+    setCreateCalendarMonth(new Date(defaultDateTime.getFullYear(), defaultDateTime.getMonth(), 1));
     setCreateForm({
       serviceType: "Limpeza padrão",
       serviceDate: formatDateInputValue(defaultDateTime),
@@ -249,6 +261,48 @@ export default function OffersScreen({ session }) {
       observations: "",
     });
     setCreateModalOpen(true);
+  };
+
+  const selectedCreateDate = useMemo(() => {
+    const scheduledAt = buildOfferSchedule(createForm.serviceDate, createForm.serviceTime || "08:00");
+    return Number.isNaN(scheduledAt.getTime()) ? null : scheduledAt;
+  }, [createForm.serviceDate, createForm.serviceTime]);
+
+  const todayStart = useMemo(() => getDayStart(new Date()), []);
+
+  const createCalendarMonthTitle = useMemo(() => {
+    return createCalendarMonth.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  }, [createCalendarMonth]);
+
+  const createCalendarDays = useMemo(() => {
+    const year = createCalendarMonth.getFullYear();
+    const month = createCalendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const startOffset = firstDay.getDay();
+    const days = [];
+
+    for (let index = 0; index < startOffset; index += 1) {
+      days.push(null);
+    }
+
+    for (let day = 1; day <= totalDays; day += 1) {
+      days.push(new Date(year, month, day));
+    }
+
+    while (days.length % 7 !== 0) {
+      days.push(null);
+    }
+
+    return days;
+  }, [createCalendarMonth]);
+
+  const isCreateDatePast = (value) => getDayStart(value).getTime() < todayStart.getTime();
+
+  const handleCreateMonthChange = (offset) => {
+    setCreateCalendarMonth((previousMonth) => {
+      return new Date(previousMonth.getFullYear(), previousMonth.getMonth() + offset, 1);
+    });
   };
 
   const offerTimeOptions = useMemo(() => {
@@ -1445,12 +1499,85 @@ export default function OffersScreen({ session }) {
                 <Text style={styles.offerCreateSectionTitle}>Agenda</Text>
                 <Text style={styles.offerCreateSectionCopy}>Horarios disponiveis entre 08:00 e 20:00.</Text>
                 <Text style={styles.offerCreateFieldLabel}>Data</Text>
-                <TextInput
-                  style={[styles.modalInput, styles.offerCreateModalInput]}
-                  placeholder="YYYY-MM-DD"
-                  value={createForm.serviceDate}
-                  onChangeText={(value) => setCreateForm((current) => ({ ...current, serviceDate: value }))}
-                />
+                <View style={styles.orderCalendarCard}>
+                  <View style={styles.orderCalendarHeader}>
+                    <TouchableOpacity
+                      style={styles.orderCalendarNavButton}
+                      onPress={() => handleCreateMonthChange(-1)}
+                    >
+                      <Text style={styles.orderCalendarNavButtonText}>{"<"}</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.orderCalendarMonthLabel}>{createCalendarMonthTitle}</Text>
+                    <TouchableOpacity
+                      style={styles.orderCalendarNavButton}
+                      onPress={() => handleCreateMonthChange(1)}
+                    >
+                      <Text style={styles.orderCalendarNavButtonText}>{">"}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.orderCalendarWeekRow}>
+                    {WEEKDAY_LABELS.map((weekday) => (
+                      <Text key={weekday} style={styles.orderCalendarWeekday}>
+                        {weekday}
+                      </Text>
+                    ))}
+                  </View>
+
+                  <View style={styles.orderCalendarGrid}>
+                    {createCalendarDays.map((day, index) => {
+                      if (!day) {
+                        return <View key={`empty-${index}`} style={styles.orderCalendarCellEmpty} />;
+                      }
+
+                      const dateValue = formatDateInputValue(day);
+                      const isSelected = createForm.serviceDate === dateValue;
+                      const past = isCreateDatePast(day);
+
+                      return (
+                        <View key={dateValue} style={styles.orderCalendarCell}>
+                          <TouchableOpacity
+                            style={[
+                              styles.orderCalendarCellButton,
+                              past && styles.orderCalendarCellPast,
+                              isSelected && !past && styles.orderCalendarCellSelected,
+                              past && styles.orderCalendarCellDisabled,
+                            ]}
+                            onPress={() => {
+                              if (!past) {
+                                setCreateForm((current) => ({
+                                  ...current,
+                                  serviceDate: dateValue,
+                                }));
+                              }
+                            }}
+                            disabled={past}
+                          >
+                            <Text
+                              style={[
+                                styles.orderCalendarCellText,
+                                past && styles.orderCalendarCellPastText,
+                                isSelected && !past && styles.orderCalendarCellSelectedText,
+                              ]}
+                            >
+                              {day.getDate()}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+                <Text style={styles.orderHint}>
+                  Data selecionada:{" "}
+                  {selectedCreateDate
+                    ? selectedCreateDate.toLocaleDateString("pt-BR", {
+                        weekday: "long",
+                        day: "2-digit",
+                        month: "long",
+                      })
+                    : "Nenhuma data selecionada"}
+                </Text>
                 <Text style={styles.offerCreateFieldLabel}>Hora</Text>
                 <ScrollView
                   horizontal
