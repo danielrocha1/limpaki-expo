@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
-import * as NavigationBar from "expo-navigation-bar";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AppHeader, { MOBILE_HEADER_HEIGHT } from "../layout/AppHeader";
@@ -379,22 +378,10 @@ function MobileAppContent() {
     };
   }, [authMode, session]);
 
-  useEffect(() => {
-    if (Platform.OS !== "android") {
-      return;
-    }
-
-    // Keep Android in immersive mode so system navigation buttons stay hidden.
-    void NavigationBar.setBehaviorAsync("overlay-swipe").catch(() => {});
-    void NavigationBar.setVisibilityAsync("hidden").catch(() => {});
-    void NavigationBar.setPositionAsync("absolute").catch(() => {});
-    void NavigationBar.setBackgroundColorAsync("#00000000").catch(() => {});
-  }, []);
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <ExpoStatusBar style="light" />
-      <StatusBar hidden barStyle="light-content" backgroundColor={palette.bgTop} />
+      <StatusBar barStyle="light-content" backgroundColor={palette.bgTop} />
       {shouldShowHeader ? (
         <AppHeader
           topInset={insets.top}

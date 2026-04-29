@@ -10,6 +10,8 @@ import ProfileScreen from "./screens/ProfileScreen";
 import SubscriptionScreen from "./screens/SubscriptionScreen";
 import { MobileChatCenterProvider } from "../MobileChatCenter";
 
+const ALLOWED_ROUTES_FOR_PAYWALL = ["subscription", "profile"];
+
 export default function AppShell({
   forcedRoute,
   profileIntent,
@@ -19,23 +21,21 @@ export default function AppShell({
   onLogout,
 }) {
   const insets = useSafeAreaInsets();
-  const bottomOffset = Platform.OS === "ios" ? Math.max(insets.bottom, 0) : 0;
+  const bottomOffset = (Platform.OS === "ios" ? Math.max(insets.bottom, 0) : 0) + 5;
   const screenBottomPadding = BOTTOM_NAV_HEIGHT + bottomOffset + 8;
 
   const initialRoute = useMemo(() => {
     if (!session.emailVerified && !session.isTestUser) return "profile";
     if (!session.hasValidSubscription && !session.isTestUser) return "subscription";
     return session.role === "diarista" ? "offers" : "map";
-  }, [session]);
+  }, [session.emailVerified, session.hasValidSubscription, session.isTestUser, session.role]);
 
   // Paywall: bloqueia navegação para usuários sem assinatura (clientes e diaristas)
   const isPaywallActive = !session.hasValidSubscription && !session.isTestUser;
-  const allowedRoutesForPaywall = ["subscription", "profile"];
-
   const [currentRoute, setCurrentRoute] = useState(initialRoute);
 
   useEffect(() => {
-    setCurrentRoute(initialRoute);
+    setCurrentRoute((route) => (route === initialRoute ? route : initialRoute));
   }, [initialRoute]);
 
   useEffect(() => {
@@ -44,12 +44,12 @@ export default function AppShell({
     }
 
     // Se o paywall está ativo, só permite rotas permitidas
-    if (isPaywallActive && !allowedRoutesForPaywall.includes(forcedRoute)) {
+    if (isPaywallActive && !ALLOWED_ROUTES_FOR_PAYWALL.includes(forcedRoute)) {
       return;
     }
 
-    setCurrentRoute(forcedRoute);
-  }, [forcedRoute, isPaywallActive, allowedRoutesForPaywall]);
+    setCurrentRoute((route) => (route === forcedRoute ? route : forcedRoute));
+  }, [forcedRoute, isPaywallActive]);
 
   useEffect(() => {
     onRouteChange?.(currentRoute);
@@ -83,15 +83,15 @@ export default function AppShell({
           currentRoute={currentRoute}
           onNavigate={(route) => {
             // Paywall: bloqueia navegação para rotas não permitidas
-            if (isPaywallActive && !allowedRoutesForPaywall.includes(route)) {
+            if (isPaywallActive && !ALLOWED_ROUTES_FOR_PAYWALL.includes(route)) {
               return;
             }
-            setCurrentRoute(route);
+            setCurrentRoute((current) => (current === route ? current : route));
           }}
           role={session.role}
           bottomOffset={bottomOffset}
           isPaywallActive={isPaywallActive}
-          allowedRoutes={allowedRoutesForPaywall}
+          allowedRoutes={ALLOWED_ROUTES_FOR_PAYWALL}
         />
       </View>
     </MobileChatCenterProvider>
