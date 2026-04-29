@@ -27,6 +27,16 @@
       ],
       "package": "com.dsoftwarehouse.limpaeexpo"
     },
+    "androidStatusBar": {
+      "hidden": true,
+      "barStyle": "light-content",
+      "backgroundColor": "#2f5fe0"
+    },
+    "androidNavigationBar": {
+      "visible": "sticky-immersive",
+      "barStyle": "light-content",
+      "backgroundColor": "#2f5fe0"
+    },
     "web": {
       "bundler": "metro"
     },

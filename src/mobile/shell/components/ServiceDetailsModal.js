@@ -15,6 +15,14 @@ import { formatCurrency, formatDate } from "../utils/shellUtils";
 
 const legacyAcceptedStatus = "em andamento";
 
+const hasReviewFromRole = (reviewData = {}, role = "cliente") => {
+  if (role === "cliente") {
+    return Boolean(reviewData.client_comment || reviewData.ClientComment);
+  }
+
+  return Boolean(reviewData.diarist_comment || reviewData.DiaristComment);
+};
+
 const getDisplayStatusLabel = (status) => {
   const normalizedStatus = normalizeServiceStatus(status);
 
@@ -138,6 +146,7 @@ export default function ServiceDetailsModal({
   onOpenClientProfile,
   onStartWithPin,
   onOpenChat,
+  onReview,
   chatLabel = "Abrir chat",
 }) {
   const [pin, setPin] = useState("");
@@ -155,6 +164,7 @@ export default function ServiceDetailsModal({
     normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.IN_SERVICE);
   const isPending = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.PENDING);
   const isCompleted = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.COMPLETED);
+  const isCancelled = normalizedStatus === normalizeServiceStatus(SERVICE_STATUS.CANCELLED);
   const displayStatus = getDisplayStatusLabel(serviceStatus);
   const statusPresentation = getStatusPresentation(displayStatus);
   const counterpart = isClient ? safeService.diarist : safeService.client;
@@ -225,6 +235,7 @@ export default function ServiceDetailsModal({
     "Ainda nao avaliada",
   );
   const canClientCancel = isClient && !isCompleted && (isPending || isAccepted || isInJourney);
+  const canReview = isCompleted && !hasReviewFromRole(reviewData, role);
   const submitPin = async () => {
     const normalizedPin = String(pin || "").replace(/\D/g, "");
     if (normalizedPin.length !== 4) {
@@ -432,7 +443,7 @@ export default function ServiceDetailsModal({
                       <Text style={{ color: "#2563eb", fontSize: 15, fontWeight: "900" }}>
                         {safeService.duration_hours || 0}h
                       </Text>
-                      {isAccepted && clientPin ? (
+                      {isClient && isAccepted && clientPin ? (
                         <View
                           style={{
                             borderRadius: 999,
@@ -977,7 +988,27 @@ export default function ServiceDetailsModal({
                 </TouchableOpacity>
               ) : null}
 
-              {canClientCancel ? (
+              {canReview ? (
+                <TouchableOpacity
+                  onPress={() => onReview?.(safeService)}
+                  disabled={Boolean(busyAction)}
+                  style={{
+                    flex: 1,
+                    minHeight: 46,
+                    borderRadius: 14,
+                    backgroundColor: "#111827",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: busyAction ? 0.7 : 1,
+                  }}
+                >
+                  <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "800" }}>
+                    Avaliar experiencia
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
+              {canClientCancel && !isCancelled ? (
                 <TouchableOpacity
                   onPress={() => onCancel?.(safeService)}
                   disabled={Boolean(busyAction)}

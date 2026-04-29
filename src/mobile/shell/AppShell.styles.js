@@ -1144,6 +1144,10 @@ export const styles = StyleSheet.create({
     paddingTop: 18,
     paddingHorizontal: 18,
     paddingBottom: 18,
+    maxHeight: "92%",
+  },
+  offerCreateModalContent: {
+    paddingBottom: 8,
   },
   offerCreateModalTitle: {
     color: palette.ink,
@@ -1151,11 +1155,143 @@ export const styles = StyleSheet.create({
     fontWeight: "800",
     marginBottom: 10,
   },
-  offerCreateModalAddress: {
+  offerCreateModalIntro: {
+    borderRadius: 16,
+    backgroundColor: "#f8fbff",
+    borderWidth: 1,
+    borderColor: "#dbe7ff",
+    padding: 12,
+    marginBottom: 12,
+    gap: 10,
+  },
+  offerCreateIntroCopy: {
+    gap: 4,
+  },
+  offerCreateModalKicker: {
+    color: palette.accent,
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  offerCreateModalCopy: {
     color: palette.muted,
     fontSize: 13,
+    lineHeight: 19,
+  },
+  offerCreateModalAddressBox: {
+    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e5eaf3",
+    padding: 10,
+  },
+  offerCreateModalAddressLabel: {
+    color: palette.muted,
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  offerCreateModalAddress: {
+    color: palette.ink,
+    fontSize: 13,
     lineHeight: 20,
+    fontWeight: "800",
+  },
+  offerCreateSection: {
+    borderRadius: 16,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e5eaf3",
+    padding: 12,
     marginBottom: 12,
+  },
+  offerCreateSectionTitle: {
+    color: palette.ink,
+    fontSize: 15,
+    fontWeight: "900",
+    marginBottom: 4,
+  },
+  offerCreateSectionCopy: {
+    color: palette.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  offerCreateFieldLabel: {
+    color: palette.ink,
+    fontSize: 12,
+    fontWeight: "800",
+    marginBottom: 6,
+  },
+  offerCreateOptionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  offerCreateOptionChip: {
+    minHeight: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#dbe7ff",
+    backgroundColor: "#f8fbff",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  offerCreateOptionChipActive: {
+    borderColor: palette.accent,
+    backgroundColor: "#eff6ff",
+  },
+  offerCreateOptionChipText: {
+    color: palette.ink,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  offerCreateOptionChipTextActive: {
+    color: palette.accent,
+  },
+  offerCreateTimeList: {
+    gap: 8,
+    paddingRight: 4,
+  },
+  offerCreateTimeChip: {
+    minHeight: 36,
+    minWidth: 66,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#dbe7ff",
+    backgroundColor: "#f8fbff",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  offerCreateTimeChipActive: {
+    borderColor: palette.accent,
+    backgroundColor: palette.accent,
+  },
+  offerCreateTimeChipDisabled: {
+    opacity: 0.45,
+  },
+  offerCreateTimeChipText: {
+    color: palette.ink,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  offerCreateTimeChipTextActive: {
+    color: "#ffffff",
+  },
+  offerCreateTimeChipTextDisabled: {
+    color: palette.muted,
+  },
+  offerCreateInputRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  offerCreateInputColumn: {
+    flex: 1,
+    minWidth: 0,
   },
   offerCreateModalInput: {
     borderRadius: 14,

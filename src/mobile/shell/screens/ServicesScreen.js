@@ -10,7 +10,7 @@ import ServiceDetailsModal from "../components/ServiceDetailsModal";
 import ClientProfileModal from "../components/ClientProfileModal";
 import LoadingState from "../components/LoadingState";
 import { useMobileChatCenter } from "../../MobileChatCenter";
-import { SERVICE_ACTIONS } from "../../../services/constants";
+import { SERVICE_ACTIONS, VALIDATION } from "../../../services/constants";
 import {
   formatAverageRatingText,
   formatCurrency,
@@ -513,6 +513,13 @@ export default function ServicesScreen({ session }) {
     service: null,
   });
   const [cancelReasonText, setCancelReasonText] = useState("");
+  const [reviewModal, setReviewModal] = useState({
+    open: false,
+    service: null,
+    rating: 5,
+    comment: "",
+    error: "",
+  });
   const [tab, setTab] = useState("active");
   const [pageByTab, setPageByTab] = useState({
     active: 1,
@@ -821,6 +828,94 @@ export default function ServicesScreen({ session }) {
     const success = await executeServiceAction(service, SERVICE_ACTIONS.COMPLETE);
     if (success && modalService && (modalService?.id || modalService?.ID) === (service?.id || service?.ID)) {
       setSelectedService(null);
+    }
+  };
+
+  const openReviewModal = (service) => {
+    setReviewModal({
+      open: true,
+      service,
+      rating: 5,
+      comment: "",
+      error: "",
+    });
+  };
+
+  const closeReviewModal = () => {
+    setReviewModal({
+      open: false,
+      service: null,
+      rating: 5,
+      comment: "",
+      error: "",
+    });
+  };
+
+  const submitReview = async () => {
+    const targetService = reviewModal.service;
+    const serviceId = targetService?.id || targetService?.ID;
+    const comment = String(reviewModal.comment || "").trim();
+
+    if (!serviceId) {
+      return;
+    }
+
+    if (!reviewModal.rating) {
+      setReviewModal((current) => ({ ...current, error: "Por favor, selecione uma avaliacao." }));
+      return;
+    }
+
+    if (comment.length < VALIDATION.MIN_COMMENT_LENGTH) {
+      setReviewModal((current) => ({
+        ...current,
+        error: `O comentario deve ter pelo menos ${VALIDATION.MIN_COMMENT_LENGTH} caracteres.`,
+      }));
+      return;
+    }
+
+    setBusyState({ serviceId, action: "review" });
+    setReviewModal((current) => ({ ...current, error: "" }));
+
+    try {
+      const reviewData =
+        viewerRole === "cliente"
+          ? {
+              service_id: serviceId,
+              client_rating: reviewModal.rating,
+              client_comment: comment,
+            }
+          : {
+              service_id: serviceId,
+              diarist_rating: reviewModal.rating,
+              diarist_comment: comment,
+            };
+
+      const response = await apiFetch("/reviews", {
+        method: "POST",
+        authenticated: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reviewData),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || payload?.message || "Erro ao enviar review.");
+      }
+
+      closeReviewModal();
+      setSelectedService(null);
+      servicesCacheRef.current = {};
+      await refreshCurrentPage();
+      Alert.alert("Avaliacao enviada", "Obrigado pelo feedback.");
+    } catch (error) {
+      setReviewModal((current) => ({
+        ...current,
+        error: error.message || "Nao foi possivel enviar a avaliacao.",
+      }));
+    } finally {
+      setBusyState({ serviceId: null, action: "" });
     }
   };
 
@@ -1305,6 +1400,7 @@ export default function ServicesScreen({ session }) {
                   onComplete={handleComplete}
                   onOpenClientProfile={viewerRole === "diarista" ? handleOpenClientProfile : handleOpenDiaristProfile}
                   onOpenChat={isServiceChatAvailable(service) ? openChat : null}
+                  onReview={openReviewModal}
                   chatLabel={session?.role === "cliente" ? "Falar com a diarista" : "Falar com cliente"}
                 />
               );
@@ -1330,6 +1426,7 @@ export default function ServicesScreen({ session }) {
         onOpenClientProfile={viewerRole === "diarista" ? handleOpenClientProfile : handleOpenDiaristProfile}
         onStartWithPin={handleStartWithPin}
         onOpenChat={isServiceChatAvailable(modalService) ? openChat : null}
+        onReview={openReviewModal}
         chatLabel={session?.role === "cliente" ? "Falar com a diarista" : "Falar com cliente"}
       />
 
@@ -1356,6 +1453,104 @@ export default function ServicesScreen({ session }) {
               <TouchableOpacity style={styles.dangerInlineButton} onPress={submitCancelReason}>
                 <Text style={styles.dangerInlineButtonText}>
                   {busyState.action === SERVICE_ACTIONS.CANCEL ? "Salvando..." : "Cancelar servico"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={reviewModal.open}
+        transparent
+        animationType="fade"
+        onRequestClose={closeReviewModal}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Avaliar experiencia</Text>
+            <Text style={styles.modalCopy}>
+              Como foi o servico com{" "}
+              {viewerRole === "cliente"
+                ? reviewModal.service?.diarist?.name ||
+                  reviewModal.service?.diarist?.Name ||
+                  "a diarista"
+                : reviewModal.service?.client?.name ||
+                  reviewModal.service?.client?.Name ||
+                  "o cliente"}
+              ?
+            </Text>
+
+            <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+              {[1, 2, 3, 4, 5].map((ratingValue) => (
+                <TouchableOpacity
+                  key={ratingValue}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    setReviewModal((current) => ({
+                      ...current,
+                      rating: ratingValue,
+                      error: "",
+                    }))
+                  }
+                  disabled={busyState.action === "review"}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor:
+                      ratingValue <= reviewModal.rating ? "#fef3c7" : "#f1f5f9",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: ratingValue <= reviewModal.rating ? "#f59e0b" : "#94a3b8",
+                      fontSize: 24,
+                      fontWeight: "900",
+                    }}
+                  >
+                    {"\u2605"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TextInput
+              style={[styles.modalInput, styles.modalTextarea]}
+              placeholder="Conte em poucas palavras como foi a experiencia"
+              multiline
+              value={reviewModal.comment}
+              onChangeText={(comment) =>
+                setReviewModal((current) => ({
+                  ...current,
+                  comment,
+                  error: "",
+                }))
+              }
+              editable={busyState.action !== "review"}
+            />
+
+            {reviewModal.error ? (
+              <Text style={[styles.errorText, { marginBottom: 10 }]}>{reviewModal.error}</Text>
+            ) : null}
+
+            <View style={styles.modalActionRow}>
+              <TouchableOpacity
+                style={styles.modalGhostButton}
+                onPress={closeReviewModal}
+                disabled={busyState.action === "review"}
+              >
+                <Text style={styles.modalGhostButtonText}>Fechar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.primaryInlineButton}
+                onPress={submitReview}
+                disabled={busyState.action === "review"}
+              >
+                <Text style={styles.primaryInlineButtonText}>
+                  {busyState.action === "review" ? "Enviando..." : "Enviar avaliacao"}
                 </Text>
               </TouchableOpacity>
             </View>

@@ -10,6 +10,14 @@ import { formatCurrency, formatDate } from "../utils/shellUtils";
 
 const legacyAcceptedStatus = "em andamento";
 
+const hasReviewFromRole = (reviewData = {}, role = "cliente") => {
+  if (role === "cliente") {
+    return Boolean(reviewData.client_comment || reviewData.ClientComment);
+  }
+
+  return Boolean(reviewData.diarist_comment || reviewData.DiaristComment);
+};
+
 const getDisplayStatusLabel = (status) => {
   const normalizedStatus = normalizeServiceStatus(status);
 
@@ -126,6 +134,7 @@ export default function ServiceCard({
   onComplete,
   onOpenClientProfile,
   onOpenChat,
+  onReview,
   chatLabel = "Abrir chat",
 }) {
   const safeService = service || {};
@@ -133,6 +142,7 @@ export default function ServiceCard({
   const { isPending, isAccepted, isInJourney, isCompleted, canRevealPreciseLocation } =
     getServiceBusinessState(serviceStatus);
   const isHistoryCard = activeTab === "history";
+  const isCancelled = normalizeServiceStatus(serviceStatus) === normalizeServiceStatus(SERVICE_STATUS.CANCELLED);
   const displayStatus = getDisplayStatusLabel(serviceStatus);
   const statusPresentation = getStatusPresentation(displayStatus);
   const serviceId = safeService?.id || safeService?.ID || "-";
@@ -189,7 +199,11 @@ export default function ServiceCard({
     role === "cliente" &&
     !isHistoryCard &&
     !isCompleted &&
+    !isCancelled &&
     (isPending || isAccepted || isInJourney);
+  const canReview =
+    isCompleted &&
+    !hasReviewFromRole(reviewData, role);
 
   return (
     <TouchableOpacity
@@ -424,7 +438,7 @@ export default function ServiceCard({
                   {safeService.duration_hours || 0}h
                 </Text>
               </View>
-              {isAccepted && clientPin ? (
+              {role === "cliente" && isAccepted && clientPin ? (
                 <View
                   style={{
                     borderRadius: 999,
@@ -664,6 +678,27 @@ export default function ServiceCard({
               Servico concluido
             </Text>
           </View>
+        ) : null}
+
+        {canReview ? (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => onReview?.(safeService)}
+            disabled={Boolean(busyAction) || disabled}
+            style={{
+              width: "100%",
+              minHeight: 42,
+              borderRadius: 12,
+              backgroundColor: "#111827",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: busyAction || disabled ? 0.7 : 1,
+            }}
+          >
+            <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "800" }}>
+              Avaliar experiencia
+            </Text>
+          </TouchableOpacity>
         ) : null}
 
         {canClientCancel ? (

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   Image,
   Platform,
   StatusBar,
@@ -12,6 +13,7 @@ import {
 } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
+import * as NavigationBar from "expo-navigation-bar";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AppHeader, { MOBILE_HEADER_HEIGHT } from "../layout/AppHeader";
@@ -378,10 +380,41 @@ function MobileAppContent() {
     };
   }, [authMode, session]);
 
+  useEffect(() => {
+    if (Platform.OS !== "android") {
+      return undefined;
+    }
+
+    const hideSystemBars = () => {
+      StatusBar.setHidden(true, "fade");
+      void NavigationBar.setBehaviorAsync("overlay-swipe").catch(() => {});
+      void NavigationBar.setVisibilityAsync("hidden").catch(() => {});
+    };
+
+    hideSystemBars();
+
+    const appStateSubscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        hideSystemBars();
+      }
+    });
+
+    const navigationSubscription = NavigationBar.addVisibilityListener(({ visibility }) => {
+      if (visibility === "visible") {
+        hideSystemBars();
+      }
+    });
+
+    return () => {
+      appStateSubscription.remove();
+      navigationSubscription.remove();
+    };
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={palette.bgTop} />
+      <ExpoStatusBar hidden style="light" />
+      <StatusBar hidden barStyle="light-content" backgroundColor={palette.bgTop} />
       {shouldShowHeader ? (
         <AppHeader
           topInset={insets.top}

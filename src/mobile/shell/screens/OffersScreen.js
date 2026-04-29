@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Image, Modal, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { apiFetch, getToken } from "../../../config/api";
@@ -128,6 +128,64 @@ const formatNeighborhood = (offer = {}) =>
   offer?.AddressNeighborhood ||
   "Bairro nao informado";
 
+const OFFER_START_HOUR = 8;
+const OFFER_END_HOUR = 20;
+const OFFER_SERVICE_TYPES = [
+  "Limpeza padrão",
+  "Limpeza pesada",
+  "Pós-obra",
+  "Passadoria",
+];
+const OFFER_TIME_OPTIONS = Array.from(
+  { length: (OFFER_END_HOUR - OFFER_START_HOUR) * 2 + 1 },
+  (_, index) => {
+    const totalMinutes = OFFER_START_HOUR * 60 + index * 30;
+    const hour = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
+    const minute = String(totalMinutes % 60).padStart(2, "0");
+    return `${hour}:${minute}`;
+  },
+);
+
+const formatDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getDefaultOfferDateTime = () => {
+  const now = new Date();
+  const todayAtEight = new Date(now);
+  todayAtEight.setHours(OFFER_START_HOUR, 0, 0, 0);
+
+  if (now < todayAtEight) {
+    return todayAtEight;
+  }
+
+  const tomorrowAtEight = new Date(todayAtEight);
+  tomorrowAtEight.setDate(tomorrowAtEight.getDate() + 1);
+  return tomorrowAtEight;
+};
+
+const buildOfferSchedule = (serviceDate, serviceTime) => {
+  const dateParts = String(serviceDate || "")
+    .split("-")
+    .map((value) => Number(value));
+  const timeParts = String(serviceTime || "08:00")
+    .split(":")
+    .map((value) => Number(value));
+  const [year, month, day] = dateParts;
+  const [hours = 0, minutes = 0] = timeParts;
+
+  if (!year || !month || !day) {
+    return new Date(Number.NaN);
+  }
+
+  return new Date(year, month - 1, day, hours, minutes, 0, 0);
+};
+
+const normalizeNumericInput = (value) => Number(String(value || "").replace(",", "."));
+
 const formatProfileNeighborhood = (source = {}) =>
   source?.neighborhood ||
   source?.Neighborhood ||
@@ -150,7 +208,7 @@ export default function OffersScreen({ session }) {
   });
   const [submittingKey, setSubmittingKey] = useState("");
   const [createForm, setCreateForm] = useState({
-    serviceType: "Limpeza padrao",
+    serviceType: "Limpeza padrão",
     serviceDate: "",
     serviceTime: "08:00",
     hours: "4",
@@ -178,32 +236,57 @@ export default function OffersScreen({ session }) {
     profile: null,
   });
 
-  const getDefaultSchedule = () => {
-    const now = new Date();
-    const draft = new Date(now);
-    draft.setHours(8, 0, 0, 0);
-    if (now >= draft) {
-      draft.setDate(draft.getDate() + 1);
-    }
-
-    return {
-      serviceDate: draft.toISOString().slice(0, 10),
-      serviceTime: `${String(draft.getHours()).padStart(2, "0")}:${String(draft.getMinutes()).padStart(2, "0")}`,
-    };
-  };
-
   const openCreateModal = () => {
-    const defaults = getDefaultSchedule();
+    const defaultDateTime = getDefaultOfferDateTime();
     setCreateForm({
-      serviceType: "Limpeza padrao",
-      serviceDate: defaults.serviceDate,
-      serviceTime: defaults.serviceTime,
+      serviceType: "Limpeza padrão",
+      serviceDate: formatDateInputValue(defaultDateTime),
+      serviceTime: `${String(defaultDateTime.getHours()).padStart(2, "0")}:${String(
+        defaultDateTime.getMinutes(),
+      ).padStart(2, "0")}`,
       hours: "4",
       value: "",
       observations: "",
     });
     setCreateModalOpen(true);
   };
+
+  const offerTimeOptions = useMemo(() => {
+    const now = new Date();
+
+    return OFFER_TIME_OPTIONS.map((timeValue) => {
+      const scheduledAt = buildOfferSchedule(createForm.serviceDate, timeValue);
+      const disabled =
+        !createForm.serviceDate ||
+        Number.isNaN(scheduledAt.getTime()) ||
+        scheduledAt < now ||
+        scheduledAt.getHours() < OFFER_START_HOUR ||
+        scheduledAt.getHours() > OFFER_END_HOUR;
+
+      return {
+        value: timeValue,
+        label: timeValue,
+        disabled,
+      };
+    });
+  }, [createForm.serviceDate]);
+
+  useEffect(() => {
+    if (!createModalOpen || !createForm.serviceDate) {
+      return;
+    }
+
+    const selectedTime = offerTimeOptions.find((option) => option.value === createForm.serviceTime);
+    if (selectedTime && !selectedTime.disabled) {
+      return;
+    }
+
+    const nextAvailableTime = offerTimeOptions.find((option) => !option.disabled)?.value || "";
+    setCreateForm((current) => ({
+      ...current,
+      serviceTime: nextAvailableTime,
+    }));
+  }, [createForm.serviceDate, createForm.serviceTime, createModalOpen, offerTimeOptions]);
 
   const openCounterModal = (offer) => {
     setCounterForm({
@@ -636,28 +719,41 @@ export default function OffersScreen({ session }) {
       return;
     }
 
-    const scheduledAt = new Date(`${createForm.serviceDate}T${createForm.serviceTime}:00`);
-    if (Number.isNaN(scheduledAt.getTime()) || scheduledAt.getTime() < Date.now()) {
+    const scheduledAt = buildOfferSchedule(createForm.serviceDate, createForm.serviceTime);
+    if (Number.isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) {
       Alert.alert("Agenda invalida", "Escolha uma data e horario validos.");
+      return;
+    }
+
+    const durationHours = normalizeNumericInput(createForm.hours);
+    const initialValue = normalizeNumericInput(createForm.value);
+    if (!Number.isFinite(durationHours) || durationHours < 1) {
+      Alert.alert("Duracao invalida", "Informe uma duracao minima de 1 hora.");
+      return;
+    }
+
+    if (!Number.isFinite(initialValue) || initialValue < 0) {
+      Alert.alert("Valor invalido", "Informe um valor inicial valido.");
       return;
     }
 
     try {
       setSubmittingKey("create-offer");
+      const offerData = {
+        service_type: createForm.serviceType || "Limpeza padrão",
+        scheduled_at: scheduledAt.toISOString(),
+        duration_hours: durationHours,
+        initial_value: initialValue,
+        address_id: payload.activeAddress?.id || payload.activeAddress?.ID,
+        observations: createForm.observations || "",
+      };
       const response = await apiFetch("/offers", {
         method: "POST",
         authenticated: true,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          service_type: createForm.serviceType || "Limpeza padrao",
-          scheduled_at: scheduledAt.toISOString(),
-          duration_hours: Number(createForm.hours),
-          initial_value: Number(createForm.value),
-          address_id: payload.activeAddress?.id || payload.activeAddress?.ID,
-          observations: createForm.observations || "",
-        }),
+        body: JSON.stringify(offerData),
       });
 
       if (!response.ok) {
@@ -667,6 +763,7 @@ export default function OffersScreen({ session }) {
 
       setCreateModalOpen(false);
       await resource.refresh();
+      Alert.alert("Oferta criada", "Oferta criada com sucesso!");
     } catch (error) {
       Alert.alert("Erro ao criar oferta", error.message || "Nao foi possivel criar a oferta.");
     } finally {
@@ -1294,49 +1391,151 @@ export default function OffersScreen({ session }) {
       >
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, styles.offerCreateModalCard]}>
-            <Text style={styles.offerCreateModalTitle}>Criar nova oferta</Text>
-            <Text style={styles.offerCreateModalAddress}>
-              Endereco selecionado: {formatAddress(normalizeAddress(payload.activeAddress || {})) || "Nao informado"}
-            </Text>
-            <TextInput
-              style={[styles.modalInput, styles.offerCreateModalInput, styles.offerCreateModalPrimaryInput]}
-              placeholder="Tipo de limpeza"
-              value={createForm.serviceType}
-              onChangeText={(value) => setCreateForm((current) => ({ ...current, serviceType: value }))}
-            />
-            <TextInput
-              style={[styles.modalInput, styles.offerCreateModalInput]}
-              placeholder="YYYY-MM-DD"
-              value={createForm.serviceDate}
-              onChangeText={(value) => setCreateForm((current) => ({ ...current, serviceDate: value }))}
-            />
-            <TextInput
-              style={[styles.modalInput, styles.offerCreateModalInput]}
-              placeholder="HH:mm"
-              value={createForm.serviceTime}
-              onChangeText={(value) => setCreateForm((current) => ({ ...current, serviceTime: value }))}
-            />
-            <TextInput
-              style={[styles.modalInput, styles.offerCreateModalInput]}
-              placeholder="Duracao em horas"
-              keyboardType="numeric"
-              value={createForm.hours}
-              onChangeText={(value) => setCreateForm((current) => ({ ...current, hours: value }))}
-            />
-            <TextInput
-              style={[styles.modalInput, styles.offerCreateModalInput]}
-              placeholder="Valor inicial"
-              keyboardType="numeric"
-              value={createForm.value}
-              onChangeText={(value) => setCreateForm((current) => ({ ...current, value: value }))}
-            />
-            <TextInput
-              style={[styles.modalInput, styles.modalTextarea, styles.offerCreateModalInput, styles.offerCreateModalTextarea]}
-              placeholder="Observacoes"
-              multiline
-              value={createForm.observations}
-              onChangeText={(value) => setCreateForm((current) => ({ ...current, observations: value }))}
-            />
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.offerCreateModalContent}
+            >
+              <Text style={styles.offerCreateModalTitle}>Criar nova oferta</Text>
+              <View style={styles.offerCreateModalIntro}>
+                <View style={styles.offerCreateIntroCopy}>
+                  <Text style={styles.offerCreateModalKicker}>Nova oportunidade</Text>
+                  <Text style={styles.offerCreateModalCopy}>
+                    Monte a oferta com data, hora e valor em um fluxo mais estavel.
+                  </Text>
+                </View>
+                <View style={styles.offerCreateModalAddressBox}>
+                  <Text style={styles.offerCreateModalAddressLabel}>Endereco selecionado</Text>
+                  <Text style={styles.offerCreateModalAddress}>
+                    {formatAddress(normalizeAddress(payload.activeAddress || {})) || "Nao informado"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.offerCreateSection}>
+                <Text style={styles.offerCreateSectionTitle}>Tipo de servico</Text>
+                <Text style={styles.offerCreateSectionCopy}>Escolha a categoria principal da limpeza.</Text>
+                <View style={styles.offerCreateOptionGrid}>
+                  {OFFER_SERVICE_TYPES.map((serviceType) => {
+                    const selected = createForm.serviceType === serviceType;
+                    return (
+                      <TouchableOpacity
+                        key={serviceType}
+                        activeOpacity={0.85}
+                        style={[
+                          styles.offerCreateOptionChip,
+                          selected && styles.offerCreateOptionChipActive,
+                        ]}
+                        onPress={() => setCreateForm((current) => ({ ...current, serviceType }))}
+                      >
+                        <Text
+                          style={[
+                            styles.offerCreateOptionChipText,
+                            selected && styles.offerCreateOptionChipTextActive,
+                          ]}
+                        >
+                          {serviceType}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.offerCreateSection}>
+                <Text style={styles.offerCreateSectionTitle}>Agenda</Text>
+                <Text style={styles.offerCreateSectionCopy}>Horarios disponiveis entre 08:00 e 20:00.</Text>
+                <Text style={styles.offerCreateFieldLabel}>Data</Text>
+                <TextInput
+                  style={[styles.modalInput, styles.offerCreateModalInput]}
+                  placeholder="YYYY-MM-DD"
+                  value={createForm.serviceDate}
+                  onChangeText={(value) => setCreateForm((current) => ({ ...current, serviceDate: value }))}
+                />
+                <Text style={styles.offerCreateFieldLabel}>Hora</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.offerCreateTimeList}
+                >
+                  {offerTimeOptions.map((option) => {
+                    const selected = createForm.serviceTime === option.value;
+                    return (
+                      <TouchableOpacity
+                        key={option.value}
+                        activeOpacity={0.85}
+                        disabled={option.disabled}
+                        style={[
+                          styles.offerCreateTimeChip,
+                          selected && styles.offerCreateTimeChipActive,
+                          option.disabled && styles.offerCreateTimeChipDisabled,
+                        ]}
+                        onPress={() =>
+                          setCreateForm((current) => ({ ...current, serviceTime: option.value }))
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.offerCreateTimeChipText,
+                            selected && styles.offerCreateTimeChipTextActive,
+                            option.disabled && styles.offerCreateTimeChipTextDisabled,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              <View style={styles.offerCreateSection}>
+                <Text style={styles.offerCreateSectionTitle}>Escopo e preco</Text>
+                <Text style={styles.offerCreateSectionCopy}>
+                  Defina a duracao estimada e o valor inicial da oferta.
+                </Text>
+                <View style={styles.offerCreateInputRow}>
+                  <View style={styles.offerCreateInputColumn}>
+                    <Text style={styles.offerCreateFieldLabel}>Duracao (horas)</Text>
+                    <TextInput
+                      style={[styles.modalInput, styles.offerCreateModalInput]}
+                      placeholder="4"
+                      keyboardType="numeric"
+                      value={createForm.hours}
+                      onChangeText={(value) => setCreateForm((current) => ({ ...current, hours: value }))}
+                    />
+                  </View>
+                  <View style={styles.offerCreateInputColumn}>
+                    <Text style={styles.offerCreateFieldLabel}>Valor (R$)</Text>
+                    <TextInput
+                      style={[styles.modalInput, styles.offerCreateModalInput]}
+                      placeholder="0"
+                      keyboardType="decimal-pad"
+                      value={createForm.value}
+                      onChangeText={(value) => setCreateForm((current) => ({ ...current, value }))}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.offerCreateSection}>
+                <Text style={styles.offerCreateSectionTitle}>Observacoes</Text>
+                <Text style={styles.offerCreateSectionCopy}>
+                  Adicione contexto para a diarista chegar preparada.
+                </Text>
+                <TextInput
+                  style={[
+                    styles.modalInput,
+                    styles.modalTextarea,
+                    styles.offerCreateModalInput,
+                    styles.offerCreateModalTextarea,
+                  ]}
+                  placeholder="Ex.: apartamento com pets, foco na cozinha, levar escada pequena..."
+                  multiline
+                  value={createForm.observations}
+                  onChangeText={(value) => setCreateForm((current) => ({ ...current, observations: value }))}
+                />
+              </View>
+            </ScrollView>
             <View style={[styles.modalActionRow, styles.offerCreateModalActions]}>
               <TouchableOpacity
                 style={styles.modalGhostButton}
