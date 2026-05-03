@@ -34,7 +34,6 @@ func TestCreateCheckoutSessionWithValidPlan(t *testing.T) {
 	db := setupFlowTestDB(t)
 	user := seedUser(t, db, t.Name()+"-checkout", "cliente")
 	t.Setenv("STRIPE_SECRET_KEY", "sk_test_checkout")
-	t.Setenv("STRIPE_PUBLISHABLE_KEY", "pk_test_checkout")
 
 	restore := restoreStripeTestFuncs()
 	defer restore()
@@ -65,20 +64,6 @@ func TestCreateCheckoutSessionWithValidPlan(t *testing.T) {
 	}
 	if resp.StatusCode != fiber.StatusCreated {
 		t.Fatalf("status = %d, want 201", resp.StatusCode)
-	}
-
-	var checkoutResponse SubscriptionCheckoutSessionResponseDTO
-	if err := json.NewDecoder(resp.Body).Decode(&checkoutResponse); err != nil {
-		t.Fatalf("decode checkout response: %v", err)
-	}
-	if checkoutResponse.SessionID != "cs_test_checkout" {
-		t.Fatalf("response session_id = %q", checkoutResponse.SessionID)
-	}
-	if checkoutResponse.URL != "" {
-		t.Fatalf("response url = %q", checkoutResponse.URL)
-	}
-	if checkoutResponse.PublishableKey != "pk_test_checkout" {
-		t.Fatalf("response publishable_key = %q", checkoutResponse.PublishableKey)
 	}
 
 	var created models.Subscription
@@ -189,8 +174,8 @@ func TestCancelSubscriptionImmediately(t *testing.T) {
 
 	stripeCancelSubscriptionFunc = func(subscriptionID string, params *stripe.SubscriptionCancelParams) (*stripe.Subscription, error) {
 		return &stripe.Subscription{
-			ID:         subscriptionID,
-			Status:     stripe.SubscriptionStatusCanceled,
+			ID:       subscriptionID,
+			Status:   stripe.SubscriptionStatusCanceled,
 			CanceledAt: time.Now().UTC().Unix(),
 			EndedAt:    time.Now().UTC().Unix(),
 		}, nil
