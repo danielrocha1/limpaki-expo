@@ -135,7 +135,7 @@ export function MobileChatCenterProvider({ session, children }) {
   };
 
   const refreshActiveChats = async () => {
-    if (!session?.token) {
+    if (!session?.token || (!session?.hasValidSubscription && !session?.isTestUser)) {
       setActiveChatServices([]);
       setChatSummaries([]);
       return;
@@ -203,7 +203,7 @@ export function MobileChatCenterProvider({ session, children }) {
   };
 
   const refreshPresence = async () => {
-    if (!session?.token) {
+    if (!session?.token || (!session?.hasValidSubscription && !session?.isTestUser)) {
       setOnlineClientIds([]);
       setOnlineDiaristIds([]);
       return;

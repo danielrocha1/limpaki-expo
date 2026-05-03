@@ -432,8 +432,9 @@ type SubscriptionResponseDTO struct {
 }
 
 type SubscriptionCheckoutSessionResponseDTO struct {
-	SessionID string `json:"session_id"`
-	URL       string `json:"url"`
+	SessionID      string `json:"session_id"`
+	URL            string `json:"url"`
+	PublishableKey string `json:"publishable_key,omitempty"`
 }
 
 type UserResponseDTO struct {

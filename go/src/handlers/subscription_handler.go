@@ -157,6 +157,32 @@ func getStripeWebhookSecret() string {
 	return strings.TrimSpace(os.Getenv("STRIPE_WEBHOOK_SECRET"))
 }
 
+func getStripePublishableKey() string {
+	for _, key := range []string{
+		"STRIPE_PUBLISHABLE_KEY",
+		"STRIPE_PUBLIC_KEY",
+		"REACT_APP_STRIPE_PUBLIC_KEY",
+		"EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+		"EXPO_PUBLIC_STRIPE_PUBLIC_KEY",
+	} {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func maskLogValuePrefix(value string, prefixLength int) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+	if len(trimmed) <= prefixLength {
+		return trimmed
+	}
+	return trimmed[:prefixLength] + "..."
+}
+
 func getSubscriptionEnvOrDefault(key string, defaultValue string) string {
 	value := strings.TrimSpace(os.Getenv(key))
 	if value == "" {
@@ -548,11 +574,11 @@ func CreateCheckoutSession(c *fiber.Ctx) error {
 	cancelURL := getSubscriptionCancelURL()
 
 	sessionParams := &stripe.CheckoutSessionParams{
-		Mode:                 stripe.String(string(stripe.CheckoutSessionModeSubscription)),
-		SuccessURL: stripe.String(successURL),
-		CancelURL:  stripe.String(cancelURL),
-		Customer:   stripe.String(customerID),
-		ClientReferenceID: stripe.String(strconv.FormatUint(uint64(user.ID), 10)),
+		Mode:               stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		SuccessURL:         stripe.String(successURL),
+		CancelURL:          stripe.String(cancelURL),
+		Customer:           stripe.String(customerID),
+		ClientReferenceID:  stripe.String(strconv.FormatUint(uint64(user.ID), 10)),
 		PaymentMethodTypes: []*string{stripe.String("card")},
 		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
 			Items: []*stripe.CheckoutSessionSubscriptionDataItemsParams{
@@ -587,9 +613,14 @@ func CreateCheckoutSession(c *fiber.Ctx) error {
 	log.Printf("[subscription] checkout flow success user_id=%d subscription_id=%d session_id=%s customer_id=%s status=%s",
 		userID, record.ID, stripeSession.ID, customerID, record.Status)
 
+	publishableKey := getStripePublishableKey()
+	log.Printf("[subscription] checkout response public key user_id=%d session_id=%s has_publishable_key=%t publishable_key_prefix=%s",
+		userID, stripeSession.ID, publishableKey != "", maskLogValuePrefix(publishableKey, 8))
+
 	return c.Status(fiber.StatusCreated).JSON(SubscriptionCheckoutSessionResponseDTO{
-		SessionID: stripeSession.ID,
-		URL:       "",
+		SessionID:      stripeSession.ID,
+		URL:            "",
+		PublishableKey: publishableKey,
 	})
 }
 
