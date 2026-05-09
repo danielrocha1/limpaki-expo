@@ -209,7 +209,7 @@ export default function HomePage() {
                 <Briefcase size={32} />
               </div>
               <h3>Pagamento seguro</h3>
-              <p>Múltiplas formas de pagamento com proteção total por meio do Stripe.</p>
+              <p>Múltiplas formas de pagamento com processamento seguro via Mercado Pago.</p>
             </motion.div>
 
             <motion.div className="feature-card" variants={fadeInUp}>

@@ -12,7 +12,7 @@
 - **Database**: PostgreSQL - Relational database
 - **Authentication**: JWT (JSON Web Tokens) for secure authentication
 - **File Storage**: Supabase integration for photo uploads
-- **Payment Processing**: Stripe integration for secure transactions
+- **Payment Processing**: Mercado Pago integration for secure transactions
 - **Deployment**: Configured for Render.com hosting
 
 ### Frontend (React.js)
@@ -22,7 +22,7 @@
 - **Maps**: Leaflet & React-Leaflet for geographic features
 - **Animations**: Framer Motion for smooth UI transitions
 - **Icons**: Lucide React for modern iconography
-- **Payment UI**: Stripe React components
+- **Payment UI**: Checkout via redirect (URL devolvida pela API; Mercado Pago Checkout Pro / preferências)
 - **Calendar**: React Calendar for scheduling
 
 ## Core Features
@@ -39,7 +39,7 @@
 - **Geographic Matching**: Find diaristas near user locations using Haversine distance calculation
 
 ### 3. Payment System
-- **Secure Transactions**: Stripe integration for payment processing
+- **Secure Transactions**: Mercado Pago integration for payment processing
 - **Multiple Payment Methods**: Support for various payment options including PIX
 - **Payment Status Tracking**: Real-time payment status updates
 
@@ -135,7 +135,7 @@ The API follows RESTful conventions with the following main endpoints:
 1. Client selects address and service requirements
 2. System finds nearby available diaristas
 3. Client books service with scheduling
-4. Payment processing through Stripe
+4. Payment processing through Mercado Pago
 5. Service tracking and completion
 6. Mutual rating system
 
@@ -195,7 +195,7 @@ src/
 3. **Scalable Architecture**: Clean separation of concerns
 4. **Security Focus**: JWT authentication and secure payment processing
 5. **Geographic Features**: Sophisticated location-based matching
-6. **Payment Integration**: Production-ready Stripe implementation
+6. **Payment Integration**: Mercado Pago (checkout redirect + webhooks no backend)
 7. **User Experience**: Modern, responsive UI with smooth animations
 
 ## Areas for Improvement

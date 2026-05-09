@@ -17,6 +17,9 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/api/ws/chat", handlers.ChatWebSocketHandler())
 	app.Post("/stripe/webhook", handlers.StripeWebhookHandler)
 	app.Post("/paymentstripe", handlers.PaymentStripeWebhookHandler)
+	// Webhooks sem JWT: registados em app (nao no grupo /api com JWTMiddleware).
+	app.Post("/api/mercadopago/webhook", handlers.MercadoPagoWebhookHandler)
+	app.Post("/mercadopago/webhook", handlers.MercadoPagoWebhookHandler)
 
 	app.Post("/register", handlers.CreateUser)
 	app.Post("/users", handlers.CreateUser)

@@ -410,30 +410,32 @@ type PaymentResponseDTO struct {
 }
 
 type SubscriptionResponseDTO struct {
-	ID                      uint       `json:"id"`
-	UserID                  uint       `json:"user_id"`
-	Role                    string     `json:"role"`
-	Plan                    string     `json:"plan"`
-	Price                   float64    `json:"price"`
-	Status                  string     `json:"status"`
-	StripeCustomerID        string     `json:"stripe_customer_id,omitempty"`
-	StripeSubscriptionID    string     `json:"stripe_subscription_id,omitempty"`
-	StripePriceID           string     `json:"stripe_price_id,omitempty"`
-	StripeCheckoutSessionID string     `json:"stripe_checkout_session_id,omitempty"`
-	CurrentPeriodStart      *time.Time `json:"current_period_start,omitempty"`
-	CurrentPeriodEnd        *time.Time `json:"current_period_end,omitempty"`
-	CancelAt                *time.Time `json:"cancel_at,omitempty"`
-	CanceledAt              *time.Time `json:"canceled_at,omitempty"`
-	EndedAt                 *time.Time `json:"ended_at,omitempty"`
-	LastWebhookEventID      string     `json:"last_webhook_event_id,omitempty"`
-	AccessValid             bool       `json:"access_valid"`
-	CreatedAt               time.Time  `json:"created_at"`
-	UpdatedAt               time.Time  `json:"updated_at"`
+	ID                 uint       `json:"id"`
+	UserID             uint       `json:"user_id"`
+	Role               string     `json:"role"`
+	Plan               string     `json:"plan"`
+	Price              float64    `json:"price"`
+	Status             string     `json:"status"`
+	PayerID            string     `json:"payer_id,omitempty"`
+	PaymentID          string     `json:"payment_id,omitempty"`
+	PlanRef            string     `json:"plan_ref,omitempty"`
+	PreferenceID       string     `json:"preference_id,omitempty"`
+	CurrentPeriodStart *time.Time `json:"current_period_start,omitempty"`
+	CurrentPeriodEnd   *time.Time `json:"current_period_end,omitempty"`
+	CancelAt           *time.Time `json:"cancel_at,omitempty"`
+	CanceledAt         *time.Time `json:"canceled_at,omitempty"`
+	EndedAt            *time.Time `json:"ended_at,omitempty"`
+	LastWebhookEventID string     `json:"last_webhook_event_id,omitempty"`
+	AccessValid        bool       `json:"access_valid"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 type SubscriptionCheckoutSessionResponseDTO struct {
-	SessionID string `json:"session_id"`
-	URL       string `json:"url"`
+	SessionID        string `json:"session_id,omitempty"`
+	URL              string `json:"url,omitempty"`
+	InitPoint        string `json:"init_point,omitempty"`
+	SandboxInitPoint string `json:"sandbox_init_point,omitempty"`
 }
 
 type UserResponseDTO struct {

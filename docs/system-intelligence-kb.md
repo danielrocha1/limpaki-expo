@@ -22,7 +22,7 @@ A fonte canonica continua sendo `docs/system-intelligence-kb.yaml`.
 
 - `auth`: login, registro, reset/forgot password, verify email.
 - `profile_address`: perfil, foto, enderecos, upload de documentos.
-- `subscription_billing`: status de assinatura e checkout Stripe.
+- `subscription_billing`: status de assinatura e checkout Mercado Pago (redirect via URL da API).
 - `offers_negotiation`: criacao de oferta, contraproposta, aceitacao/recusa/cancelamento.
 - `services_lifecycle`: agenda e acoes do servico (accept/start/complete/cancel/start-with-pin).
 - `chat_presence_location`: mensagens, recibo de leitura, localizacao e presenca online.
@@ -61,7 +61,7 @@ A fonte canonica continua sendo `docs/system-intelligence-kb.yaml`.
 ### 6.2 Registro com assinatura
 1. Registro.
 2. Auto-login (em alguns fluxos).
-3. Criacao de checkout Stripe.
+3. Criacao de sessao de checkout no backend (preferencia Mercado Pago / URL de pagamento).
 4. Retorno success/denied + validacao de acesso.
 
 ### 6.3 Oferta -> Servico
@@ -86,7 +86,7 @@ A fonte canonica continua sendo `docs/system-intelligence-kb.yaml`.
 - Role: retorna `role`, `email_verified`, `is_test_user`.
 - Access status: retorna `has_valid_subscription` + `subscription`.
 - Listas paginadas: `items[]` + `pagination`.
-- Checkout: retorna `session_id` ou `url`.
+- Checkout: retorna `url`, `init_point` ou `sandbox_init_point` (Mercado Pago).
 
 Variacoes frequentes no payload:
 - `id` vs `ID`

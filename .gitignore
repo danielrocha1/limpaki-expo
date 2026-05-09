@@ -14,7 +14,11 @@
 /dist-check*
 /dist-expo-web
 /mockups
-/go
+
+# Go backend — ignorar binarios e .env local do servidor
+/go/main
+/go/main.exe
+**/go/src/config/.env
 
 .env
 .env.*

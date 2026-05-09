@@ -278,107 +278,11 @@
   transform: translateY(0);
 }
 
-/* Stripe Form Styles */
-.stripe-form {
-  background: white;
-  padding: 32px;
-  border-radius: 24px;
-  border: 2px solid #e5e7eb;
-  max-width: 500px;
-  margin: 0 auto;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-.plan-summary {
-  margin-bottom: 32px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.plan-summary h3 {
-  font-size: 18px;
-  color: #1f2937;
-  margin-bottom: 16px;
-}
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 16px;
-  color: #4b5563;
-}
-
-.summary-price {
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.card-element-container {
-  margin-bottom: 32px;
-}
-
-.card-element-container label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 12px;
-}
-
-.StripeElement {
-  padding: 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  background: #f9fafb;
-}
-
-.StripeElement--focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.stripe-error {
+.checkout-error {
   color: #ef4444;
   font-size: 14px;
   margin-bottom: 24px;
   text-align: center;
-}
-
-.pay-button {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 16px;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
-  flex: 2;
-}
-
-.secondary-button {
-  background: #f3f4f6;
-  color: #4b5563;
-  border: 1px solid #e5e7eb;
-  padding: 16px;
-  border-radius: 14px;
-  font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
-  flex: 1;
-  transition: all 0.3s ease;
-}
-
-.secondary-button:hover {
-  background: white;
-  color: #1f2937;
-  border-color: #1f2937;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.button-group {
-  display: flex;
-  gap: 12px;
 }
 
 @keyframes fadeIn {
@@ -395,8 +299,7 @@
 @media (max-width: 640px) {
   .plan-header h2 { font-size: 24px; }
   .plans-grid { grid-template-columns: 1fr; }
-  .stripe-form { padding: 24px; }
-  
+
   .transparency-note {
     flex-direction: column;
     align-items: center;

@@ -19,15 +19,34 @@ npm install
 Crie um `.env` a partir de `.env.example` e ajuste os valores do backend:
 
 ```env
-EXPO_PUBLIC_API_URL=https://seu-backend.onrender.com
-EXPO_PUBLIC_STRIPE_PUBLIC_KEY=pk_test_sua_chave_publica
+EXPO_PUBLIC_API_URL=https://limpaki-expo.onrender.com
+# Opcional: desativar fluxo de planos apos cadastro (padrao: habilitado)
+# EXPO_PUBLIC_SUBSCRIPTION_CHECKOUT_ENABLED=false
 ```
 
 Observacoes:
 
-- `EXPO_PUBLIC_API_URL` e a variavel usada pelo app Expo.
-- `EXPO_PUBLIC_STRIPE_PUBLIC_KEY` so e necessaria se o fluxo de assinatura com Stripe estiver habilitado.
-- Neste repositorio ja existe um `.env` apontando para o backend atual usado no projeto.
+- `EXPO_PUBLIC_API_URL` e a variavel usada pelo app Expo (fallback em codigo tambem aponta para `https://limpaki-expo.onrender.com`).
+- Assinatura usa Mercado Pago no backend; o app so redireciona para o link (`url` / `init_point`) devolvido pela API. Para desativar o passo de planos no cadastro, use `EXPO_PUBLIC_SUBSCRIPTION_CHECKOUT_ENABLED=false`.
+- Copie `.env.example` para `.env` local se precisar sobrescrever a URL.
+
+### Backend no Render (servico Go / API)
+
+No painel do **mesmo** servico que hospeda a API (ex.: `limpaki-expo.onrender.com`), configure pelo menos:
+
+| Variavel | Descricao |
+|----------|-----------|
+| `DATABASE_URL` | Connection string PostgreSQL (Render Postgres ou externo). |
+| `MERCADO_PAGO_ACCESS_TOKEN` | Access token de producao ou teste do Mercado Pago. |
+| `MERCADO_PAGO_WEBHOOK_URL` | URL publica do webhook, ex. `https://limpaki-expo.onrender.com/api/mercadopago/webhook` (ajuste se o host for outro). |
+| `MERCADO_PAGO_SUCCESS_URL` | Pagina do app web apos pagamento OK (ex. app na Vercel: `.../assinatura/success`). |
+| `MERCADO_PAGO_FAILURE_URL` | Pagina se falhar ou cancelar. |
+| `MERCADO_PAGO_PENDING_URL` | Pagina se pagamento ficar pendente (boleto etc.). |
+| `JWT_SECRET` | Segredo para assinar e validar JWT (obrigatorio para login funcionar). |
+| `ALLOWED_ORIGINS` | Lista separada por virgula de origens CORS (ex.: web Expo, Vercel). |
+| `FRONT_END_URL` / `FRONT_END_URL1` | Origens extra aceites pelo backend (ver `go/src/config/auth.go`). |
+
+Outras variaveis que o backend pode usar localmente (email, Supabase, etc.) continuam no `.env` carregado pelo Go em `src/config/.env` em desenvolvimento; no Render define-as tambem em **Environment**. No Mercado Pago, cadastra o webhook igual ao `MERCADO_PAGO_WEBHOOK_URL`.
 
 ## Rodar com Expo
 

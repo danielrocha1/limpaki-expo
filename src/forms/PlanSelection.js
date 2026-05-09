@@ -1,12 +1,9 @@
 import React, { useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
 import { apiFetch } from "../config/api";
+import { getCheckoutRedirectUrl } from "../config/subscriptionCheckout";
 import "./PlanSelection.css";
 
 const checkEmoji = "\u2714\uFE0F";
-
-const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY || "";
-const stripePromise = STRIPE_PUBLIC_KEY ? loadStripe(STRIPE_PUBLIC_KEY) : null;
 
 function logSubscriptionDebug(message, details = {}) {
   console.log(`[subscription] ${message}`, details);
@@ -15,9 +12,6 @@ function logSubscriptionDebug(message, details = {}) {
 function logSubscriptionError(message, details = {}) {
   console.error(`[subscription] ${message}`, details);
 }
-
-export const isStripeConfigured =
-  !!STRIPE_PUBLIC_KEY && STRIPE_PUBLIC_KEY !== "SUA_CHAVE_PUBLICA_AQUI";
 
 const plans = [
   {
@@ -55,7 +49,6 @@ async function defaultStartCheckout(plan) {
   logSubscriptionDebug("checkout request start", {
     planId: plan?.id,
     planName: plan?.name,
-    stripeConfigured: Boolean(stripePromise),
   });
 
   const response = await apiFetch("/subscriptions/checkout-session", {
@@ -84,52 +77,24 @@ async function defaultStartCheckout(plan) {
     throw new Error(payload?.error || "Não foi possível iniciar o checkout da assinatura.");
   }
 
-  if (payload?.session_id && stripePromise) {
-    logSubscriptionDebug("stripe redirect start", {
+  const redirectUrl = getCheckoutRedirectUrl(payload);
+  if (redirectUrl) {
+    logSubscriptionDebug("checkout url redirect", {
       planId: plan?.id,
-      sessionId: payload.session_id,
-    });
-    const stripe = await stripePromise;
-    if (stripe) {
-      const result = await stripe.redirectToCheckout({ sessionId: payload.session_id });
-      if (result?.error) {
-        logSubscriptionError("stripe redirect failed", {
-          planId: plan?.id,
-          sessionId: payload.session_id,
-          error: result.error.message,
-        });
-        throw new Error(result.error.message || "Falha ao redirecionar para o Stripe.");
-      }
-      logSubscriptionDebug("stripe redirect handed off", {
-        planId: plan?.id,
-        sessionId: payload.session_id,
-      });
-      return;
-    }
-    logSubscriptionError("stripe object unavailable", {
-      planId: plan?.id,
-      sessionId: payload.session_id,
-    });
-  }
-
-  if (payload?.url) {
-    logSubscriptionDebug("checkout fallback url redirect", {
-      planId: plan?.id,
-      url: payload.url,
+      url: redirectUrl,
     });
     if (typeof window !== "undefined" && window.location?.assign) {
-      window.location.assign(payload.url);
+      window.location.assign(redirectUrl);
       return;
     }
     throw new Error("Redirecionamento web indisponivel neste ambiente.");
-    return;
   }
 
   logSubscriptionError("checkout response missing redirect data", {
     planId: plan?.id,
     payload,
   });
-  throw new Error("Checkout do Stripe não retornou URL nem session id.");
+  throw new Error("O servidor não retornou um link de pagamento (url ou init_point).");
 }
 
 const PlanSelection = ({ onBack, onPlanSelected, title = "Escolha seu Plano" }) => {
@@ -166,10 +131,10 @@ const PlanSelection = ({ onBack, onPlanSelected, title = "Escolha seu Plano" }) 
     <div className="plan-selection-container">
       <div className="plan-header">
         <h2>{title}</h2>
-        <p>Selecione a melhor opção para você e siga para o Stripe Checkout.</p>
+        <p>Selecione a melhor opção para você e siga para o pagamento seguro (Mercado Pago).</p>
       </div>
 
-      {error && <div className="stripe-error">{error}</div>}
+      {error && <div className="checkout-error">{error}</div>}
 
       <div className="plans-grid">
         {plans.map((plan) => {
@@ -205,7 +170,7 @@ const PlanSelection = ({ onBack, onPlanSelected, title = "Escolha seu Plano" }) 
                 onClick={() => handlePlanSelect(plan)}
                 disabled={Boolean(processingPlanId)}
               >
-                {isProcessing ? "Redirecionando..." : "Assinar com Stripe"}
+                {isProcessing ? "Redirecionando..." : "Assinar agora"}
               </button>
             </div>
           );

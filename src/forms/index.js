@@ -1,18 +1,15 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loadStripe } from "@stripe/stripe-js";
 import { message } from "antd";
 import RegisterClient from "./RegisterClient";
 import RegisterDiarist from "./RegisterDiarist";
-import PlanSelection, { isStripeConfigured } from "./PlanSelection";
+import PlanSelection from "./PlanSelection";
 import "./multiform.css";
 import { buildApiPathUrl, buildApiUrl, getToken, setToken } from "../config/api";
+import { getCheckoutRedirectUrl, isSubscriptionCheckoutEnabled } from "../config/subscriptionCheckout";
 
 const clientEmoji = "\uD83D\uDC64";
 const diaristEmoji = "\uD83E\uDDF9";
-const stripePromise = process.env.REACT_APP_STRIPE_PUBLIC_KEY
-  ? loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY)
-  : null;
 
 function logSubscriptionDebug(messageText, details = {}) {
   console.log(`[subscription] ${messageText}`, details);
@@ -59,7 +56,7 @@ const RegisterForm = () => {
     logSubscriptionDebug("registration complete start", {
       email: data?.email,
       role: data?.role,
-      stripeConfigured: isStripeConfigured,
+      subscriptionCheckoutEnabled: isSubscriptionCheckoutEnabled,
     });
     setIsRegistering(true);
 
@@ -71,7 +68,7 @@ const RegisterForm = () => {
         verificationEmailSent: registerPayload?.verification_email_sent,
       });
 
-      if (isStripeConfigured) {
+      if (isSubscriptionCheckoutEnabled) {
         await authenticateAfterRegister(data);
         logSubscriptionDebug("post-registration auth success", {
           email: data?.email,
@@ -180,52 +177,24 @@ const RegisterForm = () => {
       throw new Error(payload.error || "Não foi possível iniciar o checkout da assinatura.");
     }
 
-    if (payload?.session_id && stripePromise) {
-      logSubscriptionDebug("post-registration stripe redirect start", {
+    const redirectUrl = getCheckoutRedirectUrl(payload);
+    if (redirectUrl) {
+      logSubscriptionDebug("post-registration checkout redirect", {
         planId: plan?.id,
-        sessionId: payload.session_id,
-      });
-      const stripe = await stripePromise;
-      if (stripe) {
-        const result = await stripe.redirectToCheckout({ sessionId: payload.session_id });
-        if (result?.error) {
-          logSubscriptionError("post-registration stripe redirect failed", {
-            planId: plan?.id,
-            sessionId: payload.session_id,
-            error: result.error.message,
-          });
-          throw new Error(result.error.message || "Falha ao redirecionar para o Stripe.");
-        }
-        logSubscriptionDebug("post-registration stripe redirect handed off", {
-          planId: plan?.id,
-          sessionId: payload.session_id,
-        });
-        return;
-      }
-      logSubscriptionError("post-registration stripe object unavailable", {
-        planId: plan?.id,
-        sessionId: payload.session_id,
-      });
-    }
-
-    if (payload?.url) {
-      logSubscriptionDebug("post-registration checkout fallback url redirect", {
-        planId: plan?.id,
-        url: payload.url,
+        url: redirectUrl,
       });
       if (typeof window !== "undefined" && window.location?.assign) {
-        window.location.assign(payload.url);
+        window.location.assign(redirectUrl);
         return;
       }
       throw new Error("Redirecionamento web indisponivel neste ambiente.");
-      return;
     }
 
     logSubscriptionError("post-registration checkout response missing redirect data", {
       planId: plan?.id,
       payload,
     });
-    throw new Error("Checkout do Stripe não retornou a URL esperada.");
+    throw new Error("O servidor não retornou um link de pagamento (url ou init_point).");
   };
 
   if (showPlans) {

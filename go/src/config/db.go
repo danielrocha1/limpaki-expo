@@ -47,7 +47,7 @@ func ConnectDB() {
 		&models.ChatMessage{},
 		&models.ChatMessageRead{},
 		&models.ChatLocation{},
-		&models.StripeWebhookEvent{},
+		&models.WebhookEventDedupe{},
 	)
 	if err != nil {
 		log.Fatal("Erro ao migrar tabelas:", err)

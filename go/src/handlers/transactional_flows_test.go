@@ -50,7 +50,7 @@ func setupFlowTestDB(t *testing.T) *gorm.DB {
 		&models.Service{},
 		&models.Payment{},
 		&models.Subscription{},
-		&models.StripeWebhookEvent{},
+		&models.WebhookEventDedupe{},
 		&models.Review{},
 		&models.ChatRoom{},
 		&models.ChatRoomUser{},

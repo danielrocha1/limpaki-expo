@@ -69,7 +69,7 @@ export function SubscriptionPlansPage() {
       maxWidth="1120px"
       hideHeader
     >
-      {status.message && <div className="stripe-error">{status.message}</div>}
+      {status.message && <div className="checkout-error">{status.message}</div>}
       <PlanSelection />
     </SubscriptionStatusCard>
   );
@@ -112,8 +112,8 @@ export function SubscriptionSuccessPage() {
 
   return (
     <SubscriptionStatusCard
-      title="Retorno do Stripe recebido"
-      description="A liberação real depende da confirmação do webhook do Stripe."
+      title="Retorno do pagamento recebido"
+      description="A liberação do acesso depende da confirmação do pagamento no backend (ex.: webhook do Mercado Pago)."
     >
       {state.loading ? (
         <p>Consultando o status atual da assinatura...</p>

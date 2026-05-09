@@ -67,7 +67,15 @@ export default function AppShell({
       screen = <ServicesScreen session={session} />;
       break;
     case "subscription":
-      screen = <SubscriptionScreen session={session} />;
+      screen = (
+        <SubscriptionScreen
+          session={session}
+          onSessionUpdate={onSessionUpdate}
+          onAccessGranted={() => {
+            setCurrentRoute("services");
+          }}
+        />
+      );
       break;
     case "profile":
     default:

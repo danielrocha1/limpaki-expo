@@ -13,11 +13,9 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { apiFetch, buildApiUrl, setToken } from "../../../config/api";
+import { getCheckoutRedirectUrl, isSubscriptionCheckoutEnabled } from "../../../config/subscriptionCheckout";
 import MapConfirmModal from "../map/MapConfirmModal";
 
-const STRIPE_PUBLIC_KEY =
-  process.env.EXPO_PUBLIC_STRIPE_PUBLIC_KEY || process.env.REACT_APP_STRIPE_PUBLIC_KEY || "";
-const isStripeConfigured = !!STRIPE_PUBLIC_KEY && STRIPE_PUBLIC_KEY !== "SUA_CHAVE_PUBLICA_AQUI";
 const NOMINATIM_USER_AGENT = "LimpaeExpo/1.0 (+https://limpae.app; contato: suporte@limpae.app)";
 const NOMINATIM_HEADERS = {
   Accept: "application/json",
@@ -1204,7 +1202,7 @@ export default function RegisterFlow({ onBackToLogin, onRegistrationSuccess }) {
       throw new Error(registerPayload.error || "Erro ao realizar registro");
     }
 
-    if (!isStripeConfigured) {
+    if (!isSubscriptionCheckoutEnabled) {
       onRegistrationSuccess(registerPayload?.message || "Registro concluído com sucesso! Confira seu e-mail para confirmar a conta.");
       onBackToLogin();
       return;
@@ -1251,16 +1249,13 @@ export default function RegisterFlow({ onBackToLogin, onRegistrationSuccess }) {
         throw new Error(payload?.error || "Não foi possível iniciar o checkout da assinatura.");
       }
 
-      if (payload?.url) {
-        await Linking.openURL(payload.url);
+      const redirectUrl = getCheckoutRedirectUrl(payload);
+      if (redirectUrl) {
+        await Linking.openURL(redirectUrl);
         return;
       }
 
-      if (payload?.session_id) {
-        throw new Error("O checkout retornou uma sessão Stripe web. Precisamos ligar a etapa mobile do pagamento na próxima iteração.");
-      }
-
-      throw new Error("Checkout não retornou a URL esperada.");
+      throw new Error("O servidor não retornou um link de pagamento (url ou init_point).");
     } catch (error) {
       setPlanError(error.message || "Não foi possível iniciar a assinatura.");
     } finally {

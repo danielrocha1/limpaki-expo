@@ -27,8 +27,26 @@ func runningUnderGoTest() bool {
 	return strings.Contains(binaryName, ".test")
 }
 
+// Rotas que nunca exigem JWT (webhooks externos, IPN).
+func isJWTExemptPath(rawPath string) bool {
+	path := strings.TrimSuffix(strings.TrimSpace(rawPath), "/")
+	switch path {
+	case "/api/mercadopago/webhook",
+		"/mercadopago/webhook",
+		"/stripe/webhook",
+		"/paymentstripe":
+		return true
+	default:
+		return false
+	}
+}
+
 // JWTMiddleware valida o token e armazena o ID do usuário no contexto
 func JWTMiddleware(c *fiber.Ctx) error {
+	if isJWTExemptPath(c.Path()) {
+		return c.Next()
+	}
+
 	tokenString := ExtractBearerToken(c)
 	if tokenString == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Token ausente"})

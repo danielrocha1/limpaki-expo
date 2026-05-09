@@ -121,9 +121,10 @@ services:
       - "src/forms/PlanSelection.js"
       - "src/subscription/SubscriptionPages.js"
       - "src/mobile/shell/screens/SubscriptionScreen.js"
+      - "src/config/subscriptionCheckout.js"
     endpoints:
       - { method: "GET", path: "/api/subscriptions/access-status", auth: true }
-      - { method: "POST", path: "/api/subscriptions/checkout-session", auth: true, body: ["plan"] }
+      - { method: "POST", path: "/api/subscriptions/checkout-session", auth: true, body: ["plan"], note: "Frontend espera url ou init_point (Mercado Pago); renomear path no backend e opcional." }
     gating:
       web:
         route_guards:
@@ -201,7 +202,7 @@ flows:
       - "POST /register"
       - "POST /login (auto-login em alguns fluxos)"
       - "POST /api/subscriptions/checkout-session"
-      - "retorno Stripe -> /assinatura/success|denied -> GET access-status"
+      - "retorno Mercado Pago -> /assinatura/success|denied -> GET access-status"
   - id: "offer_to_service"
     steps:
       - "cliente cria oferta"
@@ -235,7 +236,7 @@ contracts_inferred:
     users_role: ["role", "email_verified", "is_test_user"]
     access_status: ["has_valid_subscription", "is_test_user?", "subscription?"]
     paginated_collection: ["items[]", "pagination.{page,page_size,total_items,total_pages,has_next,has_previous}"]
-    checkout_session: ["session_id?", "url?"]
+    checkout_session: ["url?", "init_point?", "sandbox_init_point?"]
   schema_variants_observed:
     - "id vs ID"
     - "name vs Name"
@@ -250,7 +251,7 @@ dependencies:
     - "services_lifecycle -> chat_presence_location"
     - "auth/subscription -> route gating"
   external_services:
-    - "Stripe (checkout)"
+    - "Mercado Pago (checkout / preferencias; webhook no backend)"
     - "ViaCEP (lookup de CEP)"
     - "Nominatim/OpenStreetMap (geocoding)"
 

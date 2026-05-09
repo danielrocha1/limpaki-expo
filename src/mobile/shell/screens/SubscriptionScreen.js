@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   ActivityIndicator,
@@ -11,12 +11,15 @@ import {
   View,
 } from "react-native";
 import { apiFetch } from "../../../config/api";
+import { getCheckoutRedirectUrl } from "../../../config/subscriptionCheckout";
 import { styles as shellStyles } from "../AppShell.styles";
 
 const palette = {
   ink: "#1f2937",
   muted: "#6b7280",
   body: "#4b5563",
+  pageBg: "#f3f4f6",
+  cardBg: "#ffffff",
   blue: "#3b82f6",
   bronze: "#92400e",
   gold: "#10b981",
@@ -31,13 +34,6 @@ const palette = {
 };
 
 const checkIcon = "\u2714\uFE0F";
-const STRIPE_PUBLIC_KEY =
-  process.env.EXPO_PUBLIC_STRIPE_PUBLIC_KEY ||
-  process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-  process.env.REACT_APP_STRIPE_PUBLIC_KEY ||
-  process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY ||
-  process.env.STRIPE_PUBLISHABLE_KEY ||
-  "";
 
 const planOptions = [
   {
@@ -108,82 +104,28 @@ function splitPrice(price) {
   return { amount, cents };
 }
 
-function maskStripeKey(value = "") {
-  const normalizedValue = String(value || "").trim();
-  if (!normalizedValue) {
-    return "";
-  }
-
-  if (normalizedValue.length <= 12) {
-    return `${normalizedValue.slice(0, 4)}...`;
-  }
-
-  return `${normalizedValue.slice(0, 8)}...${normalizedValue.slice(-4)}`;
-}
-
 function logSubscriptionDebug(message, details = {}) {
   console.log(`[mobile-subscription] ${message}`, details);
 }
 
 async function redirectToCheckout(payload) {
-  const publishableKey = payload?.publishable_key || STRIPE_PUBLIC_KEY;
+  const redirectUrl = getCheckoutRedirectUrl(payload);
 
   logSubscriptionDebug("redirect payload received", {
-    hasUrl: Boolean(payload?.url),
-    hasSessionId: Boolean(payload?.session_id),
-    hasBackendPublishableKey: Boolean(payload?.publishable_key),
-    hasBundledPublishableKey: Boolean(STRIPE_PUBLIC_KEY),
-    publishableKeyPreview: maskStripeKey(publishableKey),
+    hasRedirectUrl: Boolean(redirectUrl),
     platform: Platform.OS,
   });
 
-  if (payload?.url) {
-    logSubscriptionDebug("redirecting with checkout url", {
-      platform: Platform.OS,
-    });
+  if (!redirectUrl) {
+    throw new Error("O servidor não retornou um link de pagamento (url ou init_point).");
+  }
 
-    if (Platform.OS === "web" && typeof window !== "undefined" && window.location?.assign) {
-      window.location.assign(payload.url);
-      return;
-    }
-
-    await Linking.openURL(payload.url);
+  if (Platform.OS === "web" && typeof window !== "undefined" && window.location?.assign) {
+    window.location.assign(redirectUrl);
     return;
   }
 
-  if (payload?.session_id && Platform.OS === "web" && publishableKey) {
-    logSubscriptionDebug("redirecting with stripe session id", {
-      sessionId: payload.session_id,
-      publishableKeyPreview: maskStripeKey(publishableKey),
-    });
-
-    const { loadStripe } = await import("@stripe/stripe-js");
-    const stripe = await loadStripe(publishableKey);
-    const result = stripe
-      ? await stripe.redirectToCheckout({ sessionId: payload.session_id })
-      : null;
-
-    if (result?.error) {
-      logSubscriptionDebug("stripe redirect failed", {
-        message: result.error.message,
-      });
-      throw new Error(result.error.message || "Falha ao redirecionar para o Stripe.");
-    }
-
-    return;
-  }
-  if (payload?.session_id && Platform.OS === "web" && !publishableKey) {
-    logSubscriptionDebug("missing publishable key for stripe session", {
-      sessionId: payload.session_id,
-      payloadKeys: Object.keys(payload || {}),
-    });
-    throw new Error("Chave pública do Stripe não recebida do backend.");
-  }
-
-  logSubscriptionDebug("checkout payload missing redirect data", {
-    payloadKeys: Object.keys(payload || {}),
-  });
-  throw new Error("Checkout do Stripe não retornou URL nem session id.");
+  await Linking.openURL(redirectUrl);
 }
 
 function StatusCard({ type, text }) {
@@ -208,19 +150,76 @@ function StatusCard({ type, text }) {
   );
 }
 
-export default function SubscriptionScreen({ session }) {
+export default function SubscriptionScreen({ session, onSessionUpdate, onAccessGranted }) {
   const [processingPlanId, setProcessingPlanId] = useState(null);
   const [error, setError] = useState(null);
+  const [statusState, setStatusState] = useState({
+    loading: true,
+    hasAccess: Boolean(session?.hasValidSubscription || session?.isTestUser),
+    message: "",
+  });
 
-  const hasAccess = session.hasValidSubscription || session.isTestUser;
+  const hasAccess = statusState.hasAccess;
+
+  useEffect(() => {
+    let active = true;
+
+    const loadAccessStatus = async () => {
+      setStatusState((current) => ({
+        ...current,
+        loading: true,
+        message: "",
+      }));
+
+      try {
+        const response = await apiFetch("/subscriptions/access-status", {
+          authenticated: true,
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!active) {
+          return;
+        }
+
+        const hasValidSubscription = Boolean(payload?.has_valid_subscription);
+        const isTestUser = Boolean(payload?.is_test_user) || Boolean(session?.isTestUser);
+        const hasEffectiveAccess = hasValidSubscription || isTestUser;
+
+        setStatusState({
+          loading: false,
+          hasAccess: hasEffectiveAccess,
+          message: "",
+        });
+
+        if (hasEffectiveAccess) {
+          onSessionUpdate?.((currentSession) => ({
+            ...currentSession,
+            hasValidSubscription: hasValidSubscription,
+            isTestUser,
+          }));
+          onAccessGranted?.();
+        }
+      } catch (_error) {
+        if (!active) {
+          return;
+        }
+
+        setStatusState({
+          loading: false,
+          hasAccess: Boolean(session?.hasValidSubscription || session?.isTestUser),
+          message: "Não foi possível carregar o status da assinatura.",
+        });
+      }
+    };
+
+    void loadAccessStatus();
+
+    return () => {
+      active = false;
+    };
+  }, [onAccessGranted, onSessionUpdate, session?.hasValidSubscription, session?.isTestUser]);
 
   const handlePlanSelected = async (plan) => {
-    logSubscriptionDebug("checkout request start", {
-      planId: plan?.id,
-      planName: plan?.name,
-      hasBundledPublishableKey: Boolean(STRIPE_PUBLIC_KEY),
-      bundledPublishableKeyPreview: maskStripeKey(STRIPE_PUBLIC_KEY),
-    });
     setProcessingPlanId(plan.id);
     setError(null);
 
@@ -235,15 +234,10 @@ export default function SubscriptionScreen({ session }) {
       });
 
       const payload = await response.json().catch(() => ({}));
-      logSubscriptionDebug("checkout response received", {
+      logSubscriptionDebug("checkout response", {
         planId: plan?.id,
-        status: response.status,
         ok: response.ok,
-        hasUrl: Boolean(payload?.url),
-        hasSessionId: Boolean(payload?.session_id),
-        hasPublishableKey: Boolean(payload?.publishable_key),
-        publishableKeyPreview: maskStripeKey(payload?.publishable_key),
-        payloadKeys: Object.keys(payload || {}),
+        status: response.status,
       });
 
       if (!response.ok) {
@@ -252,141 +246,183 @@ export default function SubscriptionScreen({ session }) {
 
       await redirectToCheckout(payload);
     } catch (err) {
-      logSubscriptionDebug("checkout request failed", {
-        planId: plan?.id,
-        message: err?.message,
-      });
       setError(err.message);
     } finally {
-      logSubscriptionDebug("checkout request finished", {
-        planId: plan?.id,
-      });
       setProcessingPlanId(null);
     }
   };
 
+  if (statusState.loading) {
+    return (
+      <ScrollView
+        style={[shellStyles.screenScroll, styles.screenSurface]}
+        contentContainerStyle={styles.screenContent}
+      >
+        <View style={styles.pageContainer}>
+          <View style={styles.roleHeader}>
+            <Text style={styles.roleTitle}>Escolha seu Plano</Text>
+            <Text style={styles.roleCopy}>Consultando o status atual da assinatura...</Text>
+          </View>
+          <StatusCard type="info" text="Consultando o status atual da assinatura..." />
+        </View>
+      </ScrollView>
+    );
+  }
+
   if (hasAccess) {
     return (
-      <ScrollView style={shellStyles.screenScroll} contentContainerStyle={shellStyles.screenContent}>
-        <View style={styles.roleHeader}>
-          <Text style={styles.roleTitle}>Assinatura Ativa</Text>
-          <Text style={styles.roleCopy}>
-            Sua conta já possui acesso premium liberado. Aproveite todos os recursos do Limpae!
-          </Text>
+      <ScrollView
+        style={[shellStyles.screenScroll, styles.screenSurface]}
+        contentContainerStyle={styles.screenContent}
+      >
+        <View style={styles.pageContainer}>
+          <View style={styles.roleHeader}>
+            <Text style={styles.roleTitle}>Assinatura Ativa</Text>
+            <Text style={styles.roleCopy}>
+              Sua conta já possui acesso premium liberado. Aproveite todos os recursos do Limpae!
+            </Text>
+          </View>
+          <StatusCard type="success" text="Você tem acesso total ao aplicativo." />
         </View>
-        <StatusCard type="success" text="Você tem acesso total ao aplicativo." />
       </ScrollView>
     );
   }
 
   return (
-    <ScrollView style={shellStyles.screenScroll} contentContainerStyle={shellStyles.screenContent}>
-      <View style={styles.roleHeader}>
-        <Text style={styles.roleTitle}>Escolha seu Plano</Text>
-        <Text style={styles.roleCopy}>
-          Selecione a melhor opção para você e siga para o Stripe Checkout.
-        </Text>
-      </View>
+    <ScrollView
+      style={[shellStyles.screenScroll, styles.screenSurface]}
+      contentContainerStyle={styles.screenContent}
+    >
+      <View style={styles.pageContainer}>
+        <View style={styles.roleHeader}>
+          <Text style={styles.roleTitle}>Escolha seu Plano</Text>
+          <Text style={styles.roleCopy}>
+            Selecione a melhor opção para você e siga para o pagamento seguro (Mercado Pago).
+          </Text>
+        </View>
 
-      {error ? <StatusCard type="error" text={error} /> : null}
+        {error ? <StatusCard type="error" text={error} /> : null}
+        {statusState.message ? <StatusCard type="error" text={statusState.message} /> : null}
 
-      {planOptions.map((plan) => {
-        const processing = processingPlanId === plan.id;
-        const theme = planTheme[plan.color] || planTheme.bronze;
-        const { amount, cents } = splitPrice(plan.price);
+        <View style={styles.planGrid}>
+          {planOptions.map((plan) => {
+            const processing = processingPlanId === plan.id;
+            const theme = planTheme[plan.color] || planTheme.bronze;
+            const { amount, cents } = splitPrice(plan.price);
 
-        return (
-          <LinearGradient
-            key={plan.id}
-            colors={theme.gradient}
-            style={[
-              styles.planCard,
-              {
-                borderColor: theme.border,
-                shadowColor: theme.shadow,
-                shadowOpacity: theme.shadowOpacity,
-              },
-            ]}
-          >
-            {plan.popular ? (
-              <View style={[styles.planBadge, { backgroundColor: theme.badge }]}>
-                <Text style={styles.planBadgeText}>MAIS POPULAR</Text>
-              </View>
-            ) : null}
-            {plan.bestValue ? (
-              <View style={[styles.planBadge, { backgroundColor: theme.badge }]}>
-                <Text style={styles.planBadgeText}>MELHOR VALOR</Text>
-              </View>
-            ) : null}
+            return (
+              <LinearGradient
+                key={plan.id}
+                colors={theme.gradient}
+                style={[
+                  styles.planCard,
+                  {
+                    borderColor: theme.border,
+                    shadowColor: theme.shadow,
+                    shadowOpacity: theme.shadowOpacity,
+                  },
+                ]}
+              >
+                {plan.popular ? (
+                  <View style={[styles.planBadge, { backgroundColor: theme.badge }]}>
+                    <Text style={styles.planBadgeText}>MAIS POPULAR</Text>
+                  </View>
+                ) : null}
+                {plan.bestValue ? (
+                  <View style={[styles.planBadge, { backgroundColor: theme.badge }]}>
+                    <Text style={styles.planBadgeText}>MELHOR VALOR</Text>
+                  </View>
+                ) : null}
 
-            <Text style={[styles.planName, { color: theme.title }]}>{plan.name}</Text>
+                <Text style={[styles.planName, { color: theme.title }]}>{plan.name}</Text>
 
-            <View style={styles.planPriceContainer}>
-              <Text style={styles.planOriginal}>R$ {plan.originalPrice.toFixed(2)}</Text>
-              <View style={styles.currentPrice}>
-                <Text style={styles.planCurrency}>R$</Text>
-                <Text style={[styles.planAmount, { color: theme.amount }]}>{amount}</Text>
-                <Text style={styles.planCents}>,{cents}</Text>
-                <Text style={styles.planPeriod}>/período</Text>
-              </View>
-            </View>
-
-            <Text style={styles.planDescription}>{plan.description}</Text>
-
-            <View style={styles.planFeatures}>
-              {plan.features.map((feature) => (
-                <View key={feature} style={styles.planFeatureRow}>
-                  <Text style={styles.checkIcon}>{checkIcon}</Text>
-                  <Text style={styles.planFeature}>{feature}</Text>
+                <View style={styles.planPriceContainer}>
+                  <Text style={styles.planOriginal}>R$ {plan.originalPrice.toFixed(2)}</Text>
+                  <View style={styles.currentPrice}>
+                    <Text style={styles.planCurrency}>R$</Text>
+                    <Text style={[styles.planAmount, { color: theme.amount }]}>{amount}</Text>
+                    <Text style={styles.planCents}>,{cents}</Text>
+                    <Text style={styles.planPeriod}>/período</Text>
+                  </View>
                 </View>
-              ))}
-            </View>
 
-            <TouchableOpacity
-              disabled={Boolean(processingPlanId)}
-              onPress={() => handlePlanSelected(plan)}
-              style={[
-                styles.primaryButton,
-                { backgroundColor: theme.button },
-                Boolean(processingPlanId) && styles.primaryButtonDisabled,
-              ]}
-            >
-              {processing ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.primaryButtonText}>Assinar com Stripe</Text>
-              )}
-            </TouchableOpacity>
-          </LinearGradient>
-        );
-      })}
+                <Text style={styles.planDescription}>{plan.description}</Text>
 
-      <View style={styles.planFooter}>
-        <Text style={styles.footerNote}>
-          {checkIcon} Cobrança recorrente segura {checkIcon} Cancelamento imediato {checkIcon} Acesso controlado por webhook
-        </Text>
+                <View style={styles.planFeatures}>
+                  {plan.features.map((feature) => (
+                    <View key={feature} style={styles.planFeatureRow}>
+                      <Text style={styles.checkIcon}>{checkIcon}</Text>
+                      <Text style={styles.planFeature}>{feature}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <TouchableOpacity
+                  disabled={Boolean(processingPlanId)}
+                  onPress={() => handlePlanSelected(plan)}
+                  style={[
+                    styles.primaryButton,
+                    { backgroundColor: theme.button },
+                    Boolean(processingPlanId) && styles.primaryButtonDisabled,
+                  ]}
+                >
+                  {processing ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Assinar agora</Text>
+                  )}
+                </TouchableOpacity>
+              </LinearGradient>
+            );
+          })}
+        </View>
+
+        <View style={styles.planFooter}>
+          <Text style={styles.footerNote}>
+            {checkIcon} Cobrança recorrente segura {checkIcon} Cancelamento imediato {checkIcon} Acesso controlado por webhook
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  screenSurface: {
+    backgroundColor: palette.pageBg,
+  },
+  screenContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 36,
+    backgroundColor: palette.pageBg,
+  },
+  pageContainer: {
+    width: "100%",
+    maxWidth: 1120,
+    alignSelf: "center",
+  },
   roleHeader: {
-    marginBottom: 40,
+    marginBottom: 32,
     alignItems: "center",
   },
   roleTitle: {
     fontSize: 32,
     fontWeight: "800",
-    color: "#ffffff",
+    color: palette.ink,
     textAlign: "center",
     marginBottom: 12,
   },
   roleCopy: {
     fontSize: 18,
-    color: "#ffffff",
+    color: palette.muted,
     textAlign: "center",
     lineHeight: 24,
+    maxWidth: 680,
+  },
+  planGrid: {
+    gap: 24,
+    marginBottom: 16,
   },
   statusCard: {
     borderRadius: 12,
@@ -428,9 +464,9 @@ const styles = StyleSheet.create({
     position: "relative",
     borderRadius: 24,
     borderWidth: 2,
-    padding: 32,
-    marginBottom: 24,
+    padding: 24,
     minHeight: 430,
+    backgroundColor: palette.cardBg,
     shadowRadius: 25,
     shadowOffset: { width: 0, height: 20 },
     elevation: 4,
@@ -552,12 +588,12 @@ const styles = StyleSheet.create({
   },
   planFooter: {
     alignItems: "center",
-    marginTop: -8,
+    marginTop: 6,
     marginBottom: 8,
     paddingHorizontal: 8,
   },
   footerNote: {
-    color: "#ffffff",
+    color: palette.body,
     fontSize: 14,
     fontWeight: "500",
     lineHeight: 22,
