@@ -1,0 +1,298 @@
+version: "1.0.0"
+generated_at: "2026-05-09"
+source_of_truth:
+  repository: "limpaki-expo"
+  note: "Este KB descreve o estado do frontend deste repo e os contratos de API inferidos."
+  caveats:
+    - "Nao ha codigo Go local neste repositorio."
+    - "O backend principal e remoto; contratos foram inferidos pelo consumo frontend."
+
+system_summary:
+  product: "Marketplace de diaristas (web + mobile Expo)"
+  runtimes:
+    - "Web SPA (React + react-router-dom)"
+    - "Mobile shell (Expo + React Native)"
+  core_domains:
+    - "auth"
+    - "profile_address"
+    - "offers_negotiation"
+    - "services_lifecycle"
+    - "chat_presence_location"
+    - "subscription_billing"
+  architecture_style:
+    frontend: "Feature-oriented, Context API, hooks locais de dados, componentes de dominio extensos"
+    backend_integration: "REST + WebSocket autenticado"
+
+repositories_and_entrypoints:
+  web:
+    entry: "src/index.js"
+    routing: "react-router-dom"
+  mobile:
+    entry: "src/mobile/app/MobileApp.js"
+    shell: "src/mobile/shell/AppShell.js"
+    routing_mode: "state-driven route switch"
+  infra:
+    api_client: "src/config/api.js"
+    realtime_client: "src/config/realtime.js"
+    storage_web: "src/config/storage.js"
+    storage_native: "src/config/storage.native.js"
+
+entities:
+  User:
+    aliases: ["user", "client", "diarist"]
+    keys: ["id", "role", "email_verified", "is_test_user", "photo", "name"]
+  Address:
+    keys: ["id", "street", "number", "neighborhood", "city", "state", "zipcode", "latitude", "longitude", "rooms"]
+  Subscription:
+    keys: ["has_valid_subscription", "plan", "status", "is_test_user"]
+  Offer:
+    keys: ["id", "status", "service_type", "scheduled_at", "duration_hours", "initial_value", "address_id"]
+  Negotiation:
+    keys: ["id", "offer_id", "counter_value", "counter_duration_hours", "message", "status"]
+  Service:
+    keys: ["id", "status", "offer_id", "client_id", "diarist_id", "scheduled_at", "duration_hours", "total_price"]
+  Message:
+    keys: ["id", "service_id", "sender_id", "content", "created_at", "read"]
+  Location:
+    keys: ["service_id", "user_id", "latitude", "longitude", "updated_at"]
+  Review:
+    keys: ["service_id", "client_rating", "client_comment", "diarist_rating", "diarist_comment"]
+
+global_state:
+  providers:
+    - name: "AddressProvider"
+      file: "src/context/address.js"
+      responsibilities:
+        - "Sessao (Logged/sessionLoading)"
+        - "Role e flags de e-mail/usuario teste"
+        - "Endereco selecionado e lista de enderecos"
+        - "Status de assinatura"
+    - name: "ChatCenterProvider"
+      file: "src/context/chatCenter.js"
+      responsibilities:
+        - "Lista de chats ativos por servico"
+        - "Resumo de mensagens e unread"
+        - "Abertura/fechamento do drawer de chat"
+    - name: "OnlinePresenceProvider"
+      file: "src/context/onlinePresence.js"
+      responsibilities:
+        - "Presenca online por role"
+        - "Polling + websocket de presenca"
+    - name: "ReviewProvider"
+      file: "src/context/service.js"
+      responsibilities:
+        - "Estado de review selecionado"
+
+services:
+  AuthService:
+    files:
+      - "src/forms/login.js"
+      - "src/forms/index.js"
+      - "src/mobile/app/MobileApp.js"
+      - "src/mobile/features/auth/RegisterFlow.js"
+    endpoints:
+      - { method: "POST", path: "/login", auth: false }
+      - { method: "POST", path: "/register", auth: false }
+      - { method: "POST", path: "/forgot-password", auth: false }
+      - { method: "POST", path: "/reset-password", auth: false }
+      - { method: "GET", path: "/verify-email?token=...", auth: false }
+      - { method: "GET", path: "/api/users-role/", auth: true }
+      - { method: "POST", path: "/api/auth/email-verification/resend", auth: true }
+    notes:
+      - "Nao ha refresh token explicito no frontend."
+
+  ProfileAddressService:
+    files:
+      - "src/profile/index.js"
+      - "src/mobile/shell/screens/ProfileScreen.js"
+      - "src/forms/addressform.js"
+    endpoints:
+      - { method: "GET", path: "/api/profile", auth: true }
+      - { method: "PUT", path: "/api/profile", auth: true }
+      - { method: "POST", path: "/api/upload-photo", auth: true, content_type: "multipart/form-data" }
+      - { method: "GET", path: "/api/addresses", auth: true }
+      - { method: "POST", path: "/api/addresses", auth: true }
+      - { method: "PUT", path: "/api/addresses/:id", auth: true }
+      - { method: "DELETE", path: "/api/addresses/:id", auth: true }
+      - { method: "POST", path: "/api/upload-document", auth: true, content_type: "multipart/form-data" }
+
+  SubscriptionService:
+    files:
+      - "src/forms/PlanSelection.js"
+      - "src/subscription/SubscriptionPages.js"
+      - "src/mobile/shell/screens/SubscriptionScreen.js"
+    endpoints:
+      - { method: "GET", path: "/api/subscriptions/access-status", auth: true }
+      - { method: "POST", path: "/api/subscriptions/checkout-session", auth: true, body: ["plan"] }
+    gating:
+      web:
+        route_guards:
+          - "PrivateRoute"
+          - "SubscriptionRoute"
+          - "SubscriptionGate"
+        file: "src/index.js"
+
+  OfferNegotiationService:
+    files:
+      - "src/offers/index.js"
+      - "src/mobile/shell/screens/OffersScreen.js"
+    endpoints:
+      - { method: "GET", path: "/api/offers?page=&page_size=", auth: true }
+      - { method: "GET", path: "/api/offers/my?status_group=&page=&page_size=", auth: true }
+      - { method: "POST", path: "/api/offers", auth: true, body: ["service_type", "scheduled_at", "duration_hours", "initial_value", "address_id", "observations"] }
+      - { method: "POST", path: "/api/offers/:offerId/accept", auth: true }
+      - { method: "POST", path: "/api/offers/:offerId/negotiate", auth: true, body: ["counter_value", "counter_duration_hours", "message"] }
+      - { method: "PUT", path: "/api/offers/:offerId/negotiate/:negotiationId/accept", auth: true }
+      - { method: "PUT", path: "/api/offers/:offerId/negotiate/:negotiationId/reject", auth: true, body: ["reason"] }
+      - { method: "PUT|POST", path: "/api/offers/:offerId/cancel", auth: true, body: ["reason"], note: "verbo inconsistente entre implementacoes" }
+      - { method: "GET", path: "/api/negotiations/my?page=&page_size=", auth: true }
+      - { method: "GET", path: "/api/offers/:offerId/client-profile", auth: true }
+
+  ServiceLifecycleService:
+    files:
+      - "src/services/index.js"
+      - "src/services/hooks/useServices.js"
+      - "src/mobile/shell/screens/ServicesScreen.js"
+      - "src/order/OrderStepper.js"
+      - "src/mobile/shell/components/HireOrderModal.js"
+    endpoints:
+      - { method: "GET", path: "/api/services/my?status_group=&page=&page_size=", auth: true }
+      - { method: "POST", path: "/api/services", auth: true, body: ["diarist_id", "address_id", "scheduled_at", "duration_hours", "total_price", "service_type"] }
+      - { method: "GET", path: "/api/services/pending-schedules/:diaristId", auth: true }
+      - { method: "PUT", path: "/api/services/:serviceId/accept", auth: true }
+      - { method: "PUT", path: "/api/services/:serviceId/cancel", auth: true, body: ["reason"] }
+      - { method: "PUT", path: "/api/services/:serviceId/start", auth: true }
+      - { method: "PUT", path: "/api/services/:serviceId/complete", auth: true }
+      - { method: "POST", path: "/api/services/:serviceId/start-with-pin", auth: true, body: ["pin"] }
+
+  ChatPresenceLocationService:
+    files:
+      - "src/services/chat/useServiceChat.js"
+      - "src/context/chatCenter.js"
+      - "src/context/onlinePresence.js"
+      - "src/mobile/MobileChat.js"
+      - "src/mobile/MobileChatCenter.js"
+    endpoints:
+      - { method: "GET", path: "/api/messages?service_id=&page=&page_size=", auth: true }
+      - { method: "GET", path: "/api/locations?service_id=", auth: true }
+      - { method: "GET", path: "/api/realtime/online-users?role=cliente|diarista", auth: true }
+    websockets:
+      - { path: "/api/ws/chat", params: ["service_id"], events: ["message", "read", "location", "presence_state", "user_joined", "user_left", "error"] }
+      - { path: "/api/ws/offers", events: ["service.updated", "presence_state"] }
+
+  DiscoveryService:
+    files:
+      - "src/diaristmap/index.js"
+      - "src/mobile/shell/screens/MapScreen.js"
+    endpoints:
+      - { method: "GET", path: "/api/diarists-nearby?latitude=&longitude=", auth: true }
+      - { method: "GET", path: "/api/diarist-reviews/:diaristId", auth: true }
+      - { method: "GET", path: "/api/diarists/:diaristProfileId", auth: true }
+
+flows:
+  - id: "auth_bootstrap"
+    steps:
+      - "POST /login ou sessao restaurada por token"
+      - "GET /api/users-role/"
+      - "GET /api/subscriptions/access-status"
+      - "aplicar gate de role/e-mail/assinatura"
+  - id: "registration_with_subscription"
+    steps:
+      - "POST /register"
+      - "POST /login (auto-login em alguns fluxos)"
+      - "POST /api/subscriptions/checkout-session"
+      - "retorno Stripe -> /assinatura/success|denied -> GET access-status"
+  - id: "offer_to_service"
+    steps:
+      - "cliente cria oferta"
+      - "diarista aceita ou negocia"
+      - "cliente aceita negociacao"
+      - "sistema cria/atualiza servico"
+      - "lifecycle do servico (accept/start/start-with-pin/complete/cancel)"
+  - id: "service_chat_realtime"
+    steps:
+      - "carregar mensagens e localizacoes por service_id"
+      - "abrir WS /api/ws/chat?service_id"
+      - "troca de mensagens/read receipts/localizacao/presenca"
+  - id: "presence_and_updates"
+    steps:
+      - "polling de /api/realtime/online-users"
+      - "WS /api/ws/offers para eventos de atualizacao"
+
+events:
+  http_status_semantics:
+    "401": "limpa token e invalida sessao no cliente"
+    "402": "marca acesso bloqueado por assinatura"
+  ui_events:
+    - "subscription-access-blocked-change"
+  websocket_events:
+    chat: ["message", "read", "location", "user_joined", "user_left", "presence_state", "error"]
+    offers: ["service.updated", "presence_state"]
+
+contracts_inferred:
+  response_shapes:
+    login: ["token", "email_verified?"]
+    users_role: ["role", "email_verified", "is_test_user"]
+    access_status: ["has_valid_subscription", "is_test_user?", "subscription?"]
+    paginated_collection: ["items[]", "pagination.{page,page_size,total_items,total_pages,has_next,has_previous}"]
+    checkout_session: ["session_id?", "url?"]
+  schema_variants_observed:
+    - "id vs ID"
+    - "name vs Name"
+    - "photo vs Photo"
+    - "address vs Address"
+    - "reviews vs Reviews"
+
+dependencies:
+  cross_module:
+    - "ui -> contexts -> api/realtime -> backend remoto"
+    - "offers_negotiation -> services_lifecycle"
+    - "services_lifecycle -> chat_presence_location"
+    - "auth/subscription -> route gating"
+  external_services:
+    - "Stripe (checkout)"
+    - "ViaCEP (lookup de CEP)"
+    - "Nominatim/OpenStreetMap (geocoding)"
+
+critical_points:
+  duplication:
+    - "Fluxos web e mobile duplicados (auth/ofertas/servicos/chat/perfil)"
+  coupling:
+    - "Componentes grandes com regra de negocio e fetch direto"
+  inconsistencies:
+    - "Uso misto de fetch e apiFetch"
+    - "Verbos divergentes em alguns endpoints"
+    - "Documentacao local menciona backend Go nao presente"
+  potential_bugs:
+    - "Validacao de senha com mensagem inconsistente em alguns fluxos"
+    - "Tratamento defensivo excessivo indica contrato instavel"
+
+ai_usage_guide:
+  answer_questions:
+    strategy:
+      - "Identificar dominio alvo pelo endpoint/simbolo."
+      - "Usar services[] para mapear arquivo dono e fluxo."
+      - "Validar gate de role/assinatura antes de concluir impacto."
+  suggest_changes:
+    checklist:
+      - "Mapear endpoints afetados no dominio."
+      - "Verificar paridade web + mobile."
+      - "Checar contexts globais impactados (Address, ChatCenter, Presence)."
+      - "Revisar eventos WS e status HTTP 401/402."
+  generate_features:
+    template:
+      - "Definir entidade e fluxo alvo."
+      - "Adicionar/ajustar contrato API e normalizador."
+      - "Implementar em web e mobile (ou explicitar escopo unico)."
+      - "Atualizar gates de navegacao e estados globais."
+      - "Cobrir edge cases de sessao/assinatura/realtime."
+
+prompt_playbook:
+  - id: "trace-endpoint-to-ui"
+    prompt: "Rastreie o endpoint <PATH> do cliente HTTP ate os componentes web e mobile impactados, incluindo contexts e gates."
+  - id: "impact-analysis"
+    prompt: "Se alterarmos o contrato de <ENTITY>, liste arquivos afetados, riscos de regressao e plano de migracao incremental."
+  - id: "new-feature-skeleton"
+    prompt: "Crie esqueleto de feature para <FEATURE> seguindo os dominios e fluxos deste KB, com paridade web/mobile e checklist de validacao."
+  - id: "bug-triage"
+    prompt: "Investigue bug em <FLOW_ID> usando services, flows e events deste KB e proponha causa raiz + correcoes minimas."
