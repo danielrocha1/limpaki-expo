@@ -201,31 +201,31 @@ func getMercadoPagoPreapprovalHTTP(accessToken string, preapprovalID string) (*m
 		mercadoPagoAPIBase + "/v1/subscriptions/" + escaped,
 	}
 
-	var lastErr error
+	var errs []string
 	for _, u := range candidates {
 		rawBody, status, err := mercadoPagoGET(accessToken, u)
 		if err != nil {
-			lastErr = err
+			errs = append(errs, fmt.Sprintf("%s: %v", u, err))
 			continue
 		}
 		if status < 200 || status >= 300 {
-			lastErr = fmt.Errorf("%s http %d: %s", u, status, strings.TrimSpace(string(rawBody)))
+			errs = append(errs, fmt.Sprintf("%s http %d: %s", u, status, strings.TrimSpace(string(rawBody))))
 			continue
 		}
 		var out mpPreapprovalResponse
 		if err := json.Unmarshal(rawBody, &out); err != nil {
-			lastErr = err
+			errs = append(errs, fmt.Sprintf("%s parse: %v", u, err))
 			continue
 		}
 		if strings.TrimSpace(out.ExternalReference) != "" || strings.TrimSpace(out.Status) != "" || len(strings.TrimSpace(string(out.ID))) > 0 {
 			return &out, nil
 		}
-		lastErr = errors.New("resposta sem dados uteis")
+		errs = append(errs, u+": resposta sem dados uteis")
 	}
-	if lastErr == nil {
-		lastErr = errors.New("nenhum endpoint respondeu")
+	if len(errs) == 0 {
+		return nil, errors.New("nenhum endpoint respondeu")
 	}
-	return nil, lastErr
+	return nil, fmt.Errorf("%s", strings.Join(errs, "; "))
 }
 
 func getMercadoPagoPaymentHTTP(accessToken string, paymentID string) (*mpPaymentResponse, error) {
