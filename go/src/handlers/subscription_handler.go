@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -361,7 +362,8 @@ func syncSubscriptionFromPreapproval(tx *gorm.DB, pre *mpPreapprovalResponse, no
 	extRef := strings.TrimSpace(pre.ExternalReference)
 	userID, planKey, role, err := parseExternalReference(extRef)
 	if err != nil {
-		return models.Subscription{}, false, err
+		log.Printf("[subscription] preapproval external_reference invalido ou ausente ref=%q err=%v", extRef, err)
+		return models.Subscription{}, false, nil
 	}
 
 	var existing models.Subscription
@@ -657,17 +659,23 @@ func MercadoPagoWebhookHandler(c *fiber.Ctx) error {
 	if id, err := parsePaymentIDFromRaw(note.ID); err == nil && id != "" {
 		notificationID = id
 	}
+	if notificationID == "" && paymentDataID != "" {
+		notificationID = "mp-data-" + paymentDataID
+	}
+	if notificationID == "" {
+		notificationID = fmt.Sprintf("mp-fallback-%d", time.Now().UnixNano())
+	}
 	ts := time.Now().Unix()
 
 	switch kind {
 	case "subscription_preapproval":
 		pre, err := getMercadoPagoPreapprovalFunc(token, paymentDataID)
 		if err != nil {
-			log.Printf("[subscription] webhook fetch preapproval falhou id=%s err=%v", paymentDataID, err)
-			return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "falha ao consultar preapproval"})
-		}
-		if notificationID == "" {
-			notificationID = "mpa-" + paymentDataID + "-" + pre.Status
+			log.Printf("[subscription] webhook fetch preapproval/subscription falhou id=%s err=%v", paymentDataID, err)
+			return c.JSON(fiber.Map{
+				"received": true,
+				"warning":  "consulta_mp_falhou_veja_logs",
+			})
 		}
 		err = config.DB.Transaction(func(tx *gorm.DB) error {
 			dup, err := registerWebhookEventDedupe(tx, notificationID, note.Action)
@@ -681,8 +689,8 @@ func MercadoPagoWebhookHandler(c *fiber.Ctx) error {
 			return err
 		})
 		if err != nil {
-			log.Printf("[subscription] webhook preapproval erro: %v", err)
-			return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
+			log.Printf("[subscription] webhook preapproval persistencia erro: %v", err)
+			return c.JSON(fiber.Map{"received": true, "warning": "persistencia_falhou_veja_logs"})
 		}
 		return c.JSON(fiber.Map{"received": true})
 
@@ -690,9 +698,9 @@ func MercadoPagoWebhookHandler(c *fiber.Ctx) error {
 		payment, err := getMercadoPagoPaymentFunc(token, paymentDataID)
 		if err != nil {
 			log.Printf("[subscription] webhook fetch payment falhou id=%s err=%v", paymentDataID, err)
-			return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "falha ao consultar pagamento"})
+			return c.JSON(fiber.Map{"received": true, "warning": "consulta_pagamento_falhou"})
 		}
-		if notificationID == "" {
+		if notificationID == "" || strings.HasPrefix(notificationID, "mp-data-") {
 			notificationID = "mp-" + paymentDataID + "-" + payment.Status
 		}
 		err = config.DB.Transaction(func(tx *gorm.DB) error {
@@ -708,7 +716,7 @@ func MercadoPagoWebhookHandler(c *fiber.Ctx) error {
 		})
 		if err != nil {
 			log.Printf("[subscription] webhook payment erro: %v", err)
-			return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
+			return c.JSON(fiber.Map{"received": true, "warning": err.Error()})
 		}
 		return c.JSON(fiber.Map{"received": true})
 

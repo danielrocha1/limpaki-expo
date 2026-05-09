@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -165,6 +166,27 @@ func payerIDFromRaw(raw json.RawMessage) string {
 	return strings.Trim(s, `"`)
 }
 
+func mercadoPagoGET(accessToken string, requestURL string) ([]byte, int, error) {
+	req, err := http.NewRequest(http.MethodGet, requestURL, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := mercadoPagoHTTPClient.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+	rawBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, resp.StatusCode, err
+	}
+	return rawBody, resp.StatusCode, nil
+}
+
+// getMercadoPagoPreapprovalHTTP tenta varios endpoints conforme o produto (preapproval classico vs subscriptions API).
 func getMercadoPagoPreapprovalHTTP(accessToken string, preapprovalID string) (*mpPreapprovalResponse, error) {
 	if strings.TrimSpace(accessToken) == "" {
 		return nil, errors.New("MERCADO_PAGO_ACCESS_TOKEN nao configurada")
@@ -173,27 +195,37 @@ func getMercadoPagoPreapprovalHTTP(accessToken string, preapprovalID string) (*m
 	if pid == "" {
 		return nil, errors.New("preapproval id vazio")
 	}
-	req, err := http.NewRequest(http.MethodGet, mercadoPagoAPIBase+"/preapproval/"+pid, nil)
-	if err != nil {
-		return nil, err
+	escaped := url.PathEscape(pid)
+	candidates := []string{
+		mercadoPagoAPIBase + "/preapproval/" + escaped,
+		mercadoPagoAPIBase + "/v1/subscriptions/" + escaped,
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Accept", "application/json")
 
-	resp, err := mercadoPagoHTTPClient.Do(req)
-	if err != nil {
-		return nil, err
+	var lastErr error
+	for _, u := range candidates {
+		rawBody, status, err := mercadoPagoGET(accessToken, u)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if status < 200 || status >= 300 {
+			lastErr = fmt.Errorf("%s http %d: %s", u, status, strings.TrimSpace(string(rawBody)))
+			continue
+		}
+		var out mpPreapprovalResponse
+		if err := json.Unmarshal(rawBody, &out); err != nil {
+			lastErr = err
+			continue
+		}
+		if strings.TrimSpace(out.ExternalReference) != "" || strings.TrimSpace(out.Status) != "" || len(strings.TrimSpace(string(out.ID))) > 0 {
+			return &out, nil
+		}
+		lastErr = errors.New("resposta sem dados uteis")
 	}
-	defer resp.Body.Close()
-	rawBody, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("mercado pago preapproval http %d: %s", resp.StatusCode, strings.TrimSpace(string(rawBody)))
+	if lastErr == nil {
+		lastErr = errors.New("nenhum endpoint respondeu")
 	}
-	var out mpPreapprovalResponse
-	if err := json.Unmarshal(rawBody, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return nil, lastErr
 }
 
 func getMercadoPagoPaymentHTTP(accessToken string, paymentID string) (*mpPaymentResponse, error) {
