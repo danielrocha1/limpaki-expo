@@ -18,15 +18,20 @@ function readCheckoutEnabled() {
 
 export const isSubscriptionCheckoutEnabled = readCheckoutEnabled();
 
-/** URL de redirecionamento: API própria, Mercado Pago (init_point) ou ambiente de testes (sandbox_init_point). */
+/**
+ * URL de redirecionamento para o checkout MP.
+ * Com credenciais de TESTE, a API costuma preencher init_point (produção) e sandbox_init_point; abrir
+ * init_point com cartão/PIX de teste impede concluir o pagamento. Por isso: sandbox_init_point primeiro.
+ * Em produção, sandbox_init_point costuma vir vazio — usa-se init_point.
+ */
 export function getCheckoutRedirectUrl(payload) {
   if (!payload || typeof payload !== "object") {
     return "";
   }
   return (
     payload.url ||
-    payload.init_point ||
     payload.sandbox_init_point ||
+    payload.init_point ||
     ""
   );
 }
