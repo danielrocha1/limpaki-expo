@@ -39,7 +39,7 @@ export function formatCheckoutSessionError(payload, fallbackMessage) {
     return `${base} Configure MERCADO_PAGO_ACCESS_TOKEN no servidor da API.`;
   }
   if (payload?.code === "subscription_persist_failed") {
-    return `${base} Verifique os logs do servidor (BD) e se o deploy inclui a correção do placeholder pending: na assinatura pendente.`;
+    return `${base} Verifique os logs do servidor e a migração das colunas Mercado Pago (mp_*).`;
   }
   return base;
 }

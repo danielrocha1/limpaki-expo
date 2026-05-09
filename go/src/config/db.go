@@ -29,6 +29,10 @@ func ConnectDB() {
 		log.Fatal("Erro ao conectar ao banco de dados:", err)
 	}
 
+	if err := renameLegacyStripeSchemaToMercadoPago(DB); err != nil {
+		log.Fatal("Erro ao renomear schema legado Stripe -> Mercado Pago:", err)
+	}
+
 	err = DB.AutoMigrate(
 		&models.User{},
 		&models.EmailVerificationToken{},

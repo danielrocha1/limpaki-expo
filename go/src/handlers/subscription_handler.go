@@ -215,7 +215,7 @@ func buildExternalReference(userID uint, planKey, role string) string {
 	return strconv.FormatUint(uint64(userID), 10) + "|" + planKey + "|" + role
 }
 
-// pendingSubscriptionPaymentID evita stripe_subscription_id UNIQUE com '' (varios pendentes).
+// pendingSubscriptionPaymentID evita mp_external_id UNIQUE com '' (varios pendentes).
 func pendingSubscriptionPaymentID(preferenceID string) string {
 	return "pending:" + strings.TrimSpace(preferenceID)
 }
@@ -499,7 +499,7 @@ func CreateCheckoutSession(c *fiber.Ctx) error {
 		},
 		AutoReturn:        "approved",
 		ExternalReference: extRef,
-		NotificationURL: getMercadoPagoWebhookPublicURL(),
+		NotificationURL:   getMercadoPagoWebhookPublicURL(),
 		Metadata: map[string]string{
 			"user_id": strconv.FormatUint(uint64(user.ID), 10),
 			"plan":    planConfig.Plan,
@@ -637,7 +637,7 @@ func CancelCurrentSubscription(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"message":        "Assinatura cancelada no aplicativo (renovacao automatica via Mercado Pago deve ser gerenciada na conta MP se aplicavel)",
+		"message":      "Assinatura cancelada no aplicativo (renovacao automatica via Mercado Pago deve ser gerenciada na conta MP se aplicavel)",
 		"subscription": toSubscriptionResponseDTO(sub),
 	})
 }
