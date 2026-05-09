@@ -35,7 +35,7 @@ const TARGET_ORIGIN =
   process.env.REACT_APP_API_URL ||
   envFromFile.EXPO_PUBLIC_API_URL ||
   envFromFile.REACT_APP_API_URL ||
-  "https://limpae-jcqa.onrender.com";
+  "https://limpaki-expo.onrender.com";
 const PORT = Number(process.env.LIMPAE_PROXY_PORT || 8787);
 const HOST = process.env.LIMPAE_PROXY_HOST || "0.0.0.0";
 

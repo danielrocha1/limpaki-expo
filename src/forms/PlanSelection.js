@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { apiFetch } from "../config/api";
+import { SUBSCRIPTION_PLAN_PRICE_BRL } from "../config/subscriptionPlans";
 import { getCheckoutRedirectUrl } from "../config/subscriptionCheckout";
 import "./PlanSelection.css";
 
@@ -17,7 +18,7 @@ const plans = [
   {
     id: "monthly",
     name: "Mensal",
-    price: 15.0,
+    price: SUBSCRIPTION_PLAN_PRICE_BRL.monthly,
     originalPrice: 19.9,
     description: "Ideal para quem quer testar",
     features: ["Acesso total", "Suporte prioritário", "Sem fidelidade"],
@@ -26,7 +27,7 @@ const plans = [
   {
     id: "quarterly",
     name: "Trimestral",
-    price: 37.0,
+    price: SUBSCRIPTION_PLAN_PRICE_BRL.quarterly,
     originalPrice: 45.0,
     description: "O melhor custo-benefício",
     features: ["Acesso total", "Suporte prioritário", "Economize 20%"],
@@ -36,7 +37,7 @@ const plans = [
   {
     id: "yearly",
     name: "Anual",
-    price: 150.0,
+    price: SUBSCRIPTION_PLAN_PRICE_BRL.yearly,
     originalPrice: 180.0,
     description: "Para quem quer economizar de verdade",
     features: ["Acesso total", "Suporte prioritário", "Economize 45%"],

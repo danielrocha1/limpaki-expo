@@ -41,6 +41,7 @@ func subscriptionPriceForPlan(plan string) (float64, bool) {
 	return config.Price, true
 }
 
+// Precos em BRL para Preferencia MP; manter alinhado a src/config/subscriptionPlans.js (UI).
 func subscriptionPlanByName(plan string) (subscriptionPlanConfig, bool) {
 	switch strings.ToLower(strings.TrimSpace(plan)) {
 	case subscriptionPlanMonthly:
@@ -214,6 +215,11 @@ func buildExternalReference(userID uint, planKey, role string) string {
 	return strconv.FormatUint(uint64(userID), 10) + "|" + planKey + "|" + role
 }
 
+// pendingSubscriptionPaymentID evita stripe_subscription_id UNIQUE com '' (varios pendentes).
+func pendingSubscriptionPaymentID(preferenceID string) string {
+	return "pending:" + strings.TrimSpace(preferenceID)
+}
+
 func upsertSubscriptionRecord(tx *gorm.DB, sub models.Subscription) (models.Subscription, error) {
 	var existing models.Subscription
 	err := tx.Where("user_id = ?", sub.UserID).First(&existing).Error
@@ -259,6 +265,7 @@ func createOrUpdatePendingSubscription(user models.User, plan subscriptionPlanCo
 		Plan:         plan.StoragePlan,
 		Price:        plan.Price,
 		PlanRef:      plan.Plan,
+		PaymentID:    pendingSubscriptionPaymentID(preferenceID),
 		PreferenceID: preferenceID,
 		Status:       normalizeSubscriptionStorageStatus("pending"),
 		ExpiresAt:    time.Now().UTC().Add(30 * time.Minute),
@@ -507,6 +514,7 @@ func CreateCheckoutSession(c *fiber.Ctx) error {
 
 	record, err := createOrUpdatePendingSubscription(user, planConfig, pref.ID)
 	if err != nil {
+		log.Printf("[subscription] persistir assinatura pendente: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Erro ao persistir assinatura pendente"})
 	}
 

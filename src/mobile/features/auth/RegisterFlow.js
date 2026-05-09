@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { apiFetch, buildApiUrl, setToken } from "../../../config/api";
+import { SUBSCRIPTION_PLAN_PRICE_BRL } from "../../../config/subscriptionPlans";
 import { getCheckoutRedirectUrl, isSubscriptionCheckoutEnabled } from "../../../config/subscriptionCheckout";
 import MapConfirmModal from "../map/MapConfirmModal";
 
@@ -45,7 +46,7 @@ const planOptions = [
   {
     id: "monthly",
     name: "Mensal",
-    price: 15.0,
+    price: SUBSCRIPTION_PLAN_PRICE_BRL.monthly,
     originalPrice: 19.9,
     description: "Ideal para quem quer testar",
     features: ["Acesso total", "Suporte prioritário", "Sem fidelidade"],
@@ -53,7 +54,7 @@ const planOptions = [
   {
     id: "quarterly",
     name: "Trimestral",
-    price: 37.0,
+    price: SUBSCRIPTION_PLAN_PRICE_BRL.quarterly,
     originalPrice: 45.0,
     description: "O melhor custo-benefício",
     features: ["Acesso total", "Suporte prioritário", "Economize 20%"],
@@ -62,7 +63,7 @@ const planOptions = [
   {
     id: "yearly",
     name: "Anual",
-    price: 150.0,
+    price: SUBSCRIPTION_PLAN_PRICE_BRL.yearly,
     originalPrice: 180.0,
     description: "Para quem quer economizar de verdade",
     features: ["Acesso total", "Suporte prioritário", "Economize 45%"],

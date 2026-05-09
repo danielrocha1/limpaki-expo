@@ -58,6 +58,9 @@ func TestCreateCheckoutSessionWithValidPlan(t *testing.T) {
 	if created.PreferenceID != "pref_test" {
 		t.Fatalf("preference id = %q, want pref_test", created.PreferenceID)
 	}
+	if created.PaymentID != "pending:pref_test" {
+		t.Fatalf("payment id placeholder = %q, want pending:pref_test", created.PaymentID)
+	}
 }
 
 func TestMercadoPagoWebhookApprovesSubscription(t *testing.T) {

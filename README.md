@@ -65,7 +65,7 @@ npm run doctor
 
 ## Rodar com proxy no Expo
 
-Quando quiser forcar o app a bater em um proxy local apontando para `https://limpae-jcqa.onrender.com`, use:
+Quando quiser forcar o app a bater em um proxy local apontando para o backend em Render (padrao `https://limpaki-expo.onrender.com`), use:
 
 ```bash
 npm run start:proxy
@@ -81,7 +81,9 @@ Esse fluxo:
 
 - sobe um proxy local em `0.0.0.0:8787`
 - aponta o Expo para `http://SEU_IP_LOCAL:8787`
-- encaminha requisicoes HTTP e WebSocket para `https://limpae-jcqa.onrender.com`
+- encaminha requisicoes HTTP e WebSocket para o destino em `LIMPAE_PROXY_TARGET` (padrao `https://limpaki-expo.onrender.com`)
+
+Para apontar para o Go na maquina local: `set LIMPAE_PROXY_TARGET=http://127.0.0.1:PORT` (Windows) antes de `npm run proxy:web` ou `npm run start:proxy`.
 
 Observacao:
 
