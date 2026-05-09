@@ -215,7 +215,7 @@ func buildExternalReference(userID uint, planKey, role string) string {
 	return strconv.FormatUint(uint64(userID), 10) + "|" + planKey + "|" + role
 }
 
-// pendingSubscriptionPaymentID evita mp_external_id UNIQUE com '' (varios pendentes).
+// pendingSubscriptionPaymentID evita mp_external_id UNIQUE com ” (varios pendentes).
 func pendingSubscriptionPaymentID(preferenceID string) string {
 	return "pending:" + strings.TrimSpace(preferenceID)
 }
@@ -226,6 +226,7 @@ func upsertSubscriptionRecord(tx *gorm.DB, sub models.Subscription) (models.Subs
 	switch {
 	case err == nil:
 		sub.ID = existing.ID
+		sub.CreatedAt = existing.CreatedAt
 		if sub.PayerID == "" {
 			sub.PayerID = existing.PayerID
 		}

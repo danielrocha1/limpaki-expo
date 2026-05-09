@@ -61,6 +61,10 @@ func ConnectDB() {
 		log.Fatal("Erro ao alinhar tamanho de service_type:", err)
 	}
 
+	if err := ensureSubscriptionStatusCheckConstraint(DB); err != nil {
+		log.Fatal("Erro ao alinhar constraint de status em subscriptions:", err)
+	}
+
 	fmt.Println("Banco de dados conectado e migrado com sucesso!")
 }
 
