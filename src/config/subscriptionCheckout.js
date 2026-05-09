@@ -30,3 +30,16 @@ export function getCheckoutRedirectUrl(payload) {
     ""
   );
 }
+
+/** Mensagem amigável a partir do JSON de erro do POST /subscriptions/checkout-session. */
+export function formatCheckoutSessionError(payload, fallbackMessage) {
+  const base =
+    (payload && typeof payload === "object" && payload.error) || fallbackMessage || "Não foi possível iniciar o checkout.";
+  if (payload?.code === "mp_token_missing") {
+    return `${base} Configure MERCADO_PAGO_ACCESS_TOKEN no servidor da API.`;
+  }
+  if (payload?.code === "subscription_persist_failed") {
+    return `${base} Verifique os logs do servidor (BD) e se o deploy inclui a correção do placeholder pending: na assinatura pendente.`;
+  }
+  return base;
+}

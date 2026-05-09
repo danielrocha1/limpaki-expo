@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { apiFetch } from "../../../config/api";
 import { SUBSCRIPTION_PLAN_PRICE_BRL } from "../../../config/subscriptionPlans";
-import { getCheckoutRedirectUrl } from "../../../config/subscriptionCheckout";
+import { formatCheckoutSessionError, getCheckoutRedirectUrl } from "../../../config/subscriptionCheckout";
 import { styles as shellStyles } from "../AppShell.styles";
 
 const palette = {
@@ -239,10 +239,12 @@ export default function SubscriptionScreen({ session, onSessionUpdate, onAccessG
         planId: plan?.id,
         ok: response.ok,
         status: response.status,
+        error: payload?.error,
+        code: payload?.code,
       });
 
       if (!response.ok) {
-        throw new Error(payload?.error || "Não foi possível iniciar o checkout.");
+        throw new Error(formatCheckoutSessionError(payload, "Não foi possível iniciar o checkout."));
       }
 
       await redirectToCheckout(payload);

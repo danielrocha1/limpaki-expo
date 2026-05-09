@@ -466,6 +466,7 @@ func CreateCheckoutSession(c *fiber.Ctx) error {
 	if !mercadoPagoConfigured() {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "MERCADO_PAGO_ACCESS_TOKEN nao configurada",
+			"code":  "mp_token_missing",
 		})
 	}
 
@@ -515,7 +516,10 @@ func CreateCheckoutSession(c *fiber.Ctx) error {
 	record, err := createOrUpdatePendingSubscription(user, planConfig, pref.ID)
 	if err != nil {
 		log.Printf("[subscription] persistir assinatura pendente: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Erro ao persistir assinatura pendente"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Erro ao persistir assinatura pendente",
+			"code":  "subscription_persist_failed",
+		})
 	}
 
 	_ = record

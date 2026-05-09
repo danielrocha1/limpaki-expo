@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { apiFetch } from "../config/api";
 import { SUBSCRIPTION_PLAN_PRICE_BRL } from "../config/subscriptionPlans";
-import { getCheckoutRedirectUrl } from "../config/subscriptionCheckout";
+import { formatCheckoutSessionError, getCheckoutRedirectUrl } from "../config/subscriptionCheckout";
 import "./PlanSelection.css";
 
 const checkEmoji = "\u2714\uFE0F";
@@ -73,9 +73,13 @@ async function defaultStartCheckout(plan) {
     logSubscriptionError("checkout request failed", {
       planId: plan?.id,
       status: response.status,
+      error: payload?.error,
+      code: payload?.code,
       payload,
     });
-    throw new Error(payload?.error || "Não foi possível iniciar o checkout da assinatura.");
+    throw new Error(
+      formatCheckoutSessionError(payload, "Não foi possível iniciar o checkout da assinatura."),
+    );
   }
 
   const redirectUrl = getCheckoutRedirectUrl(payload);

@@ -14,7 +14,11 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { apiFetch, buildApiUrl, setToken } from "../../../config/api";
 import { SUBSCRIPTION_PLAN_PRICE_BRL } from "../../../config/subscriptionPlans";
-import { getCheckoutRedirectUrl, isSubscriptionCheckoutEnabled } from "../../../config/subscriptionCheckout";
+import {
+  formatCheckoutSessionError,
+  getCheckoutRedirectUrl,
+  isSubscriptionCheckoutEnabled,
+} from "../../../config/subscriptionCheckout";
 import MapConfirmModal from "../map/MapConfirmModal";
 
 const NOMINATIM_USER_AGENT = "LimpaeExpo/1.0 (+https://limpae.app; contato: suporte@limpae.app)";
@@ -1247,7 +1251,9 @@ export default function RegisterFlow({ onBackToLogin, onRegistrationSuccess }) {
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(payload?.error || "Não foi possível iniciar o checkout da assinatura.");
+        throw new Error(
+          formatCheckoutSessionError(payload, "Não foi possível iniciar o checkout da assinatura."),
+        );
       }
 
       const redirectUrl = getCheckoutRedirectUrl(payload);
