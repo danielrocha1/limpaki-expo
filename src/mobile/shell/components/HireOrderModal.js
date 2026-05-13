@@ -1,6 +1,15 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import {
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "../../../config/api";
 import { palette, styles } from "../AppShell.styles";
 import {
@@ -71,6 +80,105 @@ const TimeWheel = memo(function TimeWheel({
   );
 });
 
+const hireOutcomePalette = {
+  success: "#059669",
+  successBg: "#ecfdf5",
+  error: "#dc2626",
+  errorBg: "#fef2f2",
+  ink: "#0f172a",
+  muted: "#64748b",
+  cardBorder: "rgba(15, 23, 42, 0.08)",
+};
+
+const hireOutcomeStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.52)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#ffffff",
+    borderRadius: 22,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    borderWidth: 1,
+    borderColor: hireOutcomePalette.cardBorder,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    elevation: 12,
+  },
+  iconWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: hireOutcomePalette.ink,
+    textAlign: "center",
+    marginBottom: 10,
+    letterSpacing: -0.3,
+  },
+  body: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: hireOutcomePalette.muted,
+    textAlign: "center",
+    marginBottom: 26,
+  },
+  button: {
+    backgroundColor: palette.accent,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+});
+
+function HireOutcomeModal({ visible, variant, message, onDismiss }) {
+  const isSuccess = variant === "success";
+  const iconName = isSuccess ? "checkmark-circle" : "close-circle";
+  const iconColor = isSuccess ? hireOutcomePalette.success : hireOutcomePalette.error;
+  const wrapBg = isSuccess ? hireOutcomePalette.successBg : hireOutcomePalette.errorBg;
+  const title = isSuccess ? "Contratação concluída" : "Não foi possível contratar";
+  const body = isSuccess
+    ? "O serviço foi registrado com sucesso. A diarista será notificada e poderá confirmar os detalhes no app."
+    : message ||
+      "Verifique sua conexão e tente novamente. Se o problema continuar, entre em contato com o suporte.";
+
+  return (
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onDismiss}>
+      <View style={hireOutcomeStyles.overlay}>
+        <View style={hireOutcomeStyles.card}>
+          <View style={[hireOutcomeStyles.iconWrap, { backgroundColor: wrapBg }]}>
+            <Ionicons name={iconName} size={56} color={iconColor} />
+          </View>
+          <Text style={hireOutcomeStyles.title}>{title}</Text>
+          <Text style={hireOutcomeStyles.body}>{body}</Text>
+          <TouchableOpacity style={hireOutcomeStyles.button} onPress={onDismiss} activeOpacity={0.88}>
+            <Text style={hireOutcomeStyles.buttonText}>{isSuccess ? "Ótimo, continuar" : "Entendi"}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function getDayStart(value) {
   const date = value instanceof Date ? new Date(value) : new Date(value);
   date.setHours(0, 0, 0, 0);
@@ -79,6 +187,7 @@ function getDayStart(value) {
 
 export default function HireOrderModal({ visible, diarist, selectedAddress, onClose, onSuccess }) {
   const [currentStep, setCurrentStep] = useState(1);
+  const [hireOutcome, setHireOutcome] = useState(null);
   const [date, setDate] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const today = new Date();
@@ -115,7 +224,14 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
     setDuration(1);
     setServiceType("");
     setDailyStart("08");
+    setHireOutcome(null);
   }, [visible, diarist]);
+
+  useEffect(() => {
+    if (!visible) {
+      setHireOutcome(null);
+    }
+  }, [visible]);
 
   useEffect(() => {
     let cancelled = false;
@@ -399,19 +515,30 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
         throw new Error(data?.error || "Nao foi possivel concluir a contratacao.");
       }
 
-      Alert.alert("Contratacao realizada", "Servico contratado com sucesso.");
-      onSuccess?.();
-      onClose?.();
+      setHireOutcome({ variant: "success" });
     } catch (error) {
-      Alert.alert("Erro na contratacao", error.message || "Nao foi possivel contratar o servico.");
+      setHireOutcome({
+        variant: "error",
+        message: error.message || "Nao foi possivel contratar o servico.",
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleDismissHireOutcome = () => {
+    const wasSuccess = hireOutcome?.variant === "success";
+    setHireOutcome(null);
+    if (wasSuccess) {
+      onSuccess?.();
+      onClose?.();
+    }
+  };
+
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.orderShell}>
+    <>
+      <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+        <View style={styles.orderShell}>
         <View style={styles.orderHeader}>
           <TouchableOpacity style={styles.orderCloseButton} onPress={onClose}>
             <Feather name="x" size={18} color={palette.ink} />
@@ -755,7 +882,14 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
           )}
         </View>
       </View>
-    </Modal>
+      </Modal>
+      <HireOutcomeModal
+        visible={Boolean(hireOutcome)}
+        variant={hireOutcome?.variant === "error" ? "error" : "success"}
+        message={hireOutcome?.message}
+        onDismiss={handleDismissHireOutcome}
+      />
+    </>
   );
 }
 
