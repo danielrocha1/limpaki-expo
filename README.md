@@ -48,6 +48,22 @@ No painel do **mesmo** servico que hospeda a API (ex.: `limpaki-expo.onrender.co
 
 Outras variaveis que o backend pode usar localmente (email, Supabase, etc.) continuam no `.env` carregado pelo Go em `src/config/.env` em desenvolvimento; no Render define-as tambem em **Environment**. No Mercado Pago, cadastra o webhook igual ao `MERCADO_PAGO_WEBHOOK_URL`.
 
+### Testes Mercado Pago (Checkout Pro / preferencias)
+
+Este projeto usa **Checkout Pro** (API de [preferencias](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/integration-test/test-cards)), nao Checkout Bricks. Segue a documentacao oficial de **contas de teste**:
+
+| Papel | Onde usar no teu fluxo |
+|-------|-------------------------|
+| **Vendedor** | Credenciais da **tua aplicacao** no painel: `MERCADO_PAGO_ACCESS_TOKEN` de **teste** (`TEST-...`) no backend / Render. E o mesmo pais (ex. Brasil) da conta compradora de teste. |
+| **Comprador** | Ao abrir o `sandbox_init_point`, faz login no checkout com o **usuario de teste comprador** criado em [Suas integracoes](https://www.mercadopago.com.br/developers/panel/app) > aplicacao > **Contas de teste** (username + senha; codigo de 6 digitos se pedir verificacao por email). |
+| **Cartoes de teste** | [Cartoes de teste](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/integration-test/test-cards) (numero, nome titular, validade, CVV conforme a doc). |
+
+Notas:
+
+- Para **Checkout Pro**, o painel pode **criar contas de teste automaticamente** ao criar a aplicacao; tambem podes criar manualmente (**Vendedor** / **Comprador** / ate 15 contas).
+- **Checkout Bricks** tem fluxo de teste diferente e a doc indica limitacoes a **usuarios de teste** nessa seccao — nao se aplica aqui.
+- O app Expo prefere **`sandbox_init_point`** quando existe (token de teste), para nao misturar checkout de producao com cartoes de teste.
+
 ## Rodar com Expo
 
 ```bash
