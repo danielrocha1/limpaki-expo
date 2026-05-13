@@ -342,8 +342,33 @@ export default function SubscriptionScreen({
       return undefined;
     }
     if (kind === "success") {
-      void pollAfterMpReturn({ bypassPendingKey: true });
-      onConsumeMpReturnHint?.();
+      const params = mpReturnHint.params || {};
+      const payId = params.payment_id || params.collection_id;
+      void (async () => {
+        if (payId && Platform.OS !== "web") {
+          try {
+            const confirmRes = await apiFetch("/subscriptions/confirm-mp-payment", {
+              method: "POST",
+              authenticated: true,
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ payment_id: String(payId) }),
+            });
+            logSubscriptionDebug("confirm-mp-payment", {
+              ok: confirmRes.ok,
+              status: confirmRes.status,
+            });
+          } catch (confirmErr) {
+            logSubscriptionDebug("confirm-mp-payment error", {
+              message: confirmErr?.message || String(confirmErr),
+            });
+          }
+        }
+        await pollAfterMpReturn({ bypassPendingKey: true });
+        onConsumeMpReturnHint?.();
+      })();
+      return undefined;
     }
     return undefined;
   }, [mpReturnHint, onConsumeMpReturnHint, pollAfterMpReturn]);

@@ -272,6 +272,10 @@ type SubscriptionCreateRequestDTO struct {
 	MpPendingURL string `json:"mp_pending_url,omitempty"`
 }
 
+type MercadoPagoConfirmPaymentRequestDTO struct {
+	PaymentID string `json:"payment_id"`
+}
+
 type ReviewWriteRequestDTO struct {
 	ServiceID      uint   `json:"service_id"`
 	ClientComment  string `json:"client_comment"`

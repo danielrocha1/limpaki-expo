@@ -150,6 +150,62 @@ func TestCreateCheckoutSessionInvalidDeepLinkUsesEnv(t *testing.T) {
 	}
 }
 
+func TestConfirmMercadoPagoPaymentUsesPreferenceWhenExternalRefEmpty(t *testing.T) {
+	db := setupFlowTestDB(t)
+	user := seedUser(t, db, t.Name()+"-confmp", "cliente")
+	t.Setenv("MERCADO_PAGO_ACCESS_TOKEN", "TEST-TOKEN")
+
+	restore := restoreMercadoPagoFuncs()
+	defer restore()
+
+	getMercadoPagoPaymentFunc = func(accessToken string, paymentID string) (*mpPaymentResponse, error) {
+		rawID, _ := json.Marshal(777001)
+		return &mpPaymentResponse{
+			ID:                rawID,
+			Status:            "approved",
+			ExternalReference: "",
+			PreferenceID:      "pref_confirm_pref",
+			TransactionAmount: 15,
+			CurrencyID:        "BRL",
+		}, nil
+	}
+
+	_, err := createOrUpdatePendingSubscription(user, subscriptionPlanConfig{
+		Plan:        subscriptionPlanMonthly,
+		StoragePlan: "premium",
+		Price:       15,
+	}, "pref_confirm_pref")
+	if err != nil {
+		t.Fatalf("pending: %v", err)
+	}
+
+	app := testAppWithUser(user.ID, func(app *fiber.App) {
+		app.Post("/subscriptions/confirm-mp-payment", ConfirmMercadoPagoPayment)
+	})
+
+	req := httptest.NewRequest("POST", "/subscriptions/confirm-mp-payment", bytes.NewBufferString(`{"payment_id":"777001"}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+
+	var sub models.Subscription
+	if err := db.Where("user_id = ?", user.ID).First(&sub).Error; err != nil {
+		t.Fatalf("load subscription: %v", err)
+	}
+	if sub.Status != "active" {
+		t.Fatalf("status = %q, want active", sub.Status)
+	}
+	if sub.PaymentID != "777001" {
+		t.Fatalf("payment id = %q, want 777001", sub.PaymentID)
+	}
+}
+
 func TestMercadoPagoWebhookApprovesSubscription(t *testing.T) {
 	db := setupFlowTestDB(t)
 	user := seedUser(t, db, t.Name()+"-wh", "cliente")

@@ -29,6 +29,8 @@ const (
 	defaultSubscriptionPendingURL = "limpae://subscription/pending"
 )
 
+var errMercadoPagoPaymentUserMismatch = errors.New("mp_payment_user_mismatch")
+
 type subscriptionPlanConfig struct {
 	Plan        string
 	StoragePlan string
@@ -340,10 +342,34 @@ func createOrUpdatePendingSubscription(user models.User, plan subscriptionPlanCo
 	return upsertSubscriptionRecord(config.DB, record)
 }
 
+// augmentPaymentExternalRefFromPendingPreference preenche external_reference no objeto de pagamento
+// quando a API MP devolve o campo vazio mas inclui preference_id (Checkout Pro).
+func augmentPaymentExternalRefFromPendingPreference(tx *gorm.DB, payment *mpPaymentResponse) {
+	if payment == nil || strings.TrimSpace(payment.ExternalReference) != "" {
+		return
+	}
+	pid := strings.TrimSpace(payment.PreferenceID)
+	if pid == "" {
+		return
+	}
+	var pending models.Subscription
+	err := tx.Where(&models.Subscription{PreferenceID: pid}).First(&pending).Error
+	if err != nil || pending.UserID == 0 {
+		return
+	}
+	planKey := strings.TrimSpace(pending.PlanRef)
+	role := strings.TrimSpace(pending.Role)
+	if planKey == "" || role == "" {
+		return
+	}
+	payment.ExternalReference = buildExternalReference(pending.UserID, planKey, role)
+}
+
 func syncSubscriptionFromApprovedPayment(tx *gorm.DB, payment *mpPaymentResponse, notificationID string, notificationCreated int64) (models.Subscription, bool, error) {
 	if payment == nil {
 		return models.Subscription{}, false, errors.New("pagamento ausente")
 	}
+	augmentPaymentExternalRefFromPendingPreference(tx, payment)
 	extRef := strings.TrimSpace(payment.ExternalReference)
 	userID, planKey, role, err := parseExternalReference(extRef)
 	if err != nil {
@@ -595,6 +621,71 @@ func CreateCheckoutSession(c *fiber.Ctx) error {
 	})
 }
 
+// ConfirmMercadoPagoPayment permite ao app nativo sincronizar a assinatura apos o deep link,
+// quando o webhook MP ainda nao correu ou o pagamento veio sem external_reference.
+func ConfirmMercadoPagoPayment(c *fiber.Ctx) error {
+	userID, err := RequireAuthenticatedUser(c)
+	if err != nil {
+		return err
+	}
+
+	var req MercadoPagoConfirmPaymentRequestDTO
+	if decodeErrors := decodeStrictJSON(c, &req); len(decodeErrors) > 0 {
+		return writeValidationError(c, decodeErrors)
+	}
+
+	payID := strings.TrimSpace(req.PaymentID)
+	if payID == "" {
+		return writeValidationError(c, []ValidationFieldError{{Field: "payment_id", Reason: "is required"}})
+	}
+
+	if !mercadoPagoConfigured() {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "MERCADO_PAGO_ACCESS_TOKEN nao configurada",
+			"code":  "mp_token_missing",
+		})
+	}
+
+	token := getMercadoPagoAccessToken()
+	payment, err := getMercadoPagoPaymentFunc(token, payID)
+	if err != nil {
+		log.Printf("[subscription] confirm-mp-payment consulta MP id=%s err=%v", payID, err)
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
+			"error": "Nao foi possivel consultar o pagamento no Mercado Pago",
+		})
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		augmentPaymentExternalRefFromPendingPreference(tx, payment)
+		extRef := strings.TrimSpace(payment.ExternalReference)
+		puid, _, _, perr := parseExternalReference(extRef)
+		if perr != nil {
+			return perr
+		}
+		if puid != userID {
+			return errMercadoPagoPaymentUserMismatch
+		}
+		_, _, syncErr := syncSubscriptionFromApprovedPayment(tx, payment, "app-confirm:"+payID, time.Now().Unix())
+		return syncErr
+	})
+
+	if err != nil {
+		if errors.Is(err, errMercadoPagoPaymentUserMismatch) {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "Este pagamento nao corresponde ao usuario logado",
+				"code":  "mp_payment_user_mismatch",
+			})
+		}
+		log.Printf("[subscription] confirm-mp-payment persistencia id=%s err=%v", payID, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Nao foi possivel sincronizar a assinatura a partir deste pagamento",
+			"code":  "mp_sync_failed",
+		})
+	}
+
+	return c.JSON(fiber.Map{"received": true})
+}
+
 func GetSubscriptions(c *fiber.Ctx) error {
 	userID, err := RequireAuthenticatedUser(c)
 	if err != nil {
@@ -718,6 +809,9 @@ func MercadoPagoWebhookHandler(c *fiber.Ctx) error {
 	}
 
 	kind := strings.ToLower(strings.TrimSpace(note.Type))
+	if kind == "" {
+		kind = strings.ToLower(strings.TrimSpace(note.Topic))
+	}
 	if kind == "" {
 		kind = "payment"
 	}

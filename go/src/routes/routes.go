@@ -76,6 +76,7 @@ func SetupRoutes(app *fiber.App) {
 	api.Get("/subscriptions/current", handlers.GetCurrentSubscription)
 	api.Get("/subscriptions/access-status", handlers.GetSubscriptionAccessStatus)
 	api.Post("/subscriptions/checkout-session", handlers.CreateCheckoutSession)
+	api.Post("/subscriptions/confirm-mp-payment", handlers.ConfirmMercadoPagoPayment)
 	api.Post("/subscriptions/cancel", handlers.CancelCurrentSubscription)
 	api.Get("/subscriptions/:id", handlers.GetSubscription)
 	api.Put("/subscriptions/:id", handlers.UpdateSubscription)

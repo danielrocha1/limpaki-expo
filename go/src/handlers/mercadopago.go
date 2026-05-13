@@ -73,6 +73,7 @@ type mpPaymentResponse struct {
 	Status              string          `json:"status"`
 	StatusDetail        string          `json:"status_detail"`
 	ExternalReference   string          `json:"external_reference"`
+	PreferenceID        string          `json:"preference_id"`
 	DateApproved        *string         `json:"date_approved"`
 	Payer               *mpPayerDetail  `json:"payer"`
 	TransactionAmount   float64         `json:"transaction_amount"`
@@ -283,6 +284,7 @@ type mercadoPagoWebhookNotification struct {
 	ID       json.RawMessage `json:"id"`
 	LiveMode bool            `json:"live_mode"`
 	Type     string          `json:"type"`
+	Topic    string          `json:"topic"`
 	Action   string          `json:"action"`
 	Data     struct {
 		ID json.RawMessage `json:"id"`
