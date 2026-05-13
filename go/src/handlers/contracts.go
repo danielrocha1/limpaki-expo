@@ -265,6 +265,11 @@ type PaymentUpdateRequestDTO struct {
 
 type SubscriptionCreateRequestDTO struct {
 	Plan string `json:"plan"`
+	// Opcional: apenas scheme limpae:// e caminhos de retorno do checkout (app nativo).
+	// Se válidos, substituem MERCADO_PAGO_*_URL do servidor para esta preferência.
+	MpSuccessURL string `json:"mp_success_url,omitempty"`
+	MpFailureURL string `json:"mp_failure_url,omitempty"`
+	MpPendingURL string `json:"mp_pending_url,omitempty"`
 }
 
 type ReviewWriteRequestDTO struct {

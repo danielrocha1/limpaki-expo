@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AppState,
   Image,
+  Linking,
   Platform,
   StatusBar,
   StyleSheet,
@@ -28,6 +29,10 @@ import {
 import RegisterFlow from "../features/auth/RegisterFlow";
 import AppShell from "../shell/AppShell";
 import { formatAddress, normalizeAddress } from "../shell/utils/shellUtils";
+import {
+  DEFERRED_MP_RETURN_STORAGE_KEY,
+  parseMercadoPagoSubscriptionReturnUrl,
+} from "../subscriptionMpDeepLink";
 
 const palette = {
   bgTop: "#2f5fe0",
@@ -56,6 +61,7 @@ function MobileAppContent() {
   const [isBootstrappingSession, setIsBootstrappingSession] = useState(true);
   const [successMessage, setSuccessMessage] = useState("");
   const [session, setSession] = useState(null);
+  const [subscriptionMpReturnHint, setSubscriptionMpReturnHint] = useState(null);
   const [appRoute, setAppRoute] = useState(null);
   const [profileIntent, setProfileIntent] = useState(null);
   const [addressOptions, setAddressOptions] = useState([]);
@@ -65,8 +71,16 @@ function MobileAppContent() {
   const shouldShowHeader =
     isBootstrappingSession || (authMode !== "login" && authMode !== "register");
 
+  const sessionRef = useRef(session);
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  const mpInitialUrlProbeDoneRef = useRef(false);
+
   const resetSessionState = () => {
     setSession(null);
+    setSubscriptionMpReturnHint(null);
     setAppRoute(null);
     setProfileIntent(null);
     setAddressOptions([]);
@@ -325,6 +339,110 @@ function MobileAppContent() {
     };
   }, []);
 
+  const consumeSubscriptionMpReturnHint = useCallback(() => {
+    setSubscriptionMpReturnHint(null);
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      return undefined;
+    }
+    const sub = Linking.addEventListener("url", ({ url }) => {
+      const parsed = parseMercadoPagoSubscriptionReturnUrl(url);
+      if (!parsed) {
+        return;
+      }
+      const cur = sessionRef.current;
+      if (cur?.token) {
+        setAppRoute("subscription");
+        setSubscriptionMpReturnHint({
+          kind: parsed.kind,
+          params: parsed.params,
+          key: Date.now(),
+        });
+      } else {
+        void AsyncStorage.setItem(DEFERRED_MP_RETURN_STORAGE_KEY, url);
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web" || isBootstrappingSession || mpInitialUrlProbeDoneRef.current) {
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      let initial;
+      try {
+        initial = await Linking.getInitialURL();
+      } catch (_e) {
+        initial = null;
+      }
+      mpInitialUrlProbeDoneRef.current = true;
+      if (cancelled || !initial) {
+        return;
+      }
+      const parsed = parseMercadoPagoSubscriptionReturnUrl(initial);
+      if (!parsed) {
+        return;
+      }
+      if (session?.token) {
+        setAppRoute("subscription");
+        setSubscriptionMpReturnHint({
+          kind: parsed.kind,
+          params: parsed.params,
+          key: Date.now(),
+        });
+      } else {
+        try {
+          await AsyncStorage.setItem(DEFERRED_MP_RETURN_STORAGE_KEY, initial);
+        } catch (_e2) {
+          /* ignore */
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isBootstrappingSession, session?.token]);
+
+  useEffect(() => {
+    if (Platform.OS === "web" || !session?.token) {
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      let url;
+      try {
+        url = await AsyncStorage.getItem(DEFERRED_MP_RETURN_STORAGE_KEY);
+      } catch (_e) {
+        return;
+      }
+      if (!url || cancelled) {
+        return;
+      }
+      const parsed = parseMercadoPagoSubscriptionReturnUrl(url);
+      try {
+        await AsyncStorage.removeItem(DEFERRED_MP_RETURN_STORAGE_KEY);
+      } catch (_e2) {
+        /* ignore */
+      }
+      if (!parsed) {
+        return;
+      }
+      setAppRoute("subscription");
+      setSubscriptionMpReturnHint({
+        kind: parsed.kind,
+        params: parsed.params,
+        key: Date.now(),
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.token]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -497,6 +615,8 @@ function MobileAppContent() {
             session={session}
             onSessionUpdate={setSession}
             onRouteChange={setAppRoute}
+            mpReturnHint={subscriptionMpReturnHint}
+            onConsumeMpReturnHint={consumeSubscriptionMpReturnHint}
             onLogout={async () => {
               await clearToken();
               resetSessionState();

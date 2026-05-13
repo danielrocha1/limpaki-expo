@@ -19,6 +19,8 @@ export default function AppShell({
   onRouteChange,
   onSessionUpdate,
   onLogout,
+  mpReturnHint,
+  onConsumeMpReturnHint,
 }) {
   const insets = useSafeAreaInsets();
   const bottomOffset = (Platform.OS === "ios" ? Math.max(insets.bottom, 0) : 0) + 5;
@@ -71,6 +73,8 @@ export default function AppShell({
         <SubscriptionScreen
           session={session}
           onSessionUpdate={onSessionUpdate}
+          mpReturnHint={mpReturnHint}
+          onConsumeMpReturnHint={onConsumeMpReturnHint}
           onAccessGranted={() => {
             setCurrentRoute("services");
           }}

@@ -2,6 +2,7 @@
   "expo": {
     "name": "Limpae Expo",
     "slug": "limpae-expo",
+    "scheme": "limpae",
     "version": "1.0.0",
     "orientation": "portrait",
     "assetBundlePatterns": [

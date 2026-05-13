@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -22,9 +23,10 @@ const (
 	subscriptionPlanQuarterly = "quarterly"
 	subscriptionPlanYearly    = "yearly"
 
-	defaultSubscriptionSuccessURL = "https://limpae.vercel.app/assinatura/success"
-	defaultSubscriptionFailureURL = "https://limpae.vercel.app/assinatura/denied"
-	defaultSubscriptionPendingURL = "https://limpae.vercel.app/assinatura/denied"
+	// Retorno Checkout Pro no app nativo (deep link). Web / fallback: MERCADO_PAGO_*_URL ou Vercel.
+	defaultSubscriptionSuccessURL = "limpae://subscription/success"
+	defaultSubscriptionFailureURL = "limpae://subscription/failure"
+	defaultSubscriptionPendingURL = "limpae://subscription/pending"
 )
 
 type subscriptionPlanConfig struct {
@@ -99,6 +101,69 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+const maxMpClientReturnURLLen = 768
+
+type mpReturnURLKind int
+
+const (
+	mpReturnSuccessURL mpReturnURLKind = iota
+	mpReturnFailureURL
+	mpReturnPendingURL
+)
+
+func normalizeLimpaeCheckoutPath(u *url.URL) string {
+	if u == nil || !strings.EqualFold(u.Scheme, "limpae") {
+		return ""
+	}
+	host := strings.ToLower(strings.TrimSpace(u.Host))
+	path := strings.Trim(strings.ToLower(u.Path), "/")
+	if host != "" && path != "" {
+		return host + "/" + path
+	}
+	if host != "" {
+		return host
+	}
+	return path
+}
+
+func isAllowedLimpaeCheckoutReturnURL(raw string, kind mpReturnURLKind) bool {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || len(raw) > maxMpClientReturnURLLen {
+		return false
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u == nil {
+		return false
+	}
+	p := normalizeLimpaeCheckoutPath(u)
+	switch kind {
+	case mpReturnSuccessURL:
+		return p == "subscription/success" || p == "assinatura/success"
+	case mpReturnFailureURL:
+		return p == "subscription/failure" || p == "subscription/denied" ||
+			p == "assinatura/failure" || p == "assinatura/denied"
+	case mpReturnPendingURL:
+		return p == "subscription/pending" || p == "assinatura/pending"
+	default:
+		return false
+	}
+}
+
+func pickMpCheckoutReturnURL(client string, server string, kind mpReturnURLKind) string {
+	if isAllowedLimpaeCheckoutReturnURL(client, kind) {
+		return strings.TrimSpace(client)
+	}
+	return server
+}
+
+func resolveMercadoPagoCheckoutBackURLs(req SubscriptionCreateRequestDTO) mpBackURLs {
+	return mpBackURLs{
+		Success: pickMpCheckoutReturnURL(req.MpSuccessURL, getSubscriptionSuccessURL(), mpReturnSuccessURL),
+		Failure: pickMpCheckoutReturnURL(req.MpFailureURL, getSubscriptionFailureURL(), mpReturnFailureURL),
+		Pending: pickMpCheckoutReturnURL(req.MpPendingURL, getSubscriptionPendingURL(), mpReturnPendingURL),
+	}
+}
+
 func getSubscriptionSuccessURL() string {
 	return firstNonEmpty(
 		os.Getenv("MERCADO_PAGO_SUCCESS_URL"),
@@ -119,6 +184,7 @@ func getSubscriptionPendingURL() string {
 	return firstNonEmpty(
 		os.Getenv("MERCADO_PAGO_PENDING_URL"),
 		os.Getenv("SUBSCRIPTION_PENDING_URL"),
+		getSubscriptionEnvOrDefault("STRIPE_CHECKOUT_PENDING_URL", defaultSubscriptionPendingURL),
 		getSubscriptionFailureURL(),
 	)
 }
@@ -493,11 +559,7 @@ func CreateCheckoutSession(c *fiber.Ctx) error {
 			CurrencyID: "BRL",
 		}},
 		Payer: mpPayer{Email: user.Email},
-		BackURLs: mpBackURLs{
-			Success: getSubscriptionSuccessURL(),
-			Failure: getSubscriptionFailureURL(),
-			Pending: getSubscriptionPendingURL(),
-		},
+		BackURLs: resolveMercadoPagoCheckoutBackURLs(request),
 		AutoReturn:        "approved",
 		ExternalReference: extRef,
 		NotificationURL:   getMercadoPagoWebhookPublicURL(),

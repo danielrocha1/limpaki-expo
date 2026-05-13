@@ -166,32 +166,41 @@ function StatusCard({ type, text }) {
   );
 }
 
+function paymentFeedbackToModalVariant(feedback) {
+  if (feedback === "success") {
+    return "success";
+  }
+  if (feedback === "pending") {
+    return "pending";
+  }
+  return "failed";
+}
+
 function SubscriptionPaymentResultModal({ visible, variant, onDismiss }) {
   const isSuccess = variant === "success";
+  const isPending = variant === "pending";
+  const iconName = isSuccess ? "checkmark-circle" : isPending ? "time-outline" : "close-circle";
+  const iconColor = isSuccess ? palette.gold : isPending ? palette.info : palette.error;
+  const wrapBg = isSuccess ? palette.successBg : isPending ? palette.infoBg : palette.errorBg;
+  const title = isSuccess
+    ? "Pagamento confirmado"
+    : isPending
+      ? "Pagamento pendente"
+      : "Pagamento não concluído";
+  const body = isSuccess
+    ? "Sua assinatura foi ativada. Aproveite o acesso premium no Limpae."
+    : isPending
+      ? "O Mercado Pago marcou este pagamento como pendente. Quando for aprovado, seu acesso será liberado automaticamente."
+      : "Não encontramos a assinatura ativa. Se você acabou de pagar, aguarde alguns instantes ou tente novamente. Se cancelou no Mercado Pago, escolha um plano outra vez.";
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onDismiss}>
       <View style={styles.paymentModalOverlay}>
         <View style={styles.paymentModalCard}>
-          <View
-            style={[
-              styles.paymentModalIconWrap,
-              { backgroundColor: isSuccess ? palette.successBg : palette.errorBg },
-            ]}
-          >
-            <Ionicons
-              name={isSuccess ? "checkmark-circle" : "close-circle"}
-              size={112}
-              color={isSuccess ? palette.gold : palette.error}
-            />
+          <View style={[styles.paymentModalIconWrap, { backgroundColor: wrapBg }]}>
+            <Ionicons name={iconName} size={112} color={iconColor} />
           </View>
-          <Text style={styles.paymentModalTitle}>
-            {isSuccess ? "Pagamento confirmado" : "Pagamento não concluído"}
-          </Text>
-          <Text style={styles.paymentModalBody}>
-            {isSuccess
-              ? "Sua assinatura foi ativada. Aproveite o acesso premium no Limpae."
-              : "Não encontramos a assinatura ativa. Se você acabou de pagar, aguarde alguns instantes e tente de novo no Mercado Pago ou escolha um plano outra vez."}
-          </Text>
+          <Text style={styles.paymentModalTitle}>{title}</Text>
+          <Text style={styles.paymentModalBody}>{body}</Text>
           <TouchableOpacity style={styles.paymentModalButton} onPress={onDismiss} activeOpacity={0.85}>
             <Text style={styles.paymentModalButtonText}>Continuar</Text>
           </TouchableOpacity>
@@ -201,11 +210,19 @@ function SubscriptionPaymentResultModal({ visible, variant, onDismiss }) {
   );
 }
 
-export default function SubscriptionScreen({ session, onSessionUpdate, onAccessGranted }) {
+export default function SubscriptionScreen({
+  session,
+  onSessionUpdate,
+  onAccessGranted,
+  mpReturnHint,
+  onConsumeMpReturnHint,
+}) {
   const [processingPlanId, setProcessingPlanId] = useState(null);
   const [error, setError] = useState(null);
+  /** null | 'success' | 'failed' | 'pending' */
   const [paymentFeedback, setPaymentFeedback] = useState(null);
   const pollingRef = useRef(false);
+  const lastMpHintKeyRef = useRef(null);
   const [statusState, setStatusState] = useState({
     loading: true,
     hasAccess: Boolean(session?.hasValidSubscription || session?.isTestUser),
@@ -214,71 +231,77 @@ export default function SubscriptionScreen({ session, onSessionUpdate, onAccessG
 
   const hasAccess = statusState.hasAccess;
 
-  const pollAfterMpReturn = useCallback(async () => {
-    if (Platform.OS === "web" || pollingRef.current) {
-      return;
-    }
-    let raw;
-    try {
-      raw = await AsyncStorage.getItem(MP_CHECKOUT_PENDING_KEY);
-    } catch (_e) {
-      return;
-    }
-    if (!raw) {
-      return;
-    }
-    const ts = Number(raw);
-    if (!Number.isFinite(ts) || Date.now() - ts > MP_CHECKOUT_MAX_AGE_MS) {
-      try {
-        await AsyncStorage.removeItem(MP_CHECKOUT_PENDING_KEY);
-      } catch (_e2) {
-        /* ignore */
+  const pollAfterMpReturn = useCallback(
+    async (opts = {}) => {
+      const bypassPendingKey = Boolean(opts.bypassPendingKey);
+      if (Platform.OS === "web" || pollingRef.current) {
+        return;
       }
-      return;
-    }
-
-    pollingRef.current = true;
-    try {
-      for (let i = 0; i < MP_POLL_ATTEMPTS; i += 1) {
-        const response = await apiFetch("/subscriptions/access-status", {
-          authenticated: true,
-        });
-        const payload = await response.json().catch(() => ({}));
-        const hasValid = Boolean(payload?.has_valid_subscription);
-        const isTestUser = Boolean(payload?.is_test_user);
-        if (hasValid || isTestUser) {
-          try {
-            await AsyncStorage.removeItem(MP_CHECKOUT_PENDING_KEY);
-          } catch (_e3) {
-            /* ignore */
-          }
-          setPaymentFeedback("success");
-          onSessionUpdate?.((currentSession) => ({
-            ...currentSession,
-            hasValidSubscription: hasValid,
-            isTestUser,
-          }));
-          setStatusState({
-            loading: false,
-            hasAccess: true,
-            message: "",
-          });
+      if (!bypassPendingKey) {
+        let raw;
+        try {
+          raw = await AsyncStorage.getItem(MP_CHECKOUT_PENDING_KEY);
+        } catch (_e) {
           return;
         }
-        await new Promise((resolve) => {
-          setTimeout(resolve, MP_POLL_INTERVAL_MS);
-        });
+        if (!raw) {
+          return;
+        }
+        const ts = Number(raw);
+        if (!Number.isFinite(ts) || Date.now() - ts > MP_CHECKOUT_MAX_AGE_MS) {
+          try {
+            await AsyncStorage.removeItem(MP_CHECKOUT_PENDING_KEY);
+          } catch (_e2) {
+            /* ignore */
+          }
+          return;
+        }
       }
+
+      pollingRef.current = true;
       try {
-        await AsyncStorage.removeItem(MP_CHECKOUT_PENDING_KEY);
-      } catch (_e4) {
-        /* ignore */
+        for (let i = 0; i < MP_POLL_ATTEMPTS; i += 1) {
+          const response = await apiFetch("/subscriptions/access-status", {
+            authenticated: true,
+          });
+          const payload = await response.json().catch(() => ({}));
+          const hasValid = Boolean(payload?.has_valid_subscription);
+          const isTestUser = Boolean(payload?.is_test_user);
+          if (hasValid || isTestUser) {
+            try {
+              await AsyncStorage.removeItem(MP_CHECKOUT_PENDING_KEY);
+            } catch (_e3) {
+              /* ignore */
+            }
+            setPaymentFeedback("success");
+            onSessionUpdate?.((currentSession) => ({
+              ...currentSession,
+              hasValidSubscription: hasValid,
+              isTestUser,
+            }));
+            setStatusState({
+              loading: false,
+              hasAccess: true,
+              message: "",
+            });
+            return;
+          }
+          await new Promise((resolve) => {
+            setTimeout(resolve, MP_POLL_INTERVAL_MS);
+          });
+        }
+        try {
+          await AsyncStorage.removeItem(MP_CHECKOUT_PENDING_KEY);
+        } catch (_e4) {
+          /* ignore */
+        }
+        setPaymentFeedback("failed");
+      } finally {
+        pollingRef.current = false;
       }
-      setPaymentFeedback("failed");
-    } finally {
-      pollingRef.current = false;
-    }
-  }, [onSessionUpdate]);
+    },
+    [onSessionUpdate],
+  );
 
   useEffect(() => {
     if (Platform.OS === "web") {
@@ -298,6 +321,32 @@ export default function SubscriptionScreen({ session, onSessionUpdate, onAccessG
     }
     setPaymentFeedback(null);
   };
+
+  useEffect(() => {
+    if (!mpReturnHint || Platform.OS === "web") {
+      return undefined;
+    }
+    if (mpReturnHint.key === lastMpHintKeyRef.current) {
+      return undefined;
+    }
+    lastMpHintKeyRef.current = mpReturnHint.key;
+    const { kind } = mpReturnHint;
+    if (kind === "failure") {
+      setPaymentFeedback("failed");
+      onConsumeMpReturnHint?.();
+      return undefined;
+    }
+    if (kind === "pending") {
+      setPaymentFeedback("pending");
+      onConsumeMpReturnHint?.();
+      return undefined;
+    }
+    if (kind === "success") {
+      void pollAfterMpReturn({ bypassPendingKey: true });
+      onConsumeMpReturnHint?.();
+    }
+    return undefined;
+  }, [mpReturnHint, onConsumeMpReturnHint, pollAfterMpReturn]);
 
   useEffect(() => {
     let active = true;
@@ -368,7 +417,16 @@ export default function SubscriptionScreen({ session, onSessionUpdate, onAccessG
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ plan: plan.id }),
+        body: JSON.stringify(
+          Platform.OS === "web"
+            ? { plan: plan.id }
+            : {
+                plan: plan.id,
+                mp_success_url: "limpae://subscription/success",
+                mp_failure_url: "limpae://subscription/failure",
+                mp_pending_url: "limpae://subscription/pending",
+              },
+        ),
       });
 
       const payload = await response.json().catch(() => ({}));
@@ -397,7 +455,7 @@ export default function SubscriptionScreen({ session, onSessionUpdate, onAccessG
       <>
         <SubscriptionPaymentResultModal
           visible={paymentFeedback !== null}
-          variant={paymentFeedback === "success" ? "success" : "failed"}
+          variant={paymentFeedbackToModalVariant(paymentFeedback)}
           onDismiss={handleDismissPaymentModal}
         />
         <ScrollView
@@ -421,7 +479,7 @@ export default function SubscriptionScreen({ session, onSessionUpdate, onAccessG
       <>
         <SubscriptionPaymentResultModal
           visible={paymentFeedback !== null}
-          variant={paymentFeedback === "success" ? "success" : "failed"}
+          variant={paymentFeedbackToModalVariant(paymentFeedback)}
           onDismiss={handleDismissPaymentModal}
         />
         <ScrollView
@@ -446,7 +504,7 @@ export default function SubscriptionScreen({ session, onSessionUpdate, onAccessG
     <>
       <SubscriptionPaymentResultModal
         visible={paymentFeedback !== null}
-        variant={paymentFeedback === "success" ? "success" : "failed"}
+        variant={paymentFeedbackToModalVariant(paymentFeedback)}
         onDismiss={handleDismissPaymentModal}
       />
       <ScrollView

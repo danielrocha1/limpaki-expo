@@ -63,6 +63,93 @@ func TestCreateCheckoutSessionWithValidPlan(t *testing.T) {
 	}
 }
 
+func TestCreateCheckoutSessionClientDeepLinksOverrideEnv(t *testing.T) {
+	db := setupFlowTestDB(t)
+	user := seedUser(t, db, t.Name()+"-deeplink", "cliente")
+	t.Setenv("MERCADO_PAGO_ACCESS_TOKEN", "TEST-TOKEN")
+	t.Setenv("MERCADO_PAGO_SUCCESS_URL", "https://limpae.vercel.app/assinatura/success")
+	t.Setenv("MERCADO_PAGO_FAILURE_URL", "https://limpae.vercel.app/assinatura/failure")
+	t.Setenv("MERCADO_PAGO_PENDING_URL", "https://limpae.vercel.app/assinatura/pending")
+
+	var captured mpPreferenceRequest
+	restore := restoreMercadoPagoFuncs()
+	defer restore()
+
+	createMercadoPagoPreferenceFunc = func(accessToken string, body mpPreferenceRequest) (*mpPreferenceResponse, error) {
+		captured = body
+		return &mpPreferenceResponse{
+			ID:               "pref_dl",
+			InitPoint:        "https://www.mercadopago.com/mlb/checkout/v1/redirect?pref_id=pref_dl",
+			SandboxInitPoint: "https://sandbox.mercadopago.com/mlb/checkout/v1/redirect?pref_id=pref_dl",
+		}, nil
+	}
+
+	app := testAppWithUser(user.ID, func(app *fiber.App) {
+		app.Post("/subscriptions/checkout-session", CreateCheckoutSession)
+	})
+
+	payload := `{"plan":"monthly","mp_success_url":"limpae://subscription/success","mp_failure_url":"limpae://subscription/failure","mp_pending_url":"limpae://subscription/pending"}`
+	req := httptest.NewRequest("POST", "/subscriptions/checkout-session", bytes.NewBufferString(payload))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusCreated {
+		t.Fatalf("status = %d, want 201", resp.StatusCode)
+	}
+	if captured.BackURLs.Success != "limpae://subscription/success" {
+		t.Fatalf("back_urls.success = %q, want limpae://subscription/success", captured.BackURLs.Success)
+	}
+	if captured.BackURLs.Failure != "limpae://subscription/failure" {
+		t.Fatalf("back_urls.failure = %q", captured.BackURLs.Failure)
+	}
+	if captured.BackURLs.Pending != "limpae://subscription/pending" {
+		t.Fatalf("back_urls.pending = %q", captured.BackURLs.Pending)
+	}
+}
+
+func TestCreateCheckoutSessionInvalidDeepLinkUsesEnv(t *testing.T) {
+	db := setupFlowTestDB(t)
+	user := seedUser(t, db, t.Name()+"-badlink", "cliente")
+	t.Setenv("MERCADO_PAGO_ACCESS_TOKEN", "TEST-TOKEN")
+	wantSuccess := "https://limpae.vercel.app/assinatura/success"
+	t.Setenv("MERCADO_PAGO_SUCCESS_URL", wantSuccess)
+
+	var captured mpPreferenceRequest
+	restore := restoreMercadoPagoFuncs()
+	defer restore()
+
+	createMercadoPagoPreferenceFunc = func(accessToken string, body mpPreferenceRequest) (*mpPreferenceResponse, error) {
+		captured = body
+		return &mpPreferenceResponse{
+			ID:               "pref_x",
+			InitPoint:        "https://www.mercadopago.com/mlb/checkout/v1/redirect?pref_id=pref_x",
+			SandboxInitPoint: "https://sandbox.mercadopago.com/mlb/checkout/v1/redirect?pref_id=pref_x",
+		}, nil
+	}
+
+	app := testAppWithUser(user.ID, func(app *fiber.App) {
+		app.Post("/subscriptions/checkout-session", CreateCheckoutSession)
+	})
+
+	payload := `{"plan":"monthly","mp_success_url":"limpae://phishing/subscription/success"}`
+	req := httptest.NewRequest("POST", "/subscriptions/checkout-session", bytes.NewBufferString(payload))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusCreated {
+		t.Fatalf("status = %d, want 201", resp.StatusCode)
+	}
+	if captured.BackURLs.Success != wantSuccess {
+		t.Fatalf("back_urls.success = %q, want %q", captured.BackURLs.Success, wantSuccess)
+	}
+}
+
 func TestMercadoPagoWebhookApprovesSubscription(t *testing.T) {
 	db := setupFlowTestDB(t)
 	user := seedUser(t, db, t.Name()+"-wh", "cliente")
