@@ -75,7 +75,7 @@ func startRequestTimer() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		resp, err := http.Get("https://limpae-jcqa.onrender.com")
+		resp, err := http.Get("https://limpaki-expo.onrender.com")
 		if err != nil {
 			log.Printf("Erro ao fazer requisição: %v", err)
 			continue
