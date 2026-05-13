@@ -121,6 +121,9 @@ export function SubscriptionSuccessPage() {
         <>
           <p>Sua assinatura está válida e o acesso premium foi liberado.</p>
           <p>Status atual: <strong>{state.status}</strong></p>
+          <p style={{ fontSize: 14, color: "#4b5563", marginTop: 12, lineHeight: 1.5 }}>
+            Se você concluiu o pagamento pelo <strong>aplicativo móvel</strong>, volte ao Limpae no telemóvel — o ecrã de confirmação aparece ao reabrir a app.
+          </p>
           <Link className="select-plan-button" to="/services">
             Ir para serviços
           </Link>
@@ -129,6 +132,9 @@ export function SubscriptionSuccessPage() {
         <>
           <p>O pagamento retornou para a plataforma, mas a assinatura ainda não foi confirmada como válida.</p>
           <p>Status atual: <strong>{state.status || "pendente"}</strong></p>
+          <p style={{ fontSize: 14, color: "#4b5563", marginTop: 12, lineHeight: 1.5 }}>
+            Se pagou pelo app móvel, abra o Limpae de novo e aguarde alguns segundos (confirmação via webhook). Esta página web atualiza ao recarregar.
+          </p>
           <Link className="back-link" to="/assinatura/planos">
             Tentar novamente
           </Link>
