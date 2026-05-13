@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   ActivityIndicator,
+  AppState,
   Linking,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -109,6 +113,12 @@ function logSubscriptionDebug(message, details = {}) {
   console.log(`[mobile-subscription] ${message}`, details);
 }
 
+/** Marca regresso do checkout MP (nativo) para mostrar modal de sucesso/insucesso. */
+const MP_CHECKOUT_PENDING_KEY = "limpae_subscription_mp_checkout_pending_ts";
+const MP_CHECKOUT_MAX_AGE_MS = 45 * 60 * 1000;
+const MP_POLL_ATTEMPTS = 10;
+const MP_POLL_INTERVAL_MS = 1600;
+
 async function redirectToCheckout(payload) {
   const redirectUrl = getCheckoutRedirectUrl(payload);
 
@@ -126,6 +136,11 @@ async function redirectToCheckout(payload) {
     return;
   }
 
+  try {
+    await AsyncStorage.setItem(MP_CHECKOUT_PENDING_KEY, String(Date.now()));
+  } catch (_e) {
+    /* ignore */
+  }
   await Linking.openURL(redirectUrl);
 }
 
@@ -151,9 +166,46 @@ function StatusCard({ type, text }) {
   );
 }
 
+function SubscriptionPaymentResultModal({ visible, variant, onDismiss }) {
+  const isSuccess = variant === "success";
+  return (
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onDismiss}>
+      <View style={styles.paymentModalOverlay}>
+        <View style={styles.paymentModalCard}>
+          <View
+            style={[
+              styles.paymentModalIconWrap,
+              { backgroundColor: isSuccess ? palette.successBg : palette.errorBg },
+            ]}
+          >
+            <Ionicons
+              name={isSuccess ? "checkmark-circle" : "close-circle"}
+              size={112}
+              color={isSuccess ? palette.gold : palette.error}
+            />
+          </View>
+          <Text style={styles.paymentModalTitle}>
+            {isSuccess ? "Pagamento confirmado" : "Pagamento não concluído"}
+          </Text>
+          <Text style={styles.paymentModalBody}>
+            {isSuccess
+              ? "Sua assinatura foi ativada. Aproveite o acesso premium no Limpae."
+              : "Não encontramos a assinatura ativa. Se você acabou de pagar, aguarde alguns instantes e tente de novo no Mercado Pago ou escolha um plano outra vez."}
+          </Text>
+          <TouchableOpacity style={styles.paymentModalButton} onPress={onDismiss} activeOpacity={0.85}>
+            <Text style={styles.paymentModalButtonText}>Continuar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function SubscriptionScreen({ session, onSessionUpdate, onAccessGranted }) {
   const [processingPlanId, setProcessingPlanId] = useState(null);
   const [error, setError] = useState(null);
+  const [paymentFeedback, setPaymentFeedback] = useState(null);
+  const pollingRef = useRef(false);
   const [statusState, setStatusState] = useState({
     loading: true,
     hasAccess: Boolean(session?.hasValidSubscription || session?.isTestUser),
@@ -161,6 +213,91 @@ export default function SubscriptionScreen({ session, onSessionUpdate, onAccessG
   });
 
   const hasAccess = statusState.hasAccess;
+
+  const pollAfterMpReturn = useCallback(async () => {
+    if (Platform.OS === "web" || pollingRef.current) {
+      return;
+    }
+    let raw;
+    try {
+      raw = await AsyncStorage.getItem(MP_CHECKOUT_PENDING_KEY);
+    } catch (_e) {
+      return;
+    }
+    if (!raw) {
+      return;
+    }
+    const ts = Number(raw);
+    if (!Number.isFinite(ts) || Date.now() - ts > MP_CHECKOUT_MAX_AGE_MS) {
+      try {
+        await AsyncStorage.removeItem(MP_CHECKOUT_PENDING_KEY);
+      } catch (_e2) {
+        /* ignore */
+      }
+      return;
+    }
+
+    pollingRef.current = true;
+    try {
+      for (let i = 0; i < MP_POLL_ATTEMPTS; i += 1) {
+        const response = await apiFetch("/subscriptions/access-status", {
+          authenticated: true,
+        });
+        const payload = await response.json().catch(() => ({}));
+        const hasValid = Boolean(payload?.has_valid_subscription);
+        const isTestUser = Boolean(payload?.is_test_user);
+        if (hasValid || isTestUser) {
+          try {
+            await AsyncStorage.removeItem(MP_CHECKOUT_PENDING_KEY);
+          } catch (_e3) {
+            /* ignore */
+          }
+          setPaymentFeedback("success");
+          onSessionUpdate?.((currentSession) => ({
+            ...currentSession,
+            hasValidSubscription: hasValid,
+            isTestUser,
+          }));
+          setStatusState({
+            loading: false,
+            hasAccess: true,
+            message: "",
+          });
+          return;
+        }
+        await new Promise((resolve) => {
+          setTimeout(resolve, MP_POLL_INTERVAL_MS);
+        });
+      }
+      try {
+        await AsyncStorage.removeItem(MP_CHECKOUT_PENDING_KEY);
+      } catch (_e4) {
+        /* ignore */
+      }
+      setPaymentFeedback("failed");
+    } finally {
+      pollingRef.current = false;
+    }
+  }, [onSessionUpdate]);
+
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      return undefined;
+    }
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next === "active") {
+        void pollAfterMpReturn();
+      }
+    });
+    return () => sub.remove();
+  }, [pollAfterMpReturn]);
+
+  const handleDismissPaymentModal = () => {
+    if (paymentFeedback === "success") {
+      onAccessGranted?.();
+    }
+    setPaymentFeedback(null);
+  };
 
   useEffect(() => {
     let active = true;
@@ -257,45 +394,65 @@ export default function SubscriptionScreen({ session, onSessionUpdate, onAccessG
 
   if (statusState.loading) {
     return (
-      <ScrollView
-        style={[shellStyles.screenScroll, styles.screenSurface]}
-        contentContainerStyle={styles.screenContent}
-      >
-        <View style={styles.pageContainer}>
-          <View style={styles.roleHeader}>
-            <Text style={styles.roleTitle}>Escolha seu Plano</Text>
-            <Text style={styles.roleCopy}>Consultando o status atual da assinatura...</Text>
+      <>
+        <SubscriptionPaymentResultModal
+          visible={paymentFeedback !== null}
+          variant={paymentFeedback === "success" ? "success" : "failed"}
+          onDismiss={handleDismissPaymentModal}
+        />
+        <ScrollView
+          style={[shellStyles.screenScroll, styles.screenSurface]}
+          contentContainerStyle={styles.screenContent}
+        >
+          <View style={styles.pageContainer}>
+            <View style={styles.roleHeader}>
+              <Text style={styles.roleTitle}>Escolha seu Plano</Text>
+              <Text style={styles.roleCopy}>Consultando o status atual da assinatura...</Text>
+            </View>
+            <StatusCard type="info" text="Consultando o status atual da assinatura..." />
           </View>
-          <StatusCard type="info" text="Consultando o status atual da assinatura..." />
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </>
     );
   }
 
   if (hasAccess) {
     return (
-      <ScrollView
-        style={[shellStyles.screenScroll, styles.screenSurface]}
-        contentContainerStyle={styles.screenContent}
-      >
-        <View style={styles.pageContainer}>
-          <View style={styles.roleHeader}>
-            <Text style={styles.roleTitle}>Assinatura Ativa</Text>
-            <Text style={styles.roleCopy}>
-              Sua conta já possui acesso premium liberado. Aproveite todos os recursos do Limpae!
-            </Text>
+      <>
+        <SubscriptionPaymentResultModal
+          visible={paymentFeedback !== null}
+          variant={paymentFeedback === "success" ? "success" : "failed"}
+          onDismiss={handleDismissPaymentModal}
+        />
+        <ScrollView
+          style={[shellStyles.screenScroll, styles.screenSurface]}
+          contentContainerStyle={styles.screenContent}
+        >
+          <View style={styles.pageContainer}>
+            <View style={styles.roleHeader}>
+              <Text style={styles.roleTitle}>Assinatura Ativa</Text>
+              <Text style={styles.roleCopy}>
+                Sua conta já possui acesso premium liberado. Aproveite todos os recursos do Limpae!
+              </Text>
+            </View>
+            <StatusCard type="success" text="Você tem acesso total ao aplicativo." />
           </View>
-          <StatusCard type="success" text="Você tem acesso total ao aplicativo." />
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </>
     );
   }
 
   return (
-    <ScrollView
-      style={[shellStyles.screenScroll, styles.screenSurface]}
-      contentContainerStyle={styles.screenContent}
-    >
+    <>
+      <SubscriptionPaymentResultModal
+        visible={paymentFeedback !== null}
+        variant={paymentFeedback === "success" ? "success" : "failed"}
+        onDismiss={handleDismissPaymentModal}
+      />
+      <ScrollView
+        style={[shellStyles.screenScroll, styles.screenSurface]}
+        contentContainerStyle={styles.screenContent}
+      >
       <View style={styles.pageContainer}>
         <View style={styles.roleHeader}>
           <Text style={styles.roleTitle}>Escolha seu Plano</Text>
@@ -387,6 +544,7 @@ export default function SubscriptionScreen({ session, onSessionUpdate, onAccessG
         </View>
       </View>
     </ScrollView>
+    </>
   );
 }
 
@@ -602,5 +760,61 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: "center",
     letterSpacing: 0.5,
+  },
+  paymentModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(17, 24, 39, 0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  paymentModalCard: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: palette.cardBg,
+    borderRadius: 20,
+    paddingVertical: 28,
+    paddingHorizontal: 22,
+    alignItems: "center",
+    shadowColor: "#000000",
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+  },
+  paymentModalIconWrap: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  paymentModalTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: palette.ink,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  paymentModalBody: {
+    fontSize: 15,
+    color: palette.body,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  paymentModalButton: {
+    minWidth: "100%",
+    backgroundColor: palette.blue,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  paymentModalButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
