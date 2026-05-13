@@ -80,7 +80,8 @@ type mpPaymentResponse struct {
 	CurrencyID          string          `json:"currency_id"`
 	DateCreated         *string         `json:"date_created"`
 	ClientID            json.RawMessage `json:"client_id"`
-	AdditionalInfo      string          `json:"additional_info"`
+	// A API MP pode devolver objeto ou string; como string falhava o unmarshal e quebrava webhook + confirm.
+	AdditionalInfo json.RawMessage `json:"additional_info"`
 }
 
 func (p *mpPaymentResponse) PaymentIDString() string {
