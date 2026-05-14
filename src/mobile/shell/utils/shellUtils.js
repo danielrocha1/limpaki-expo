@@ -206,6 +206,55 @@ export function formatDateInputValue(value) {
   return `${year}-${month}-${day}`;
 }
 
+/** Rotulos para o periodo de cobranca (alinhado ao backend: PlanRef = monthly|quarterly|yearly). */
+const SUBSCRIPTION_BILLING_PERIOD_LABELS = {
+  monthly: "Mensal",
+  quarterly: "Trimestral",
+  yearly: "Anual",
+};
+
+/**
+ * Texto amigavel para a linha "Plano" no perfil (mobile).
+ * Usa `plan_ref` quando existir (periodo MP); senao o tier em `plan` (ex.: premium).
+ */
+export function formatClientSubscriptionPlanLabel({ plan, planRef, hasValidSubscription }) {
+  const ref = String(planRef || "")
+    .trim()
+    .toLowerCase();
+  const tier = String(plan || "")
+    .trim()
+    .toLowerCase();
+
+  if (ref && SUBSCRIPTION_BILLING_PERIOD_LABELS[ref]) {
+    return SUBSCRIPTION_BILLING_PERIOD_LABELS[ref];
+  }
+
+  if (!hasValidSubscription && !tier && !ref) {
+    return "Sem assinatura";
+  }
+
+  if (tier === "premium") {
+    return "Premium";
+  }
+
+  if (tier === "free") {
+    return "Plano gratuito";
+  }
+
+  if (!tier && !ref && hasValidSubscription) {
+    return "Assinatura ativa";
+  }
+
+  const raw = tier || ref;
+  if (!raw) {
+    return hasValidSubscription ? "Assinatura ativa" : "Sem assinatura";
+  }
+
+  return raw
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function buildOrderIsoDate(selectedDate, selectedHour, selectedMinute) {
   const dateObj = new Date(selectedDate);
   dateObj.setHours(Number(selectedHour), Number(selectedMinute), 0, 0);

@@ -28,6 +28,8 @@ import {
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 const TIME_WHEEL_ITEM_HEIGHT = 40;
 
+const HIRE_ORDER_TOTAL_STEPS = 4;
+
 const TimeWheel = memo(function TimeWheel({
   label,
   wheelRef,
@@ -48,6 +50,7 @@ const TimeWheel = memo(function TimeWheel({
         <ScrollView
           ref={wheelRef}
           showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
           snapToInterval={TIME_WHEEL_ITEM_HEIGHT}
           snapToAlignment="start"
           disableIntervalMomentum
@@ -343,13 +346,16 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
   }, [calendarMonth]);
 
   const isStep1Valid = Boolean(hireType);
-  const isStep2Valid = Boolean(currentDateValue) && !isSelectedDateBlocked && !isSelectedDatePast;
+  const calendarOk = Boolean(currentDateValue) && !isSelectedDateBlocked && !isSelectedDatePast;
   const isHourOptionValid = ORDER_HOUR_OPTIONS.includes(hour);
   const isMinuteOptionValid = ORDER_MINUTE_OPTIONS.includes(minute);
   const normalizedHourSelection = useMemo(() => normalizeOrderTimeSelection(hour, minute), [hour, minute]);
-  const isStep3Valid =
-    hireType === "daily" ? Boolean(dailyStart) : Boolean(hour && minute && isHourOptionValid && isMinuteOptionValid && duration > 0);
-  const isStep4Valid = serviceType.trim().length > 0;
+  const timeAndDurationOk =
+    hireType === "daily"
+      ? Boolean(dailyStart)
+      : Boolean(hour && minute && isHourOptionValid && isMinuteOptionValid && duration > 0);
+  const isStep2Valid = calendarOk && timeAndDurationOk;
+  const isStep3Valid = serviceType.trim().length > 0;
 
   const scrollWheelToValue = (ref, options, value, animated = true) => {
     const targetIndex = options.indexOf(value);
@@ -404,7 +410,7 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
   };
 
   useEffect(() => {
-    if (!visible || currentStep !== 3 || hireType !== "hour") {
+    if (!visible || currentStep !== 2 || hireType !== "hour") {
       return;
     }
     scrollWheelToValue(hourWheelRef, ORDER_HOUR_OPTIONS, hour, false);
@@ -436,7 +442,6 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
     if (currentStep === 1 && isStep1Valid) setCurrentStep(2);
     if (currentStep === 2 && isStep2Valid) setCurrentStep(3);
     if (currentStep === 3 && isStep3Valid) setCurrentStep(4);
-    if (currentStep === 4 && isStep4Valid) setCurrentStep(5);
   };
 
   const handlePrevStep = () => {
@@ -548,10 +553,10 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
         </View>
 
         <View style={styles.orderProgressTrack}>
-          <View style={[styles.orderProgressFill, { width: `${(currentStep / 5) * 100}%` }]} />
+          <View style={[styles.orderProgressFill, { width: `${(currentStep / HIRE_ORDER_TOTAL_STEPS) * 100}%` }]} />
         </View>
         <View style={styles.orderProgressSteps}>
-          {[1, 2, 3, 4, 5].map((step) => (
+          {[1, 2, 3, 4].map((step) => (
             <View
               key={step}
               style={[
@@ -605,7 +610,11 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
           {currentStep === 2 ? (
             <View style={styles.orderSection}>
               <Text style={styles.orderSectionTitle}>Quando voce precisa?</Text>
-              <Text style={styles.orderSectionCopy}>Selecione a data desejada no calendario.</Text>
+              <Text style={styles.orderSectionCopy}>
+                {hireType === "hour"
+                  ? "Selecione a data no calendario. Abaixo, role na vertical hora e minutos e ajuste a duracao."
+                  : "Selecione a data no calendario e o horario de inicio da diaria."}
+              </Text>
               <View style={styles.orderCalendarCard}>
                 <View style={styles.orderCalendarHeader}>
                   <TouchableOpacity style={styles.orderCalendarNavButton} onPress={() => handleMonthChange(-1)}>
@@ -694,15 +703,13 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
               <Text style={styles.orderHint}>
                 Data selecionada: {date ? formatLongDate(date) : "Nenhuma data selecionada"}
               </Text>
-            </View>
-          ) : null}
 
-          {currentStep === 3 ? (
-            <View style={styles.orderSection}>
               {hireType === "hour" ? (
                 <>
-                  <Text style={styles.orderSectionTitle}>Qual horario?</Text>
-                  <Text style={styles.orderSectionCopy}>Selecione inicio e duracao do servico.</Text>
+                  <Text style={[styles.orderSectionTitle, { marginTop: 18 }]}>Horario e duracao</Text>
+                  <Text style={styles.orderSectionCopy}>
+                    Role na vertical para escolher hora e minutos; use os botoes para a duracao do servico.
+                  </Text>
                   <View style={styles.orderTimePickerCard}>
                     <View style={styles.orderTimeWheelRow}>
                       <TimeWheel
@@ -763,7 +770,7 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
                 </>
               ) : (
                 <>
-                  <Text style={styles.orderSectionTitle}>Inicio da diaria</Text>
+                  <Text style={[styles.orderSectionTitle, { marginTop: 18 }]}>Inicio da diaria</Text>
                   <Text style={styles.orderSectionCopy}>Escolha o horario de inicio da diaria.</Text>
                   <View style={styles.orderOptionsColumn}>
                     {["08", "09"].map((startOption) => (
@@ -793,7 +800,7 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
             </View>
           ) : null}
 
-          {currentStep === 4 ? (
+          {currentStep === 3 ? (
             <View style={styles.orderSection}>
               <Text style={styles.orderSectionTitle}>O que precisa ser feito?</Text>
               <Text style={styles.orderSectionCopy}>Descreva o tipo de servico que voce precisa.</Text>
@@ -813,7 +820,7 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
             </View>
           ) : null}
 
-          {currentStep === 5 ? (
+          {currentStep === 4 ? (
             <View style={styles.orderSection}>
               <Text style={styles.orderSectionTitle}>Confirme sua contratacao</Text>
               <Text style={styles.orderSectionCopy}>Revise os detalhes antes de confirmar.</Text>
@@ -860,15 +867,14 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
               <Text style={styles.orderSecondaryButtonText}>Voltar</Text>
             </TouchableOpacity>
           ) : null}
-          {currentStep < 5 ? (
+          {currentStep < HIRE_ORDER_TOTAL_STEPS ? (
             <TouchableOpacity
               style={[styles.orderPrimaryButton, styles.orderNextButton]}
               onPress={handleNextStep}
               disabled={
                 (currentStep === 1 && !isStep1Valid) ||
                 (currentStep === 2 && !isStep2Valid) ||
-                (currentStep === 3 && !isStep3Valid) ||
-                (currentStep === 4 && !isStep4Valid)
+                (currentStep === 3 && !isStep3Valid)
               }
             >
               <Text style={styles.orderPrimaryButtonText}>Proximo</Text>

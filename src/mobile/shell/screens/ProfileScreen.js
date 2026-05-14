@@ -21,6 +21,7 @@ import MapConfirmModal from "../../MapConfirmModal";
 import { palette, styles } from "../AppShell.styles";
 import EmptyState from "../components/EmptyState";
 import SectionCard from "../components/SectionCard";
+import { formatClientSubscriptionPlanLabel } from "../utils/shellUtils";
 
 const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
 const NOMINATIM_USER_AGENT = "LimpaeExpo/1.0 (+https://limpae.app; contato: suporte@limpae.app)";
@@ -393,6 +394,7 @@ export default function ProfileScreen({ session, profileIntent }) {
   const [subscriptionSummary, setSubscriptionSummary] = useState({
     hasValidSubscription: Boolean(session.hasValidSubscription || session.isTestUser),
     plan: "",
+    planRef: "",
     status: "",
   });
   const [profileForm, setProfileForm] = useState(defaultProfileForm);
@@ -455,6 +457,7 @@ export default function ProfileScreen({ session, profileIntent }) {
       setAddresses(normalizedAddresses);
       setEmailVerified(Boolean(profile?.email_verified ?? profile?.EmailVerified ?? session.emailVerified));
       setProfileForm(buildProfileForm(profile || {}));
+      const sub = subscription?.subscription || subscription?.Subscription || {};
       setSubscriptionSummary({
         hasValidSubscription: Boolean(
           subscription?.has_valid_subscription ||
@@ -462,8 +465,9 @@ export default function ProfileScreen({ session, profileIntent }) {
             session.hasValidSubscription ||
             session.isTestUser,
         ),
-        plan: subscription?.subscription_plan || subscription?.plan || "",
-        status: subscription?.status || "",
+        plan: sub.plan || sub.Plan || "",
+        planRef: sub.plan_ref || sub.PlanRef || "",
+        status: sub.status || sub.Status || "",
       });
     } catch (loadError) {
       setError(loadError.message || "Nao foi possivel carregar o perfil.");
@@ -1142,7 +1146,7 @@ export default function ProfileScreen({ session, profileIntent }) {
           <>
             <SectionCard title="Resumo da conta">
               {renderProfileInfoRow("Telefone", user?.phone || user?.Phone || "Nao informado")}
-              {renderProfileInfoRow("Plano", subscriptionSummary.plan || (subscriptionSummary.hasValidSubscription ? "Ativo" : "Sem assinatura"))}
+              {renderProfileInfoRow("Plano", formatClientSubscriptionPlanLabel(subscriptionSummary))}
               {isDiarist
                 ? renderProfileInfoRow(
                     "Experiencia",
