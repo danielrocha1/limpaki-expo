@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Image, Modal, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { apiFetch, getToken } from "../../../config/api";
@@ -18,6 +18,7 @@ import {
   getSpecialtyPresentation,
   normalizeAddress,
   normalizeDiaristReview,
+  sanitizeTimeDigits,
 } from "../utils/shellUtils";
 
 function OffersLoadingState({ role = "cliente" }) {
@@ -147,79 +148,26 @@ const OFFER_TIME_OPTIONS = Array.from(
   },
 );
 
-const OFFER_TIME_WHEEL_ITEM_HEIGHT = 40;
-const OFFER_WHEEL_HOURS = Array.from(
-  { length: OFFER_END_HOUR - OFFER_START_HOUR + 1 },
-  (_, index) => String(OFFER_START_HOUR + index).padStart(2, "0"),
-);
-const OFFER_WHEEL_MINUTES = ["00", "30"];
+function normalizeOfferCreateTime(hourInput, minuteInput) {
+  let hour = Number.parseInt(sanitizeTimeDigits(hourInput), 10);
+  let minute = Number.parseInt(sanitizeTimeDigits(minuteInput), 10);
 
-const OfferCreateTimeWheel = memo(function OfferCreateTimeWheel({
-  label,
-  wheelRef,
-  options,
-  selectedValue,
-  onItemPress,
-  onScroll,
-  onScrollEndDrag,
-  onMomentumScrollEnd,
-}) {
-  return (
-    <View style={styles.orderTimeWheelColumn}>
-      <Text style={styles.orderTimeWheelLabel}>{label}</Text>
-      <View style={styles.orderTimeWheelWindow}>
-        <View pointerEvents="none" style={styles.orderTimeWheelFadeTop} />
-        <View pointerEvents="none" style={styles.orderTimeWheelHighlight} />
-        <View pointerEvents="none" style={styles.orderTimeWheelFadeBottom} />
-        <ScrollView
-          ref={wheelRef}
-          showsVerticalScrollIndicator={false}
-          snapToInterval={OFFER_TIME_WHEEL_ITEM_HEIGHT}
-          snapToAlignment="start"
-          disableIntervalMomentum
-          decelerationRate="fast"
-          scrollEventThrottle={16}
-          contentContainerStyle={styles.orderTimeWheelContent}
-          onScroll={onScroll}
-          onScrollEndDrag={onScrollEndDrag}
-          onMomentumScrollEnd={onMomentumScrollEnd}
-        >
-          {options.map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={styles.orderTimeWheelItem}
-              onPress={() => onItemPress(option)}
-            >
-              <Text
-                style={[
-                  styles.orderTimeWheelItemText,
-                  selectedValue === option && styles.orderTimeWheelItemTextActive,
-                ]}
-              >
-                {option}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    </View>
-  );
-});
-
-function scrollOfferCreateWheelToValue(ref, options, value, animated = true) {
-  const targetIndex = options.indexOf(value);
-  if (!ref?.current || targetIndex < 0) {
-    return;
+  if (!Number.isFinite(hour)) {
+    hour = OFFER_START_HOUR;
   }
-  ref.current.scrollTo({ y: targetIndex * OFFER_TIME_WHEEL_ITEM_HEIGHT, animated });
-}
+  if (!Number.isFinite(minute)) {
+    minute = 0;
+  }
 
-function getOfferCreateWheelValueFromOffset(offsetY, options) {
-  const maxIndex = Math.max(0, options.length - 1);
-  const nextIndex = Math.min(maxIndex, Math.max(0, Math.round(offsetY / OFFER_TIME_WHEEL_ITEM_HEIGHT)));
+  hour = Math.min(OFFER_END_HOUR, Math.max(OFFER_START_HOUR, hour));
+  minute = minute >= 15 && minute < 45 ? 30 : 0;
+  if (hour === OFFER_END_HOUR) {
+    minute = 0;
+  }
+
   return {
-    index: nextIndex,
-    value: options[nextIndex],
+    hour: String(hour).padStart(2, "0"),
+    minute: String(minute).padStart(2, "0"),
   };
 }
 
@@ -323,12 +271,8 @@ export default function OffersScreen({ session }) {
     profile: null,
   });
 
-  const createOfferHourWheelRef = useRef(null);
-  const createOfferMinuteWheelRef = useRef(null);
-  const createOfferHourWheelOffsetRef = useRef(0);
-  const createOfferMinuteWheelOffsetRef = useRef(0);
-  const createOfferHourSnapTimeoutRef = useRef(null);
-  const createOfferMinuteSnapTimeoutRef = useRef(null);
+  const [offerTimeHourInput, setOfferTimeHourInput] = useState("08");
+  const [offerTimeMinuteInput, setOfferTimeMinuteInput] = useState("00");
 
   const openCreateModal = () => {
     const defaultDateTime = getDefaultOfferDateTime();
@@ -411,21 +355,16 @@ export default function OffersScreen({ session }) {
   const parsedOfferCreateTime = useMemo(() => {
     const raw = createForm.serviceTime || "08:00";
     const [hRaw, mRaw] = raw.split(":");
-    let hour = String(hRaw || "08").padStart(2, "0");
-    let minute = mRaw === "30" ? "30" : "00";
-    if (!OFFER_WHEEL_HOURS.includes(hour)) {
-      hour = "08";
-      minute = "00";
-    }
-    if (hour === "20" && minute === "30") {
-      minute = "00";
-    }
-    return { hour, minute };
+    return normalizeOfferCreateTime(hRaw, mRaw);
   }, [createForm.serviceTime]);
 
-  const offerWheelMinuteOptions = useMemo(() => {
-    return parsedOfferCreateTime.hour === "20" ? ["00"] : OFFER_WHEEL_MINUTES;
-  }, [parsedOfferCreateTime.hour]);
+  useEffect(() => {
+    if (!createModalOpen) {
+      return;
+    }
+    setOfferTimeHourInput(parsedOfferCreateTime.hour);
+    setOfferTimeMinuteInput(parsedOfferCreateTime.minute);
+  }, [createModalOpen, parsedOfferCreateTime.hour, parsedOfferCreateTime.minute]);
 
   const offerScheduleSummaryLine = useMemo(() => {
     if (!createForm.serviceDate) {
@@ -454,91 +393,12 @@ export default function OffersScreen({ session }) {
     }
   }, [createModalOpen, createForm.serviceTime]);
 
-  const handleOfferCreateHourSelect = (hour) => {
-    setCreateForm((c) => {
-      const [, m] = (c.serviceTime || "08:00").split(":");
-      let minute = m === "30" ? "30" : "00";
-      if (hour === "20" && minute === "30") {
-        minute = "00";
-      }
-      return { ...c, serviceTime: `${hour}:${minute}` };
-    });
+  const commitOfferCreateTimeInputs = (hourDraft = offerTimeHourInput, minuteDraft = offerTimeMinuteInput) => {
+    const { hour, minute } = normalizeOfferCreateTime(hourDraft, minuteDraft);
+    setOfferTimeHourInput(hour);
+    setOfferTimeMinuteInput(minute);
+    setCreateForm((current) => ({ ...current, serviceTime: `${hour}:${minute}` }));
   };
-
-  const handleOfferCreateMinuteSelect = (minute) => {
-    setCreateForm((c) => {
-      const [h] = (c.serviceTime || "08:00").split(":");
-      const hh = String(h || "08").padStart(2, "0");
-      const m = hh === "20" ? "00" : minute === "30" ? "30" : "00";
-      return { ...c, serviceTime: `${hh}:${m}` };
-    });
-  };
-
-  const scheduleOfferCreateWheelSnap = (options, onSelect, ref, delay = 0) => {
-    const isHour = options === OFFER_WHEEL_HOURS;
-    const offsetRef = isHour ? createOfferHourWheelOffsetRef : createOfferMinuteWheelOffsetRef;
-    const timeoutRef = isHour ? createOfferHourSnapTimeoutRef : createOfferMinuteSnapTimeoutRef;
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    timeoutRef.current = setTimeout(() => {
-      const offsetY = offsetRef.current || 0;
-      const { index, value } = getOfferCreateWheelValueFromOffset(offsetY, options);
-      onSelect(value);
-      if (ref?.current) {
-        ref.current.scrollTo({ y: index * OFFER_TIME_WHEEL_ITEM_HEIGHT, animated: true });
-      }
-      timeoutRef.current = null;
-    }, delay);
-  };
-
-  const handleOfferCreateHourScroll = (event) => {
-    const offsetY = event?.nativeEvent?.contentOffset?.y || 0;
-    createOfferHourWheelOffsetRef.current = offsetY;
-  };
-
-  const handleOfferCreateMinuteScroll = (event) => {
-    const offsetY = event?.nativeEvent?.contentOffset?.y || 0;
-    createOfferMinuteWheelOffsetRef.current = offsetY;
-  };
-
-  const handleOfferCreateHourScrollEnd = (event, delay = 0) => {
-    const offsetY = event?.nativeEvent?.contentOffset?.y || 0;
-    createOfferHourWheelOffsetRef.current = offsetY;
-    const { value } = getOfferCreateWheelValueFromOffset(offsetY, OFFER_WHEEL_HOURS);
-    handleOfferCreateHourSelect(value);
-    scheduleOfferCreateWheelSnap(OFFER_WHEEL_HOURS, handleOfferCreateHourSelect, createOfferHourWheelRef, delay);
-  };
-
-  const handleOfferCreateMinuteScrollEnd = (event, delay = 0) => {
-    const offsetY = event?.nativeEvent?.contentOffset?.y || 0;
-    createOfferMinuteWheelOffsetRef.current = offsetY;
-    const opts = offerWheelMinuteOptions;
-    const { value } = getOfferCreateWheelValueFromOffset(offsetY, opts);
-    handleOfferCreateMinuteSelect(value);
-    scheduleOfferCreateWheelSnap(opts, handleOfferCreateMinuteSelect, createOfferMinuteWheelRef, delay);
-  };
-
-  useEffect(() => {
-    if (!createModalOpen) {
-      return;
-    }
-    const { hour, minute } = parsedOfferCreateTime;
-    const minOpts = offerWheelMinuteOptions;
-    scrollOfferCreateWheelToValue(createOfferHourWheelRef, OFFER_WHEEL_HOURS, hour, false);
-    scrollOfferCreateWheelToValue(createOfferMinuteWheelRef, minOpts, minute, false);
-  }, [createModalOpen, parsedOfferCreateTime.hour, parsedOfferCreateTime.minute, offerWheelMinuteOptions]);
-
-  useEffect(() => {
-    return () => {
-      if (createOfferHourSnapTimeoutRef.current) {
-        clearTimeout(createOfferHourSnapTimeoutRef.current);
-      }
-      if (createOfferMinuteSnapTimeoutRef.current) {
-        clearTimeout(createOfferMinuteSnapTimeoutRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!createModalOpen || !createForm.serviceDate) {
@@ -1809,46 +1669,37 @@ export default function OffersScreen({ session }) {
 
                 <Text style={styles.offerCreateFieldLabel}>Horário de início</Text>
                 <Text style={styles.offerCreateTimeHelp}>
-                  Deslize as colunas na vertical para escolher hora e minutos. Apenas intervalos de 30 minutos (00 ou
-                  30). O último horário do dia é 20:00.
+                  Informe hora e minutos (intervalos de 30 min: 00 ou 30). Horário permitido: das {OFFER_START_HOUR}h
+                  às {OFFER_END_HOUR}h.
                 </Text>
 
-                <View style={styles.orderTimePickerCard}>
-                  <View style={styles.orderTimeWheelRow}>
-                    <OfferCreateTimeWheel
-                      label="Hora"
-                      wheelRef={createOfferHourWheelRef}
-                      options={OFFER_WHEEL_HOURS}
-                      selectedValue={parsedOfferCreateTime.hour}
-                      onItemPress={(h) => {
-                        handleOfferCreateHourSelect(h);
-                        scrollOfferCreateWheelToValue(createOfferHourWheelRef, OFFER_WHEEL_HOURS, h, true);
-                      }}
-                      onScroll={handleOfferCreateHourScroll}
-                      onScrollEndDrag={(e) => handleOfferCreateHourScrollEnd(e, 60)}
-                      onMomentumScrollEnd={(e) => handleOfferCreateHourScrollEnd(e)}
+                <View style={styles.offerCreateTimeInputRow}>
+                  <View style={styles.offerCreateTimeInputWrap}>
+                    <Text style={styles.offerCreateFieldLabel}>Hora</Text>
+                    <TextInput
+                      style={[styles.modalInput, styles.offerCreateTimeInput]}
+                      value={offerTimeHourInput}
+                      onChangeText={(value) => setOfferTimeHourInput(sanitizeTimeDigits(value))}
+                      onBlur={() => commitOfferCreateTimeInputs()}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      placeholder="08"
+                      returnKeyType="next"
                     />
-                    <View style={styles.orderTimeWheelMiddle}>
-                      <Text style={styles.orderTimeWheelMiddleText}>:</Text>
-                    </View>
-                    <OfferCreateTimeWheel
-                      key={`offer-minute-${parsedOfferCreateTime.hour}`}
-                      label="Minuto"
-                      wheelRef={createOfferMinuteWheelRef}
-                      options={offerWheelMinuteOptions}
-                      selectedValue={parsedOfferCreateTime.minute}
-                      onItemPress={(m) => {
-                        handleOfferCreateMinuteSelect(m);
-                        scrollOfferCreateWheelToValue(
-                          createOfferMinuteWheelRef,
-                          offerWheelMinuteOptions,
-                          m,
-                          true,
-                        );
-                      }}
-                      onScroll={handleOfferCreateMinuteScroll}
-                      onScrollEndDrag={(e) => handleOfferCreateMinuteScrollEnd(e, 60)}
-                      onMomentumScrollEnd={(e) => handleOfferCreateMinuteScrollEnd(e)}
+                  </View>
+                  <Text style={styles.offerCreateTimeInputSeparator}>:</Text>
+                  <View style={styles.offerCreateTimeInputWrap}>
+                    <Text style={styles.offerCreateFieldLabel}>Minutos</Text>
+                    <TextInput
+                      style={[styles.modalInput, styles.offerCreateTimeInput]}
+                      value={offerTimeMinuteInput}
+                      onChangeText={(value) => setOfferTimeMinuteInput(sanitizeTimeDigits(value))}
+                      onBlur={() => commitOfferCreateTimeInputs()}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      placeholder="00"
+                      returnKeyType="done"
+                      onSubmitEditing={() => commitOfferCreateTimeInputs()}
                     />
                   </View>
                 </View>

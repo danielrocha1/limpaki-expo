@@ -5,6 +5,10 @@ export const ORDER_HOUR_OPTIONS = Array.from({ length: ORDER_END_HOUR - ORDER_ST
 );
 export const ORDER_MINUTE_OPTIONS = Array.from({ length: 7 }, (_, index) => String(index * 10).padStart(2, "0"));
 
+export function sanitizeTimeDigits(value, maxLength = 2) {
+  return String(value || "").replace(/\D/g, "").slice(0, maxLength);
+}
+
 export function normalizeOrderTimeSelection(selectedHour, selectedMinute) {
   const safeHour = Number(selectedHour || ORDER_START_HOUR);
   const safeMinute = Number(selectedMinute || 0);
@@ -14,6 +18,28 @@ export function normalizeOrderTimeSelection(selectedHour, selectedMinute) {
     hour: String(normalizedDate.getHours()).padStart(2, "0"),
     minute: String(normalizedDate.getMinutes()).padStart(2, "0"),
   };
+}
+
+/** Hora 08–16 e minutos em passos de 10 (contratacao por hora). */
+export function normalizeHireOrderTimeFromInput(hourInput, minuteInput) {
+  let hour = Number.parseInt(sanitizeTimeDigits(hourInput), 10);
+  let minute = Number.parseInt(sanitizeTimeDigits(minuteInput), 10);
+
+  if (!Number.isFinite(hour)) {
+    hour = ORDER_START_HOUR;
+  }
+  if (!Number.isFinite(minute)) {
+    minute = 0;
+  }
+
+  hour = Math.min(ORDER_END_HOUR, Math.max(ORDER_START_HOUR, hour));
+  minute = Math.round(minute / 10) * 10;
+  if (minute >= 60) {
+    minute = 0;
+    hour = Math.min(ORDER_END_HOUR, hour + 1);
+  }
+
+  return normalizeOrderTimeSelection(hour, minute);
 }
 
 export function formatCurrency(value) {

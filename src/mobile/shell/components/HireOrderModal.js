@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Modal,
@@ -13,75 +13,25 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "../../../config/api";
 import { palette, styles } from "../AppShell.styles";
 import {
+  ORDER_END_HOUR,
   ORDER_HOUR_OPTIONS,
   ORDER_MINUTE_OPTIONS,
+  ORDER_START_HOUR,
   buildOrderIsoDate,
   formatDateInputValue,
   formatCurrency,
   formatLongDate,
   getDiaristPricePerHour,
+  normalizeHireOrderTimeFromInput,
   normalizeOrderTimeSelection,
   getSelectedAddressId,
   getSelectedAddressStreet,
+  sanitizeTimeDigits,
 } from "../utils/shellUtils";
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
-const TIME_WHEEL_ITEM_HEIGHT = 40;
 
 const HIRE_ORDER_TOTAL_STEPS = 4;
-
-const TimeWheel = memo(function TimeWheel({
-  label,
-  wheelRef,
-  options,
-  selectedValue,
-  onItemPress,
-  onScroll,
-  onScrollEndDrag,
-  onMomentumScrollEnd,
-}) {
-  return (
-    <View style={styles.orderTimeWheelColumn}>
-      <Text style={styles.orderTimeWheelLabel}>{label}</Text>
-      <View style={styles.orderTimeWheelWindow}>
-        <View pointerEvents="none" style={styles.orderTimeWheelFadeTop} />
-        <View pointerEvents="none" style={styles.orderTimeWheelHighlight} />
-        <View pointerEvents="none" style={styles.orderTimeWheelFadeBottom} />
-        <ScrollView
-          ref={wheelRef}
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled
-          snapToInterval={TIME_WHEEL_ITEM_HEIGHT}
-          snapToAlignment="start"
-          disableIntervalMomentum
-          decelerationRate="fast"
-          scrollEventThrottle={16}
-          contentContainerStyle={styles.orderTimeWheelContent}
-          onScroll={onScroll}
-          onScrollEndDrag={onScrollEndDrag}
-          onMomentumScrollEnd={onMomentumScrollEnd}
-        >
-          {options.map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={styles.orderTimeWheelItem}
-              onPress={() => onItemPress(option)}
-            >
-              <Text
-                style={[
-                  styles.orderTimeWheelItemText,
-                  selectedValue === option && styles.orderTimeWheelItemTextActive,
-                ]}
-              >
-                {option}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    </View>
-  );
-});
 
 const hireOutcomePalette = {
   success: "#059669",
@@ -205,12 +155,6 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
   const [schedule, setSchedule] = useState([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const hourWheelRef = useRef(null);
-  const minuteWheelRef = useRef(null);
-  const hourWheelOffsetRef = useRef(0);
-  const minuteWheelOffsetRef = useRef(0);
-  const hourWheelSnapTimeoutRef = useRef(null);
-  const minuteWheelSnapTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (!visible || !diarist) {
@@ -357,91 +301,37 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
   const isStep2Valid = calendarOk && timeAndDurationOk;
   const isStep3Valid = serviceType.trim().length > 0;
 
-  const scrollWheelToValue = (ref, options, value, animated = true) => {
-    const targetIndex = options.indexOf(value);
-    if (!ref?.current || targetIndex < 0) {
-      return;
-    }
-    ref.current.scrollTo({ y: targetIndex * TIME_WHEEL_ITEM_HEIGHT, animated });
+  const commitHireTimeInputs = (hourDraft = hour, minuteDraft = minute) => {
+    const normalized = normalizeHireOrderTimeFromInput(hourDraft, minuteDraft);
+    setHour(normalized.hour);
+    setMinute(normalized.minute);
   };
-
-  const getTimeWheelValueFromOffset = (offsetY, options) => {
-    const maxIndex = Math.max(0, options.length - 1);
-    const nextIndex = Math.min(maxIndex, Math.max(0, Math.round(offsetY / TIME_WHEEL_ITEM_HEIGHT)));
-    return {
-      index: nextIndex,
-      value: options[nextIndex],
-    };
-  };
-
-  const handleTimeWheelScroll = (event, options) => {
-    const offsetY = event?.nativeEvent?.contentOffset?.y || 0;
-    const offsetRef = options === ORDER_HOUR_OPTIONS ? hourWheelOffsetRef : minuteWheelOffsetRef;
-    offsetRef.current = offsetY;
-  };
-
-  const scheduleTimeWheelSnap = (options, onSelect, ref, delay = 0) => {
-    const isHourWheel = options === ORDER_HOUR_OPTIONS;
-    const offsetRef = isHourWheel ? hourWheelOffsetRef : minuteWheelOffsetRef;
-    const timeoutRef = isHourWheel ? hourWheelSnapTimeoutRef : minuteWheelSnapTimeoutRef;
-
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    timeoutRef.current = setTimeout(() => {
-      const offsetY = offsetRef.current || 0;
-      const { index, value } = getTimeWheelValueFromOffset(offsetY, options);
-      onSelect(value);
-      if (ref?.current) {
-        ref.current.scrollTo({ y: index * TIME_WHEEL_ITEM_HEIGHT, animated: true });
-      }
-      timeoutRef.current = null;
-    }, delay);
-  };
-
-  const handleTimeWheelScrollEnd = (event, options, onSelect, ref, delay = 0) => {
-    const offsetY = event?.nativeEvent?.contentOffset?.y || 0;
-    const offsetRef = options === ORDER_HOUR_OPTIONS ? hourWheelOffsetRef : minuteWheelOffsetRef;
-    offsetRef.current = offsetY;
-    const { value } = getTimeWheelValueFromOffset(offsetY, options);
-    onSelect(value);
-    scheduleTimeWheelSnap(options, onSelect, ref, delay);
-  };
-
-  useEffect(() => {
-    if (!visible || currentStep !== 2 || hireType !== "hour") {
-      return;
-    }
-    scrollWheelToValue(hourWheelRef, ORDER_HOUR_OPTIONS, hour, false);
-    scrollWheelToValue(minuteWheelRef, ORDER_MINUTE_OPTIONS, minute, false);
-  }, [visible, currentStep, hireType]);
-
-  const handleHourPress = (option) => {
-    setHour(option);
-    scrollWheelToValue(hourWheelRef, ORDER_HOUR_OPTIONS, option);
-  };
-
-  const handleMinutePress = (option) => {
-    setMinute(option);
-    scrollWheelToValue(minuteWheelRef, ORDER_MINUTE_OPTIONS, option);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (hourWheelSnapTimeoutRef.current) {
-        clearTimeout(hourWheelSnapTimeoutRef.current);
-      }
-      if (minuteWheelSnapTimeoutRef.current) {
-        clearTimeout(minuteWheelSnapTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleNextStep = () => {
-    if (currentStep === 1 && isStep1Valid) setCurrentStep(2);
-    if (currentStep === 2 && isStep2Valid) setCurrentStep(3);
-    if (currentStep === 3 && isStep3Valid) setCurrentStep(4);
+    if (currentStep === 1 && isStep1Valid) {
+      setCurrentStep(2);
+      return;
+    }
+    if (currentStep === 2) {
+      if (hireType === "hour") {
+        const normalized = normalizeHireOrderTimeFromInput(hour, minute);
+        const hourOk = ORDER_HOUR_OPTIONS.includes(normalized.hour);
+        const minuteOk = ORDER_MINUTE_OPTIONS.includes(normalized.minute);
+        if (calendarOk && hourOk && minuteOk && duration > 0) {
+          setHour(normalized.hour);
+          setMinute(normalized.minute);
+          setCurrentStep(3);
+        }
+        return;
+      }
+      if (isStep2Valid) {
+        setCurrentStep(3);
+      }
+      return;
+    }
+    if (currentStep === 3 && isStep3Valid) {
+      setCurrentStep(4);
+    }
   };
 
   const handlePrevStep = () => {
@@ -612,7 +502,7 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
               <Text style={styles.orderSectionTitle}>Quando voce precisa?</Text>
               <Text style={styles.orderSectionCopy}>
                 {hireType === "hour"
-                  ? "Selecione a data no calendario. Abaixo, role na vertical hora e minutos e ajuste a duracao."
+                  ? "Selecione a data no calendario. Abaixo, informe hora e minutos e ajuste a duracao."
                   : "Selecione a data no calendario e o horario de inicio da diaria."}
               </Text>
               <View style={styles.orderCalendarCard}>
@@ -708,42 +598,35 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
                 <>
                   <Text style={[styles.orderSectionTitle, { marginTop: 18 }]}>Horario e duracao</Text>
                   <Text style={styles.orderSectionCopy}>
-                    Role na vertical para escolher hora e minutos; use os botoes para a duracao do servico.
+                    Informe hora e minutos (de 10 em 10). Horario permitido: das {ORDER_START_HOUR}h às{" "}
+                    {ORDER_END_HOUR}h. Use os botoes para a duracao do servico.
                   </Text>
-                  <View style={styles.orderTimePickerCard}>
-                    <View style={styles.orderTimeWheelRow}>
-                      <TimeWheel
-                        label="Hora"
-                        wheelRef={hourWheelRef}
-                        options={ORDER_HOUR_OPTIONS}
-                        selectedValue={hour}
-                        onItemPress={handleHourPress}
-                        onScroll={(event) => handleTimeWheelScroll(event, ORDER_HOUR_OPTIONS)}
-                        onScrollEndDrag={(event) =>
-                          handleTimeWheelScrollEnd(event, ORDER_HOUR_OPTIONS, setHour, hourWheelRef, 60)
-                        }
-                        onMomentumScrollEnd={(event) =>
-                          handleTimeWheelScrollEnd(event, ORDER_HOUR_OPTIONS, setHour, hourWheelRef)
-                        }
+                  <View style={styles.offerCreateTimeInputRow}>
+                    <View style={styles.offerCreateTimeInputWrap}>
+                      <Text style={styles.orderTimeWheelLabel}>Hora</Text>
+                      <TextInput
+                        style={[styles.modalInput, styles.offerCreateTimeInput]}
+                        value={hour}
+                        onChangeText={(value) => setHour(sanitizeTimeDigits(value))}
+                        onBlur={() => commitHireTimeInputs()}
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        placeholder="09"
                       />
-
-                      <View style={styles.orderTimeWheelMiddle}>
-                        <Text style={styles.orderTimeWheelMiddleText}>:</Text>
-                      </View>
-
-                      <TimeWheel
-                        label="Minuto"
-                        wheelRef={minuteWheelRef}
-                        options={ORDER_MINUTE_OPTIONS}
-                        selectedValue={minute}
-                        onItemPress={handleMinutePress}
-                        onScroll={(event) => handleTimeWheelScroll(event, ORDER_MINUTE_OPTIONS)}
-                        onScrollEndDrag={(event) =>
-                          handleTimeWheelScrollEnd(event, ORDER_MINUTE_OPTIONS, setMinute, minuteWheelRef, 60)
-                        }
-                        onMomentumScrollEnd={(event) =>
-                          handleTimeWheelScrollEnd(event, ORDER_MINUTE_OPTIONS, setMinute, minuteWheelRef)
-                        }
+                    </View>
+                    <Text style={styles.offerCreateTimeInputSeparator}>:</Text>
+                    <View style={styles.offerCreateTimeInputWrap}>
+                      <Text style={styles.orderTimeWheelLabel}>Minutos</Text>
+                      <TextInput
+                        style={[styles.modalInput, styles.offerCreateTimeInput]}
+                        value={minute}
+                        onChangeText={(value) => setMinute(sanitizeTimeDigits(value))}
+                        onBlur={() => commitHireTimeInputs()}
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        placeholder="00"
+                        returnKeyType="done"
+                        onSubmitEditing={() => commitHireTimeInputs()}
                       />
                     </View>
                   </View>

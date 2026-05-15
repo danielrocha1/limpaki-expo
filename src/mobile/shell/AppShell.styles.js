@@ -1331,6 +1331,27 @@ export const styles = StyleSheet.create({
     lineHeight: 17,
     marginBottom: 12,
   },
+  offerCreateTimeInputRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 10,
+    marginBottom: 4,
+  },
+  offerCreateTimeInputWrap: {
+    flex: 1,
+  },
+  offerCreateTimeInput: {
+    minHeight: 48,
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  offerCreateTimeInputSeparator: {
+    color: palette.ink,
+    fontSize: 22,
+    fontWeight: "900",
+    marginBottom: 14,
+  },
   offerCreateTimePeriods: {
     gap: 14,
   },
