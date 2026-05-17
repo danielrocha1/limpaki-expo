@@ -7,7 +7,7 @@ import {
   setPersistentItem,
 } from "./storage";
 
-const DEFAULT_API_ORIGIN = "https://limpaki-expo.onrender.com";
+const DEFAULT_API_ORIGIN = "https://limpaki-expo-fvjj.onrender.com";
 const hasWindowLocation =
   typeof window !== "undefined" &&
   typeof window.location !== "undefined" &&

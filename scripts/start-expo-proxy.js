@@ -4,7 +4,7 @@ const path = require("path");
 
 const rootDir = path.resolve(__dirname, "..");
 const proxyPort = process.env.LIMPAE_PROXY_PORT || "8787";
-const proxyTarget = process.env.LIMPAE_PROXY_TARGET || "https://limpaki-expo.onrender.com";
+const proxyTarget = process.env.LIMPAE_PROXY_TARGET || "https://limpaki-expo-fvjj.onrender.com";
 
 const getLanAddress = () => {
   const interfaces = os.networkInterfaces();

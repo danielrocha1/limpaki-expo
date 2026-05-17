@@ -19,26 +19,26 @@ npm install
 Crie um `.env` a partir de `.env.example` e ajuste os valores do backend:
 
 ```env
-EXPO_PUBLIC_API_URL=https://limpaki-expo.onrender.com
+EXPO_PUBLIC_API_URL=https://limpaki-expo-fvjj.onrender.com
 # Opcional: desativar fluxo de planos apos cadastro (padrao: habilitado)
 # EXPO_PUBLIC_SUBSCRIPTION_CHECKOUT_ENABLED=false
 ```
 
 Observacoes:
 
-- `EXPO_PUBLIC_API_URL` e a variavel usada pelo app Expo (fallback em codigo tambem aponta para `https://limpaki-expo.onrender.com`).
+- `EXPO_PUBLIC_API_URL` e a variavel usada pelo app Expo (fallback em codigo tambem aponta para `https://limpaki-expo-fvjj.onrender.com`).
 - Assinatura usa Mercado Pago no backend; o app so redireciona para o link (`url` / `init_point`) devolvido pela API. Para desativar o passo de planos no cadastro, use `EXPO_PUBLIC_SUBSCRIPTION_CHECKOUT_ENABLED=false`.
 - Copie `.env.example` para `.env` local se precisar sobrescrever a URL.
 
 ### Backend no Render (servico Go / API)
 
-No painel do **mesmo** servico que hospeda a API (ex.: `limpaki-expo.onrender.com`), configure pelo menos:
+No painel do **mesmo** servico que hospeda a API (ex.: `limpaki-expo-fvjj.onrender.com`), configure pelo menos:
 
 | Variavel | Descricao |
 |----------|-----------|
 | `DATABASE_URL` | Connection string PostgreSQL (Render Postgres ou externo). |
 | `MERCADO_PAGO_ACCESS_TOKEN` | Access token de producao ou teste do Mercado Pago. |
-| `MERCADO_PAGO_WEBHOOK_URL` | URL publica do webhook, ex. `https://limpaki-expo.onrender.com/api/mercadopago/webhook` (ajuste se o host for outro). |
+| `MERCADO_PAGO_WEBHOOK_URL` | URL publica do webhook, ex. `https://limpaki-expo-fvjj.onrender.com/api/mercadopago/webhook` (ajuste se o host for outro). |
 | `MERCADO_PAGO_SUCCESS_URL` | Pagina do app web apos pagamento OK (ex. app na Vercel: `.../assinatura/success`). |
 | `MERCADO_PAGO_FAILURE_URL` | Pagina se falhar ou cancelar. |
 | `MERCADO_PAGO_PENDING_URL` | Pagina se pagamento ficar pendente (boleto etc.). |
@@ -81,7 +81,7 @@ npm run doctor
 
 ## Rodar com proxy no Expo
 
-Quando quiser forcar o app a bater em um proxy local apontando para o backend em Render (padrao `https://limpaki-expo.onrender.com`), use:
+Quando quiser forcar o app a bater em um proxy local apontando para o backend em Render (padrao `https://limpaki-expo-fvjj.onrender.com`), use:
 
 ```bash
 npm run start:proxy
@@ -97,7 +97,7 @@ Esse fluxo:
 
 - sobe um proxy local em `0.0.0.0:8787`
 - aponta o Expo para `http://SEU_IP_LOCAL:8787`
-- encaminha requisicoes HTTP e WebSocket para o destino em `LIMPAE_PROXY_TARGET` (padrao `https://limpaki-expo.onrender.com`)
+- encaminha requisicoes HTTP e WebSocket para o destino em `LIMPAE_PROXY_TARGET` (padrao `https://limpaki-expo-fvjj.onrender.com`)
 
 Para apontar para o Go na maquina local: `set LIMPAE_PROXY_TARGET=http://127.0.0.1:PORT` (Windows) antes de `npm run proxy:web` ou `npm run start:proxy`.
 
