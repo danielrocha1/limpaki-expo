@@ -8,12 +8,13 @@ import MapScreen from "./screens/MapScreen";
 import OffersScreen from "./screens/OffersScreen";
 import ServicesScreen from "./screens/ServicesScreen";
 import ProfileScreen from "./screens/ProfileScreen";
+import HelpScreen from "./screens/HelpScreen";
 import SubscriptionScreen from "./screens/SubscriptionScreen";
 import { MobileChatCenterProvider } from "../MobileChatCenter";
 import { refreshSessionFlags } from "./utils/sessionUtils";
 
-const ALLOWED_ROUTES_FOR_EMAIL_GATE = ["profile"];
-const ALLOWED_ROUTES_FOR_PAYWALL = ["subscription", "profile"];
+const ALLOWED_ROUTES_FOR_EMAIL_GATE = ["profile", "help"];
+const ALLOWED_ROUTES_FOR_PAYWALL = ["subscription", "profile", "help"];
 
 export default function AppShell({
   forcedRoute,
@@ -47,6 +48,28 @@ export default function AppShell({
 
   const isNavigationRestricted = Boolean(allowedRoutes);
   const [currentRoute, setCurrentRoute] = useState(initialRoute);
+
+  const navigateToDefaultRoute = useCallback(() => {
+    const fallback = session.role === "diarista" ? "offers" : "map";
+    setCurrentRoute(fallback);
+    onRouteChange?.(fallback);
+  }, [onRouteChange, session.role]);
+
+  const navigateFromHelp = useCallback(() => {
+    if (isEmailVerificationGateActive) {
+      setCurrentRoute("profile");
+      onRouteChange?.("profile");
+      return;
+    }
+
+    if (isPaywallActive) {
+      setCurrentRoute("subscription");
+      onRouteChange?.("subscription");
+      return;
+    }
+
+    navigateToDefaultRoute();
+  }, [isEmailVerificationGateActive, isPaywallActive, navigateToDefaultRoute, onRouteChange]);
 
   const syncSessionFlags = useCallback(async () => {
     const nextSession = await refreshSessionFlags(session);
@@ -111,6 +134,9 @@ export default function AppShell({
           }}
         />
       );
+      break;
+    case "help":
+      screen = <HelpScreen session={session} onBack={navigateFromHelp} />;
       break;
     case "profile":
     default:

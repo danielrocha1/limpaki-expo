@@ -31,12 +31,12 @@ export default function EmailVerificationBanner({ visible, onSessionRefresh }) {
       setFeedback(
         data?.message ||
           data?.error ||
-          "Nao foi possivel reenviar o e-mail agora.",
+          "Não foi possível reenviar o e-mail agora.",
       );
 
       await onSessionRefresh?.();
     } catch (_error) {
-      setFeedback("Nao foi possivel reenviar o e-mail agora.");
+      setFeedback("Não foi possível reenviar o e-mail agora.");
     } finally {
       setIsSubmitting(false);
     }
@@ -47,9 +47,9 @@ export default function EmailVerificationBanner({ visible, onSessionRefresh }) {
       <View style={styles.emailVerificationOverlay}>
         <View style={styles.emailVerificationBanner}>
           <View style={styles.emailVerificationCopy}>
-            <Text style={styles.emailVerificationTitle}>Seu e-mail ainda nao foi confirmado.</Text>
+            <Text style={styles.emailVerificationTitle}>Seu e-mail ainda não foi confirmado.</Text>
             <Text style={styles.emailVerificationText}>
-              Confirme para manter sua conta protegida e garantir que voce receba avisos importantes.
+              Confirme para manter sua conta protegida e garantir que você receba avisos importantes.
               Abra o link enviado para o seu e-mail ou reenvie abaixo.
             </Text>
           </View>

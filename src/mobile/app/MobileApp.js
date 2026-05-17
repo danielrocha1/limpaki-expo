@@ -578,6 +578,13 @@ function MobileAppContent() {
               stamp: Date.now(),
             });
           }}
+          onHelpPress={() => {
+            if (!session) {
+              return;
+            }
+            setAuthMode("app");
+            setAppRoute("help");
+          }}
           onLogoutPress={async () => {
             await clearToken();
             resetSessionState();

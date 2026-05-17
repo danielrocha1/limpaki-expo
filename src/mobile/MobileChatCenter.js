@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   Animated,
   Image,
@@ -302,17 +302,23 @@ export function MobileChatCenterProvider({ session, children }) {
   const isClientOnline = (userId) => onlineClientIds.includes(Number(userId));
   const isDiaristOnline = (userId) => onlineDiaristIds.includes(Number(userId));
 
+  const openChatsMenu = useCallback(() => setIsMenuOpen(true), []);
+  const closeChatsMenu = useCallback(() => setIsMenuOpen(false), []);
+
   const value = useMemo(
     () => ({
       activeChatService,
       activeChatServices,
+      activeChatsCount: activeChatServices.length,
       chatSummaries,
       closeChat,
+      closeChatsMenu,
       isClientOnline,
       isDiaristOnline,
       isMenuOpen,
       markServiceAsSeen,
       openChat,
+      openChatsMenu,
       refreshActiveChats,
       setIsMenuOpen,
       totalUnreadCount,
@@ -323,6 +329,8 @@ export function MobileChatCenterProvider({ session, children }) {
   return (
     <MobileChatCenterContext.Provider value={value}>
       {children}
+
+      <MobileChatServicesSheet session={session} />
 
       {activeChatServices
         .filter((service) => {
@@ -353,18 +361,124 @@ export function useMobileChatCenter() {
   return context;
 }
 
-function MobileChatFloatingButton({ session }) {
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+function MobileChatServicesSheet({ session }) {
   const {
     activeChatServices,
     chatSummaries,
     isClientOnline,
     isDiaristOnline,
     isMenuOpen,
+    closeChatsMenu,
     openChat,
-    setIsMenuOpen,
-    totalUnreadCount,
   } = useMobileChatCenter();
+
+  const summaryByServiceId = useMemo(
+    () =>
+      new Map(
+        (chatSummaries || []).map((summary) => [
+          Number(summary?.service?.ID ?? summary?.service?.id ?? 0),
+          summary,
+        ]),
+      ),
+    [chatSummaries],
+  );
+
+  const items = (activeChatServices || []).map((service) => {
+    const serviceId = Number(service?.ID ?? service?.id ?? 0) || null;
+    const summary = summaryByServiceId.get(serviceId);
+    const counterpartId = getCounterpartId(service, session.role);
+    const counterpartOnline =
+      session.role === "cliente" ? isDiaristOnline(counterpartId) : isClientOnline(counterpartId);
+    const scheduledAt = service?.scheduled_at || service?.ScheduledAt || "";
+    const scheduledLabel = scheduledAt
+      ? new Date(scheduledAt).toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+        })
+      : "";
+
+    return {
+      service,
+      serviceId,
+      counterpartName: getCounterpartName(service, session.role),
+      counterpartPhoto: getCounterpartPhoto(service, session.role),
+      counterpartOnline,
+      scheduledLabel,
+      unreadCount: Number(summary?.unreadCount || 0),
+    };
+  });
+
+  return (
+    <Modal visible={isMenuOpen} transparent animationType="fade" onRequestClose={closeChatsMenu}>
+      <View style={styles.menuBackdrop}>
+        <TouchableOpacity style={styles.menuBackdropTouch} onPress={closeChatsMenu} />
+        <View style={styles.menuSheet}>
+          <View style={styles.menuHandle} />
+          <Text style={styles.menuTitle}>Chats dos seus serviços</Text>
+
+          {items.length === 0 ? (
+            <View style={styles.menuEmptyState}>
+              <Text style={styles.menuEmptyTitle}>Nenhum chat ativo agora</Text>
+              <Text style={styles.menuEmptyCopy}>
+                Quando houver um serviço em andamento, o chat com cliente ou diarista aparece aqui.
+              </Text>
+            </View>
+          ) : (
+            items.map((item) => (
+              <TouchableOpacity
+                key={item.serviceId}
+                style={styles.menuItem}
+                onPress={() => openChat(item.service)}
+              >
+                <View style={styles.menuAvatar}>
+                  {item.counterpartPhoto ? (
+                    <Image source={{ uri: item.counterpartPhoto }} style={styles.menuAvatarImage} />
+                  ) : (
+                    <Text style={styles.menuAvatarFallback}>
+                      {String(item.counterpartName || "?").trim().charAt(0).toUpperCase() || "?"}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.menuCopy}>
+                  <Text style={styles.menuEyebrow} numberOfLines={1}>
+                    Serviço #{item.serviceId}
+                    {item.scheduledLabel ? ` • ${item.scheduledLabel}` : ""}
+                  </Text>
+                  <Text style={styles.menuName} numberOfLines={1}>
+                    {item.counterpartName}
+                  </Text>
+                  <View style={styles.menuPresenceRow}>
+                    <View
+                      style={[
+                        styles.menuPresenceDot,
+                        item.counterpartOnline && styles.menuPresenceDotOnline,
+                      ]}
+                    />
+                    <Text style={styles.menuPresenceText}>
+                      {item.counterpartOnline ? "Online" : "Offline"}
+                    </Text>
+                  </View>
+                </View>
+
+                {item.unreadCount > 0 ? (
+                  <View style={styles.menuBadge}>
+                    <Text style={styles.menuBadgeText}>{item.unreadCount}</Text>
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function MobileChatFloatingButton({ session }) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const { activeChatServices, isMenuOpen, openChatsMenu, closeChatsMenu, totalUnreadCount } =
+    useMobileChatCenter();
   const ringRotation = React.useRef(new Animated.Value(0)).current;
   const dragPosition = React.useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const dragOffsetRef = React.useRef({ x: 0, y: 0 });
@@ -497,43 +611,7 @@ function MobileChatFloatingButton({ session }) {
     [animateToOffset, clampOffset, dragPosition, maxTranslateX, minTranslateX],
   );
 
-  const summaryByServiceId = useMemo(
-    () =>
-      new Map(
-        (chatSummaries || []).map((summary) => [
-          Number(summary?.service?.ID ?? summary?.service?.id ?? 0),
-          summary,
-        ]),
-      ),
-    [chatSummaries],
-  );
-
-  const items = (activeChatServices || []).map((service) => {
-    const serviceId = Number(service?.ID ?? service?.id ?? 0) || null;
-    const summary = summaryByServiceId.get(serviceId);
-    const counterpartId = getCounterpartId(service, session.role);
-    const counterpartOnline =
-      session.role === "cliente" ? isDiaristOnline(counterpartId) : isClientOnline(counterpartId);
-    const scheduledAt = service?.scheduled_at || service?.ScheduledAt || "";
-    const scheduledLabel = scheduledAt
-      ? new Date(scheduledAt).toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-        })
-      : "";
-
-    return {
-      service,
-      serviceId,
-      counterpartName: getCounterpartName(service, session.role),
-      counterpartPhoto: getCounterpartPhoto(service, session.role),
-      counterpartOnline,
-      scheduledLabel,
-      unreadCount: Number(summary?.unreadCount || 0),
-    };
-  });
-
-  if (items.length === 0) {
+  if ((activeChatServices || []).length === 0) {
     return null;
   }
 
@@ -553,7 +631,11 @@ function MobileChatFloatingButton({ session }) {
           style={styles.floatingButton}
           onPress={() => {
             if (dragDistanceRef.current <= 6) {
-              setIsMenuOpen(true);
+              if (isMenuOpen) {
+                closeChatsMenu();
+              } else {
+                openChatsMenu();
+              }
             }
           }}
         >
@@ -583,58 +665,6 @@ function MobileChatFloatingButton({ session }) {
           ) : null}
         </TouchableOpacity>
       </Animated.View>
-
-      <Modal visible={isMenuOpen} transparent animationType="fade" onRequestClose={() => setIsMenuOpen(false)}>
-        <View style={styles.menuBackdrop}>
-          <TouchableOpacity style={styles.menuBackdropTouch} onPress={() => setIsMenuOpen(false)} />
-          <View style={styles.menuSheet}>
-            <View style={styles.menuHandle} />
-            <Text style={styles.menuTitle}>Chats dos seus servicos</Text>
-
-            {items.map((item) => (
-              <TouchableOpacity
-                key={item.serviceId}
-                style={styles.menuItem}
-                onPress={() => openChat(item.service)}
-              >
-                <View style={styles.menuAvatar}>
-                  {item.counterpartPhoto ? (
-                    <Image source={{ uri: item.counterpartPhoto }} style={styles.menuAvatarImage} />
-                  ) : (
-                    <Text style={styles.menuAvatarFallback}>
-                      {String(item.counterpartName || "?").trim().charAt(0).toUpperCase() || "?"}
-                    </Text>
-                  )}
-                </View>
-
-                <View style={styles.menuCopy}>
-                  <Text style={styles.menuEyebrow} numberOfLines={1}>
-                    Servico #{item.serviceId}{item.scheduledLabel ? ` • ${item.scheduledLabel}` : ""}
-                  </Text>
-                  <Text style={styles.menuName} numberOfLines={1}>{item.counterpartName}</Text>
-                  <View style={styles.menuPresenceRow}>
-                    <View
-                      style={[
-                        styles.menuPresenceDot,
-                        item.counterpartOnline && styles.menuPresenceDotOnline,
-                      ]}
-                    />
-                    <Text style={styles.menuPresenceText}>
-                      {item.counterpartOnline ? "Online" : "Offline"}
-                    </Text>
-                  </View>
-                </View>
-
-                {item.unreadCount > 0 ? (
-                  <View style={styles.menuBadge}>
-                    <Text style={styles.menuBadgeText}>{item.unreadCount}</Text>
-                  </View>
-                ) : null}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      </Modal>
     </>
   );
 }
@@ -824,6 +854,25 @@ const styles = StyleSheet.create({
     color: palette.ink,
     fontSize: 11,
     fontWeight: "800",
+  },
+  menuEmptyState: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e5eaf3",
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+    gap: 6,
+  },
+  menuEmptyTitle: {
+    color: palette.ink,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  menuEmptyCopy: {
+    color: palette.muted,
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
 

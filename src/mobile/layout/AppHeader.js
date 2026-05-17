@@ -24,6 +24,7 @@ export default function AppHeader({
   onLoginPress,
   onRegisterPress,
   onProfilePress,
+  onHelpPress,
   onLogoutPress,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,6 +39,12 @@ export default function AppHeader({
     setMenuOpen(false);
     setAddressMenuOpen(false);
     onProfilePress?.();
+  };
+
+  const handleHelpPress = () => {
+    setMenuOpen(false);
+    setAddressMenuOpen(false);
+    onHelpPress?.();
   };
 
   const handleLogoutPress = () => {
@@ -207,6 +214,18 @@ export default function AppHeader({
               >
                 <Feather name="user" size={15} color={palette.textDark} />
                 <Text style={styles.menuItemText}>Meu perfil</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleHelpPress}
+                style={({ hovered, pressed }) => [
+                  styles.menuItem,
+                  hovered && styles.menuItemHover,
+                  pressed && styles.menuItemPressed,
+                ]}
+              >
+                <Feather name="help-circle" size={15} color={palette.textDark} />
+                <Text style={styles.menuItemText}>Ajuda</Text>
               </Pressable>
 
               <Pressable
@@ -464,7 +483,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 44,
     right: 0,
-    width: 182,
+    width: 196,
     borderRadius: 14,
     backgroundColor: "#ffffff",
     borderWidth: 1,
