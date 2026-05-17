@@ -502,8 +502,8 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
               <Text style={styles.orderSectionTitle}>Quando voce precisa?</Text>
               <Text style={styles.orderSectionCopy}>
                 {hireType === "hour"
-                  ? "Selecione a data no calendario. Abaixo, informe hora e minutos e ajuste a duracao."
-                  : "Selecione a data no calendario e o horario de inicio da diaria."}
+                  ? "Selecione a data no calendario. Apos escolher o dia, informe hora, minutos e duracao."
+                  : "Selecione a data no calendario. Apos escolher o dia, defina o inicio da diaria."}
               </Text>
               <View style={styles.orderCalendarCard}>
                 <View style={styles.orderCalendarHeader}>
@@ -594,6 +594,8 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
                 Data selecionada: {date ? formatLongDate(date) : "Nenhuma data selecionada"}
               </Text>
 
+              {calendarOk ? (
+              <>
               {hireType === "hour" ? (
                 <>
                   <Text style={[styles.orderSectionTitle, { marginTop: 18 }]}>Horario e duracao</Text>
@@ -680,6 +682,8 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
                 </Text>
                 <Text style={styles.orderPriceValue}>{formatCurrency(hourlyTotalPrice)}</Text>
               </View>
+              </>
+              ) : null}
             </View>
           ) : null}
 

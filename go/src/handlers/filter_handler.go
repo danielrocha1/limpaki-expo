@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"limpae/go/src/config"
@@ -107,6 +108,13 @@ func GetNearbyDiarists(c *fiber.Ctx) error {
 			DiaristProfile: toDiaristProfileResponseDTO(diarist.DiaristProfile),
 		})
 	}
+
+	sort.Slice(nearbyDiarists, func(i, j int) bool {
+		if nearbyDiarists[i].AverageRating != nearbyDiarists[j].AverageRating {
+			return nearbyDiarists[i].AverageRating > nearbyDiarists[j].AverageRating
+		}
+		return nearbyDiarists[i].TotalReviews > nearbyDiarists[j].TotalReviews
+	})
 
 	return c.JSON(nearbyDiarists)
 }
