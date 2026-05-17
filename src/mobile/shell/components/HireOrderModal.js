@@ -499,12 +499,21 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
 
           {currentStep === 2 ? (
             <View style={styles.orderSection}>
-              <Text style={styles.orderSectionTitle}>Quando voce precisa?</Text>
-              <Text style={styles.orderSectionCopy}>
-                {hireType === "hour"
-                  ? "Selecione a data no calendario. Apos escolher o dia, informe hora, minutos e duracao."
-                  : "Selecione a data no calendario. Apos escolher o dia, defina o inicio da diaria."}
+              <Text style={styles.orderSectionTitle}>
+                {calendarOk ? "Horario do servico" : "Quando voce precisa?"}
               </Text>
+              <Text style={styles.orderSectionCopy}>
+                {calendarOk
+                  ? hireType === "hour"
+                    ? "Confirme hora, minutos e duracao para o dia selecionado."
+                    : "Escolha o horario de inicio da diaria para o dia selecionado."
+                  : hireType === "hour"
+                    ? "Selecione a data no calendario. Em seguida voce define hora e duracao."
+                    : "Selecione a data no calendario. Em seguida voce define o inicio da diaria."}
+              </Text>
+
+              {!calendarOk ? (
+              <>
               <View style={styles.orderCalendarCard}>
                 <View style={styles.orderCalendarHeader}>
                   <TouchableOpacity style={styles.orderCalendarNavButton} onPress={() => handleMonthChange(-1)}>
@@ -590,15 +599,20 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
               {isSelectedDatePast ? (
                 <Text style={styles.errorText}>Datas passadas nao podem ser selecionadas.</Text>
               ) : null}
-              <Text style={styles.orderHint}>
-                Data selecionada: {date ? formatLongDate(date) : "Nenhuma data selecionada"}
-              </Text>
-
-              {calendarOk ? (
+              <Text style={styles.orderHint}>Toque em um dia disponivel para continuar.</Text>
+              </>
+              ) : (
               <>
+              <View style={styles.orderSelectedDateCard}>
+                <Text style={styles.orderSelectedDateLabel}>Data selecionada</Text>
+                <Text style={styles.orderSelectedDateValue}>{formatLongDate(date)}</Text>
+                <TouchableOpacity onPress={() => setDate(null)} accessibilityRole="button">
+                  <Text style={styles.orderSelectedDateChange}>Alterar data</Text>
+                </TouchableOpacity>
+              </View>
+
               {hireType === "hour" ? (
                 <>
-                  <Text style={[styles.orderSectionTitle, { marginTop: 18 }]}>Horario e duracao</Text>
                   <Text style={styles.orderSectionCopy}>
                     Informe hora e minutos (de 10 em 10). Horario permitido: das {ORDER_START_HOUR}h às{" "}
                     {ORDER_END_HOUR}h. Use os botoes para a duracao do servico.
@@ -655,7 +669,6 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
                 </>
               ) : (
                 <>
-                  <Text style={[styles.orderSectionTitle, { marginTop: 18 }]}>Inicio da diaria</Text>
                   <Text style={styles.orderSectionCopy}>Escolha o horario de inicio da diaria.</Text>
                   <View style={styles.orderOptionsColumn}>
                     {["08", "09"].map((startOption) => (
@@ -683,7 +696,7 @@ export default function HireOrderModal({ visible, diarist, selectedAddress, onCl
                 <Text style={styles.orderPriceValue}>{formatCurrency(hourlyTotalPrice)}</Text>
               </View>
               </>
-              ) : null}
+              )}
             </View>
           ) : null}
 
