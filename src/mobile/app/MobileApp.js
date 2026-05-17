@@ -137,7 +137,7 @@ function MobileAppContent() {
     let nextSession = {
       token,
       role: "cliente",
-      emailVerified: true,
+      emailVerified: false,
       isTestUser: false,
       hasValidSubscription: false,
     };
@@ -161,7 +161,7 @@ function MobileAppContent() {
           isTestUser: Boolean(roleData?.is_test_user),
         };
 
-        if (!roleData?.email_verified && !roleData?.is_test_user) {
+        if (!roleData?.email_verified) {
           nextMessage = "Login realizado. Sua conta ainda precisa confirmar o e-mail.";
         } else if (roleData?.role === "diarista") {
           nextMessage = "Login realizado como diarista.";

@@ -382,7 +382,7 @@ function ProfileLoadingSkeleton() {
   );
 }
 
-export default function ProfileScreen({ session, profileIntent }) {
+export default function ProfileScreen({ session, profileIntent, onSessionUpdate }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -453,9 +453,20 @@ export default function ProfileScreen({ session, profileIntent }) {
         ? (profile.address || profile.Address).map(normalizeAddress)
         : [];
 
+      const nextEmailVerified = Boolean(
+        profile?.email_verified ?? profile?.EmailVerified ?? session.emailVerified,
+      );
+
       setUser(profile || {});
       setAddresses(normalizedAddresses);
-      setEmailVerified(Boolean(profile?.email_verified ?? profile?.EmailVerified ?? session.emailVerified));
+      setEmailVerified(nextEmailVerified);
+
+      if (onSessionUpdate && nextEmailVerified !== session.emailVerified) {
+        onSessionUpdate({
+          ...session,
+          emailVerified: nextEmailVerified,
+        });
+      }
       setProfileForm(buildProfileForm(profile || {}));
       const sub = subscription?.subscription || subscription?.Subscription || {};
       setSubscriptionSummary({
@@ -617,6 +628,16 @@ export default function ProfileScreen({ session, profileIntent }) {
 
       if (!response.ok) {
         throw new Error(data?.error || "Nao foi possivel reenviar o e-mail.");
+      }
+
+      const nextEmailVerified = Boolean(data?.email_verified ?? data?.EmailVerified ?? emailVerified);
+      setEmailVerified(nextEmailVerified);
+
+      if (onSessionUpdate) {
+        onSessionUpdate({
+          ...session,
+          emailVerified: nextEmailVerified,
+        });
       }
 
       setStatus({

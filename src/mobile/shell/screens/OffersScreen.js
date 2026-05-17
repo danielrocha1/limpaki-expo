@@ -6,6 +6,7 @@ import { styles } from "../AppShell.styles";
 import SectionCard from "../components/SectionCard";
 import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
+import { LoadingSkeletonBlock, useLoadingSkeletonPulse } from "../components/LoadingSkeleton";
 import ClientProfileModal from "../components/ClientProfileModal";
 import OfferCreateModal from "../components/OfferCreateModal";
 import useRemoteResource from "../hooks/useRemoteResource";
@@ -21,6 +22,7 @@ import {
 
 function OffersLoadingState({ role = "cliente" }) {
   const isClient = role === "cliente";
+  const { blockPulse, dotPulse } = useLoadingSkeletonPulse();
 
   return (
     <ScrollView
@@ -29,7 +31,7 @@ function OffersLoadingState({ role = "cliente" }) {
       scrollEnabled={false}
     >
       <View style={styles.loadingHero}>
-        <View style={styles.loadingPulseDot} />
+        <LoadingSkeletonBlock style={styles.loadingPulseDot} animatedStyle={dotPulse} />
         <Text style={styles.loadingHeroTitle}>
           {isClient ? "Carregando suas ofertas" : "Carregando oportunidades"}
         </Text>
@@ -43,27 +45,54 @@ function OffersLoadingState({ role = "cliente" }) {
       <View style={styles.loadingSectionCard}>
         <View style={styles.loadingToolbar}>
           <View style={styles.loadingToolbarCopy}>
-            <View style={[styles.loadingLine, styles.loadingLineShorter]} />
-            <View style={[styles.loadingLine, styles.loadingLineMedium]} />
+            <LoadingSkeletonBlock
+              style={[styles.loadingLine, styles.loadingLineShorter]}
+              animatedStyle={blockPulse}
+            />
+            <LoadingSkeletonBlock
+              style={[styles.loadingLine, styles.loadingLineMedium]}
+              animatedStyle={blockPulse}
+            />
           </View>
-          <View style={styles.loadingFilterButton} />
+          <LoadingSkeletonBlock style={styles.loadingFilterButton} animatedStyle={blockPulse} />
         </View>
 
         <View style={[styles.inlineMeta, { marginBottom: 14 }]}>
-          <View style={[styles.loadingLine, { width: 124, height: 36, marginBottom: 0 }]} />
-          <View style={[styles.loadingLine, { width: 112, height: 36, marginBottom: 0 }]} />
+          <LoadingSkeletonBlock
+            style={[styles.loadingLine, { width: 124, height: 36, marginBottom: 0 }]}
+            animatedStyle={blockPulse}
+          />
+          <LoadingSkeletonBlock
+            style={[styles.loadingLine, { width: 112, height: 36, marginBottom: 0 }]}
+            animatedStyle={blockPulse}
+          />
         </View>
 
         {[0, 1, 2].map((item) => (
           <View key={item} style={styles.loadingDiaristCard}>
-            <View style={styles.loadingAvatar} />
+            <LoadingSkeletonBlock style={styles.loadingAvatar} animatedStyle={blockPulse} />
             <View style={styles.loadingCardBody}>
-              <View style={[styles.loadingLine, styles.loadingLineWide]} />
-              <View style={[styles.loadingLine, styles.loadingLineMedium]} />
-              <View style={[styles.loadingLine, { width: "56%" }]} />
+              <LoadingSkeletonBlock
+                style={[styles.loadingLine, styles.loadingLineWide]}
+                animatedStyle={blockPulse}
+              />
+              <LoadingSkeletonBlock
+                style={[styles.loadingLine, styles.loadingLineMedium]}
+                animatedStyle={blockPulse}
+              />
+              <LoadingSkeletonBlock
+                style={[styles.loadingLine, { width: "56%" }]}
+                animatedStyle={blockPulse}
+              />
               <View style={[styles.inlineMeta, { marginTop: 6 }]}>
-                <View style={[styles.loadingLine, { width: 88, height: 28, marginBottom: 0 }]} />
-                <View style={[styles.loadingLine, { width: 96, height: 28, marginBottom: 0 }]} />
+                <LoadingSkeletonBlock
+                  style={[styles.loadingLine, { width: 88, height: 28, marginBottom: 0 }]}
+                  animatedStyle={blockPulse}
+                />
+                <LoadingSkeletonBlock
+                  style={[styles.loadingLine, { width: 96, height: 28, marginBottom: 0 }]}
+                  animatedStyle={blockPulse}
+                />
               </View>
             </View>
           </View>
@@ -72,12 +101,15 @@ function OffersLoadingState({ role = "cliente" }) {
 
       <View style={styles.loadingSectionCard}>
         <View style={styles.loadingSectionHeader}>
-          <View style={styles.loadingTitleBar} />
-          <View style={styles.loadingCountDot} />
+          <LoadingSkeletonBlock style={styles.loadingTitleBar} animatedStyle={blockPulse} />
+          <LoadingSkeletonBlock style={styles.loadingCountDot} animatedStyle={blockPulse} />
         </View>
-        <View style={[styles.loadingLine, styles.loadingLineWide]} />
-        <View style={[styles.loadingLine, styles.loadingLineMedium]} />
-        <View style={[styles.loadingLine, { width: "72%" }]} />
+        <LoadingSkeletonBlock style={[styles.loadingLine, styles.loadingLineWide]} animatedStyle={blockPulse} />
+        <LoadingSkeletonBlock style={[styles.loadingLine, styles.loadingLineMedium]} animatedStyle={blockPulse} />
+        <LoadingSkeletonBlock
+          style={[styles.loadingLine, { width: "72%" }]}
+          animatedStyle={blockPulse}
+        />
       </View>
     </ScrollView>
   );

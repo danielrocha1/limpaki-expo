@@ -193,9 +193,7 @@ export default function AppHeader({
               <View style={styles.menuHeader}>
                 <Text style={styles.menuTitle}>{menuTitle}</Text>
                 <Text style={styles.menuSubtitle}>
-                  {session.emailVerified || session.isTestUser
-                    ? "Conta ativa"
-                    : "Confirmacao pendente"}
+                  {session.emailVerified ? "Conta ativa" : "Confirmacao pendente"}
                 </Text>
               </View>
 

@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Platform, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { AppState, Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BOTTOM_NAV_HEIGHT, styles } from "./AppShell.styles";
+import EmailVerificationBanner from "./components/EmailVerificationBanner";
 import MobileBottomNavigation from "./components/MobileBottomNavigation";
 import MapScreen from "./screens/MapScreen";
 import OffersScreen from "./screens/OffersScreen";
@@ -9,7 +10,9 @@ import ServicesScreen from "./screens/ServicesScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import SubscriptionScreen from "./screens/SubscriptionScreen";
 import { MobileChatCenterProvider } from "../MobileChatCenter";
+import { refreshSessionFlags } from "./utils/sessionUtils";
 
+const ALLOWED_ROUTES_FOR_EMAIL_GATE = ["profile"];
 const ALLOWED_ROUTES_FOR_PAYWALL = ["subscription", "profile"];
 
 export default function AppShell({
@@ -26,15 +29,30 @@ export default function AppShell({
   const bottomOffset = (Platform.OS === "ios" ? Math.max(insets.bottom, 0) : 0) + 5;
   const screenBottomPadding = BOTTOM_NAV_HEIGHT + bottomOffset + 8;
 
-  const initialRoute = useMemo(() => {
-    if (!session.emailVerified && !session.isTestUser) return "profile";
-    if (!session.hasValidSubscription && !session.isTestUser) return "subscription";
-    return session.role === "diarista" ? "offers" : "map";
-  }, [session.emailVerified, session.hasValidSubscription, session.isTestUser, session.role]);
+  const isEmailVerificationGateActive = !session.emailVerified;
+  const isPaywallActive =
+    session.emailVerified && !session.hasValidSubscription && !session.isTestUser;
 
-  // Paywall: bloqueia navegação para usuários sem assinatura (clientes e diaristas)
-  const isPaywallActive = !session.hasValidSubscription && !session.isTestUser;
+  const initialRoute = useMemo(() => {
+    if (isEmailVerificationGateActive) return "profile";
+    if (isPaywallActive) return "subscription";
+    return session.role === "diarista" ? "offers" : "map";
+  }, [isEmailVerificationGateActive, isPaywallActive, session.role]);
+
+  const allowedRoutes = isEmailVerificationGateActive
+    ? ALLOWED_ROUTES_FOR_EMAIL_GATE
+    : isPaywallActive
+      ? ALLOWED_ROUTES_FOR_PAYWALL
+      : null;
+
+  const isNavigationRestricted = Boolean(allowedRoutes);
   const [currentRoute, setCurrentRoute] = useState(initialRoute);
+
+  const syncSessionFlags = useCallback(async () => {
+    const nextSession = await refreshSessionFlags(session);
+    onSessionUpdate?.(nextSession);
+    return nextSession;
+  }, [onSessionUpdate, session]);
 
   useEffect(() => {
     setCurrentRoute((route) => (route === initialRoute ? route : initialRoute));
@@ -45,13 +63,26 @@ export default function AppShell({
       return;
     }
 
-    // Se o paywall está ativo, só permite rotas permitidas
-    if (isPaywallActive && !ALLOWED_ROUTES_FOR_PAYWALL.includes(forcedRoute)) {
+    if (allowedRoutes && !allowedRoutes.includes(forcedRoute)) {
       return;
     }
 
     setCurrentRoute((route) => (route === forcedRoute ? route : forcedRoute));
-  }, [forcedRoute, isPaywallActive]);
+  }, [allowedRoutes, forcedRoute]);
+
+  useEffect(() => {
+    if (!isEmailVerificationGateActive) {
+      return undefined;
+    }
+
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        void syncSessionFlags();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [isEmailVerificationGateActive, syncSessionFlags]);
 
   useEffect(() => {
     onRouteChange?.(currentRoute);
@@ -83,7 +114,13 @@ export default function AppShell({
       break;
     case "profile":
     default:
-      screen = <ProfileScreen session={session} profileIntent={profileIntent} />;
+      screen = (
+        <ProfileScreen
+          session={session}
+          profileIntent={profileIntent}
+          onSessionUpdate={onSessionUpdate}
+        />
+      );
       break;
   }
 
@@ -94,16 +131,19 @@ export default function AppShell({
         <MobileBottomNavigation
           currentRoute={currentRoute}
           onNavigate={(route) => {
-            // Paywall: bloqueia navegação para rotas não permitidas
-            if (isPaywallActive && !ALLOWED_ROUTES_FOR_PAYWALL.includes(route)) {
+            if (allowedRoutes && !allowedRoutes.includes(route)) {
               return;
             }
             setCurrentRoute((current) => (current === route ? current : route));
           }}
           role={session.role}
           bottomOffset={bottomOffset}
-          isPaywallActive={isPaywallActive}
-          allowedRoutes={ALLOWED_ROUTES_FOR_PAYWALL}
+          isPaywallActive={isNavigationRestricted}
+          allowedRoutes={allowedRoutes || []}
+        />
+        <EmailVerificationBanner
+          visible={isEmailVerificationGateActive}
+          onSessionRefresh={syncSessionFlags}
         />
       </View>
     </MobileChatCenterProvider>

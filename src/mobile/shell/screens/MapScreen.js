@@ -7,6 +7,7 @@ import SectionCard from "../components/SectionCard";
 import EmptyState from "../components/EmptyState";
 import useRemoteResource from "../hooks/useRemoteResource";
 import HireOrderModal from "../components/HireOrderModal";
+import { LoadingSkeletonBlock, useLoadingSkeletonPulse } from "../components/LoadingSkeleton";
 import {
   formatAverageRatingText,
   formatCurrency,
@@ -24,6 +25,8 @@ import {
   normalizeMapDiarist,
 } from "../utils/shellUtils";
 function MapLoadingState() {
+  const { blockPulse, dotPulse } = useLoadingSkeletonPulse();
+
   return (
     <ScrollView
       style={styles.screenScroll}
@@ -31,7 +34,7 @@ function MapLoadingState() {
       scrollEnabled={false}
     >
       <View style={styles.loadingHero}>
-        <View style={styles.loadingPulseDot} />
+        <LoadingSkeletonBlock style={styles.loadingPulseDot} animatedStyle={dotPulse} />
         <Text style={styles.loadingHeroTitle}>Buscando diaristas proximas</Text>
         <Text style={styles.loadingHeroCopy}>
           Estamos localizando profissionais perto do endereco ativo.
@@ -39,23 +42,38 @@ function MapLoadingState() {
       </View>
       <View style={styles.loadingSectionCard}>
         <View style={styles.loadingSectionHeader}>
-          <View style={styles.loadingTitleBar} />
-          <View style={styles.loadingCountDot} />
+          <LoadingSkeletonBlock style={styles.loadingTitleBar} animatedStyle={blockPulse} />
+          <LoadingSkeletonBlock style={styles.loadingCountDot} animatedStyle={blockPulse} />
         </View>
         <View style={styles.loadingToolbar}>
           <View style={styles.loadingToolbarCopy}>
-            <View style={[styles.loadingLine, styles.loadingLineShorter]} />
-            <View style={[styles.loadingLine, styles.loadingLineMedium]} />
+            <LoadingSkeletonBlock
+              style={[styles.loadingLine, styles.loadingLineShorter]}
+              animatedStyle={blockPulse}
+            />
+            <LoadingSkeletonBlock
+              style={[styles.loadingLine, styles.loadingLineMedium]}
+              animatedStyle={blockPulse}
+            />
           </View>
-          <View style={styles.loadingFilterButton} />
+          <LoadingSkeletonBlock style={styles.loadingFilterButton} animatedStyle={blockPulse} />
         </View>
         {[0, 1, 2].map((item) => (
           <View key={item} style={styles.loadingDiaristCard}>
-            <View style={styles.loadingAvatar} />
+            <LoadingSkeletonBlock style={styles.loadingAvatar} animatedStyle={blockPulse} />
             <View style={styles.loadingCardBody}>
-              <View style={[styles.loadingLine, styles.loadingLineWide]} />
-              <View style={[styles.loadingLine, styles.loadingLineMedium]} />
-              <View style={[styles.loadingLine, styles.loadingLineShort]} />
+              <LoadingSkeletonBlock
+                style={[styles.loadingLine, styles.loadingLineWide]}
+                animatedStyle={blockPulse}
+              />
+              <LoadingSkeletonBlock
+                style={[styles.loadingLine, styles.loadingLineMedium]}
+                animatedStyle={blockPulse}
+              />
+              <LoadingSkeletonBlock
+                style={[styles.loadingLine, styles.loadingLineShort]}
+                animatedStyle={blockPulse}
+              />
             </View>
           </View>
         ))}

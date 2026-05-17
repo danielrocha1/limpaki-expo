@@ -143,7 +143,7 @@ export default function Login() {
         if (roleResponse.ok) {
           const roleData = await roleResponse.json();
           setIsTestUser(Boolean(roleData?.is_test_user));
-          if (!roleData?.email_verified && !roleData?.is_test_user) {
+          if (!roleData?.email_verified) {
             redirectPath = "/profile?focus=email";
           } else if (roleData?.role === "diarista") {
             redirectPath = "/offers";

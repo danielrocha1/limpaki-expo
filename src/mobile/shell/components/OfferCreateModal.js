@@ -13,15 +13,35 @@ import { apiFetch } from "../../../config/api";
 import { palette, styles } from "../AppShell.styles";
 import { formatAddress, formatCurrency, normalizeAddress, sanitizeTimeDigits } from "../utils/shellUtils";
 
-const OFFER_CREATE_TOTAL_STEPS = 4;
+const OFFER_CREATE_TOTAL_STEPS = 5;
 const OFFER_START_HOUR = 8;
 const OFFER_END_HOUR = 20;
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
-const OFFER_SERVICE_TYPES = [
-  "Limpeza padrão",
-  "Limpeza pesada",
-  "Pós-obra",
-  "Passadoria",
+const OFFER_SERVICE_TYPE_OPTIONS = [
+  {
+    value: "Limpeza padrão",
+    label: "Limpeza padrão",
+    icon: "home",
+    copy: "Limpeza do dia a dia",
+  },
+  {
+    value: "Limpeza pesada",
+    label: "Limpeza pesada",
+    icon: "layers",
+    copy: "Sujeira acumulada ou areas dificeis",
+  },
+  {
+    value: "Pós-obra",
+    label: "Pós-obra",
+    icon: "tool",
+    copy: "Pos-reforma ou construcao",
+  },
+  {
+    value: "Passadoria",
+    label: "Passadoria",
+    icon: "wind",
+    copy: "Roupas e tecidos",
+  },
 ];
 const OFFER_TIME_OPTIONS = Array.from(
   { length: (OFFER_END_HOUR - OFFER_START_HOUR) * 2 + 1 },
@@ -274,12 +294,14 @@ export default function OfferCreateModal({ visible, activeAddress, onClose, onCr
   const isStep2Valid = createDateOk && isTimeOptionValid;
   const durationHoursPreview = normalizeNumericInput(createForm.hours);
   const initialValuePreview = normalizeNumericInput(createForm.value);
+  const hasValueInput = createForm.value.trim().length > 0;
   const isStep3Valid =
     Number.isFinite(durationHoursPreview) &&
     durationHoursPreview >= 1 &&
+    hasValueInput &&
     Number.isFinite(initialValuePreview) &&
-    initialValuePreview >= 0;
-  const isStep4Valid = true;
+    initialValuePreview > 0;
+  const isStep4Valid = createForm.observations.trim().length > 0;
 
   const handleCreateMonthChange = (offset) => {
     setCreateCalendarMonth((previousMonth) => {
@@ -301,6 +323,10 @@ export default function OfferCreateModal({ visible, activeAddress, onClose, onCr
     }
     if (currentStep === 3 && isStep3Valid) {
       setCurrentStep(4);
+      return;
+    }
+    if (currentStep === 4 && isStep4Valid) {
+      setCurrentStep(5);
     }
   };
 
@@ -337,8 +363,8 @@ export default function OfferCreateModal({ visible, activeAddress, onClose, onCr
       return;
     }
 
-    if (!Number.isFinite(initialValue) || initialValue < 0) {
-      Alert.alert("Valor invalido", "Informe um valor inicial valido.");
+    if (!Number.isFinite(initialValue) || initialValue <= 0) {
+      Alert.alert("Valor invalido", "Informe um valor inicial maior que zero.");
       return;
     }
 
@@ -394,7 +420,7 @@ export default function OfferCreateModal({ visible, activeAddress, onClose, onCr
           />
         </View>
         <View style={styles.orderProgressSteps}>
-          {[1, 2, 3, 4].map((step) => (
+          {[1, 2, 3, 4, 5].map((step) => (
             <View
               key={step}
               style={[
@@ -417,24 +443,40 @@ export default function OfferCreateModal({ visible, activeAddress, onClose, onCr
             <View style={styles.orderSection}>
               <Text style={styles.orderSectionTitle}>Tipo de servico</Text>
               <Text style={styles.orderSectionCopy}>Escolha a categoria principal da limpeza.</Text>
-              <View style={styles.offerCreateOptionGrid}>
-                {OFFER_SERVICE_TYPES.map((serviceType) => {
-                  const selected = createForm.serviceType === serviceType;
+              <View style={styles.offerCreateServiceGrid}>
+                {OFFER_SERVICE_TYPE_OPTIONS.map((option) => {
+                  const selected = createForm.serviceType === option.value;
                   return (
                     <TouchableOpacity
-                      key={serviceType}
+                      key={option.value}
                       activeOpacity={0.85}
-                      style={[styles.offerCreateOptionChip, selected && styles.offerCreateOptionChipActive]}
-                      onPress={() => setCreateForm((current) => ({ ...current, serviceType }))}
+                      style={[
+                        styles.offerCreateServiceCard,
+                        selected && styles.offerCreateServiceCardActive,
+                      ]}
+                      onPress={() => setCreateForm((current) => ({ ...current, serviceType: option.value }))}
                     >
-                      <Text
+                      <View
                         style={[
-                          styles.offerCreateOptionChipText,
-                          selected && styles.offerCreateOptionChipTextActive,
+                          styles.offerCreateServiceIconWrap,
+                          selected && styles.offerCreateServiceIconWrapActive,
                         ]}
                       >
-                        {serviceType}
+                        <Feather
+                          name={option.icon}
+                          size={22}
+                          color={selected ? palette.accent : palette.muted}
+                        />
+                      </View>
+                      <Text
+                        style={[
+                          styles.offerCreateServiceCardTitle,
+                          selected && styles.offerCreateServiceCardTitleActive,
+                        ]}
+                      >
+                        {option.label}
                       </Text>
+                      <Text style={styles.offerCreateServiceCardCopy}>{option.copy}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -603,21 +645,27 @@ export default function OfferCreateModal({ visible, activeAddress, onClose, onCr
                   <Text style={styles.offerCreateFieldLabel}>Valor (R$)</Text>
                   <TextInput
                     style={[styles.modalInput, styles.offerCreateModalInput]}
-                    placeholder="0"
+                    placeholder="Ex.: 120,00"
                     keyboardType="decimal-pad"
                     value={createForm.value}
-                    onChangeText={(value) => setCreateForm((current) => ({ ...current, value: value }))}
+                    onChangeText={(value) => setCreateForm((current) => ({ ...current, value }))}
                   />
                 </View>
               </View>
+              {!isStep3Valid && hasValueInput && (!Number.isFinite(initialValuePreview) || initialValuePreview <= 0) ? (
+                <Text style={styles.errorText}>Informe um valor inicial maior que zero.</Text>
+              ) : null}
+              {!hasValueInput ? (
+                <Text style={styles.orderHint}>Preencha o valor para continuar.</Text>
+              ) : null}
             </View>
           ) : null}
 
           {currentStep === 4 ? (
             <View style={styles.orderSection}>
-              <Text style={styles.orderSectionTitle}>Observacoes e revisao</Text>
+              <Text style={styles.orderSectionTitle}>Observacoes</Text>
               <Text style={styles.orderSectionCopy}>
-                Adicione detalhes para a diarista e revise antes de publicar.
+                Descreva detalhes para a diarista. No proximo passo voce confere o resumo da oferta.
               </Text>
               <TextInput
                 style={[styles.modalInput, styles.modalTextarea, styles.offerCreateModalInput]}
@@ -626,7 +674,16 @@ export default function OfferCreateModal({ visible, activeAddress, onClose, onCr
                 value={createForm.observations}
                 onChangeText={(value) => setCreateForm((current) => ({ ...current, observations: value }))}
               />
-              <View style={[styles.orderReviewCard, { marginTop: 16 }]}>
+            </View>
+          ) : null}
+
+          {currentStep === 5 ? (
+            <View style={styles.orderSection}>
+              <Text style={styles.orderSectionTitle}>Revise sua oferta</Text>
+              <Text style={styles.orderSectionCopy}>
+                Confira os dados abaixo. Se estiver tudo certo, publique a oferta.
+              </Text>
+              <View style={styles.orderReviewCard}>
                 <View style={styles.orderReviewItem}>
                   <Text style={styles.orderReviewLabel}>🧽 Servico</Text>
                   <Text style={styles.orderReviewValue}>{createForm.serviceType}</Text>
@@ -646,6 +703,10 @@ export default function OfferCreateModal({ visible, activeAddress, onClose, onCr
                 <View style={styles.orderReviewItem}>
                   <Text style={styles.orderReviewLabel}>📍 Endereco</Text>
                   <Text style={styles.orderReviewValue}>{addressLabel}</Text>
+                </View>
+                <View style={styles.orderReviewItem}>
+                  <Text style={styles.orderReviewLabel}>📝 Observacoes</Text>
+                  <Text style={styles.orderReviewValue}>{createForm.observations.trim()}</Text>
                 </View>
                 <View style={styles.orderReviewDivider} />
                 <View style={styles.orderReviewItem}>
