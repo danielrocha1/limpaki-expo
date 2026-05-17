@@ -20,8 +20,7 @@ type RegisterPayload struct {
 	Phone      int64  `json:"phone"`
 	Cpf        string `json:"cpf"`
 	Password   string `json:"password"`
-	Role       string `json:"role"`
-	IsTestUser bool   `json:"is_test_user"`
+	Role string `json:"role"`
 
 	Address models.Address `json:"address"`
 
@@ -135,7 +134,7 @@ func CreateUser(c *fiber.Ctx) error {
 		Cpf:          strings.TrimSpace(payload.Cpf),
 		PasswordHash: hashedPassword,
 		Role:         strings.TrimSpace(payload.Role),
-		IsTestUser:   payload.IsTestUser,
+		IsTestUser:   config.ShouldMarkAsTestUser(normalizedEmail),
 		Photo:        defaultPhotoURL,
 	}
 
@@ -288,9 +287,6 @@ func UpdateUser(c *fiber.Ctx) error {
 	emailChanged := user.Email != email
 	user.Email = email
 	user.Phone = phoneValue
-	if request.IsTestUser != nil {
-		user.IsTestUser = *request.IsTestUser
-	}
 	if emailChanged {
 		user.EmailVerified = false
 		user.EmailVerifiedAt = nil

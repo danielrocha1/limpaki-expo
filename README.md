@@ -16,37 +16,61 @@ npm install
 
 ## Variaveis de ambiente
 
-Crie um `.env` a partir de `.env.example` e ajuste os valores do backend:
+Ha dois arquivos de exemplo:
 
-```env
-EXPO_PUBLIC_API_URL=https://limpaki-expo-fvjj.onrender.com
-# Opcional: desativar fluxo de planos apos cadastro (padrao: habilitado)
-# EXPO_PUBLIC_SUBSCRIPTION_CHECKOUT_ENABLED=false
-```
+| Arquivo | Uso |
+|---------|-----|
+| [`.env.example`](.env.example) | App Expo / proxy (`EXPO_PUBLIC_*`, `LIMPAE_PROXY_*`) |
+| [`go/src/config/.env.example`](go/src/config/.env.example) | API Go local (`DATABASE_URL`, JWT, Resend, Mercado Pago, Supabase) |
 
-Observacoes:
+### App Expo (raiz do projeto)
 
-- `EXPO_PUBLIC_API_URL` e a variavel usada pelo app Expo (fallback em codigo tambem aponta para `https://limpaki-expo-fvjj.onrender.com`).
-- Assinatura usa Mercado Pago no backend; o app so redireciona para o link (`url` / `init_point`) devolvido pela API. Para desativar o passo de planos no cadastro, use `EXPO_PUBLIC_SUBSCRIPTION_CHECKOUT_ENABLED=false`.
-- Copie `.env.example` para `.env` local se precisar sobrescrever a URL.
+Copie `.env.example` para `.env`:
 
-### Backend no Render (servico Go / API)
+| Variavel | Obrigatoria | Descricao |
+|----------|-------------|-----------|
+| `EXPO_PUBLIC_API_URL` | Sim (recomendado) | URL base da API. Fallback em codigo: `https://limpaki-expo-fvjj.onrender.com`. |
+| `EXPO_PUBLIC_SUBSCRIPTION_CHECKOUT_ENABLED` | Nao | `false` desativa o passo de planos apos cadastro. |
+| `EXPO_PUBLIC_SUPPORT_WHATSAPP` | Nao | Numero WhatsApp (somente digitos) na Central de Ajuda. |
+| `REACT_APP_API_URL` | Nao | Build web CRA legado, se ainda usado. |
+| `LIMPAE_PROXY_TARGET` | Nao | Destino do proxy local (`npm run start:proxy`). |
+| `LIMPAE_PROXY_PORT` | Nao | Porta do proxy (padrao `8787`). |
 
-No painel do **mesmo** servico que hospeda a API (ex.: `limpaki-expo-fvjj.onrender.com`), configure pelo menos:
+### Backend Go (`go/src/config/.env` ou Environment no Render)
 
-| Variavel | Descricao |
-|----------|-----------|
-| `DATABASE_URL` | Connection string PostgreSQL (Render Postgres ou externo). |
-| `MERCADO_PAGO_ACCESS_TOKEN` | Access token de producao ou teste do Mercado Pago. |
-| `MERCADO_PAGO_WEBHOOK_URL` | URL publica do webhook, ex. `https://limpaki-expo-fvjj.onrender.com/api/mercadopago/webhook` (ajuste se o host for outro). |
-| `MERCADO_PAGO_SUCCESS_URL` | Pagina do app web apos pagamento OK (ex. app na Vercel: `.../assinatura/success`). |
-| `MERCADO_PAGO_FAILURE_URL` | Pagina se falhar ou cancelar. |
-| `MERCADO_PAGO_PENDING_URL` | Pagina se pagamento ficar pendente (boleto etc.). |
-| `JWT_SECRET` | Segredo para assinar e validar JWT (obrigatorio para login funcionar). |
-| `ALLOWED_ORIGINS` | Lista separada por virgula de origens CORS (ex.: web Expo, Vercel). |
-| `FRONT_END_URL` / `FRONT_END_URL1` | Origens extra aceites pelo backend (ver `go/src/config/auth.go`). |
+| Variavel | Obrigatoria | Descricao |
+|----------|-------------|-----------|
+| `DATABASE_URL` | Sim | PostgreSQL. |
+| `JWT_SECRET` | Sim | Assinatura de JWT no login. |
+| `PORT` | Nao | Porta HTTP (Render define automaticamente). |
+| `APP_ENV` | Nao | `production` / `staging` / `render` ativa cookies `Secure` no login. |
+| `ALLOWED_ORIGINS` | Nao* | CORS: lista separada por virgula. |
+| `FRONT_END_URL`, `FRONT_END_URL1` | Nao* | Origens CORS e base do link de verificacao de e-mail. |
+| `APP_URL`, `PUBLIC_APP_URL` | Nao | Fallback para URL de verificacao de e-mail. |
+| `INTERNAL_TEST_USER_EMAILS` | Nao | E-mails (virgula) marcados como `is_test_user` **somente no cadastro**. Nao pode ser alterado pela API. |
+| `RESEND_API_KEY` | Sim** | Envio de e-mail de verificacao. |
+| `RESEND_FROM_EMAIL`, `RESEND_FROM_NAME` | Sim** | Remetente Resend. |
+| `EMAIL_FROM`, `EMAIL_ALERT_TO`, `EMAIL_PASSWORD` | Nao | SMTP legado (alertas/upload). |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_STORAGE_BUCKET` | Sim*** | Fotos de perfil no storage. |
+| `MERCADO_PAGO_ACCESS_TOKEN` | Sim**** | Checkout Pro / assinaturas. |
+| `MERCADO_PAGO_WEBHOOK_URL` | Sim**** | Webhook publico (`/api/mercadopago/webhook`). |
+| `MERCADO_PAGO_SUCCESS_URL` / `FAILURE_URL` / `PENDING_URL` | Nao | Redirects web; app nativo pode enviar URLs no checkout. |
+| `SUBSCRIPTION_*_URL` | Nao | Aliases opcionais das URLs acima. |
+| `CHAT_ALLOWED_ORIGINS` | Nao | CORS do WebSocket de chat. |
+| `CHAT_LOCATION_MIN_INTERVAL` | Nao | Ex.: `1s` entre updates de localizacao. |
+| `CHAT_WS_READ_BUFFER`, `CHAT_WS_WRITE_BUFFER` | Nao | Buffers do WebSocket. |
 
-Outras variaveis que o backend pode usar localmente (email, Supabase, etc.) continuam no `.env` carregado pelo Go em `src/config/.env` em desenvolvimento; no Render define-as tambem em **Environment**. No Mercado Pago, cadastra o webhook igual ao `MERCADO_PAGO_WEBHOOK_URL`.
+\* Se `ALLOWED_ORIGINS` estiver vazio, o backend usa `FRONT_END_URL` / `FRONT_END_URL1` ou defaults locais (`go/src/config/auth.go`).
+
+\*\* Obrigatorias para enviar e-mail de confirmacao de conta.
+
+\*\*\* Obrigatorias para upload/resolucao de foto de perfil.
+
+\*\*\*\* Obrigatorias para assinatura paga; usuarios em `INTERNAL_TEST_USER_EMAILS` ou com `is_test_user` no banco têm acesso premium sem assinatura.
+
+**Seguranca `is_test_user`:** o campo nao aceita `is_test_user` no `PUT /api/users/:id` (JSON estrito rejeita o campo). No `POST /api/users`, o payload `is_test_user` e ignorado; use `INTERNAL_TEST_USER_EMAILS` ou atualize direto no banco.
+
+No Render, defina as variaveis do backend em **Environment** do servico da API. Cadastre no Mercado Pago o webhook igual a `MERCADO_PAGO_WEBHOOK_URL`.
 
 ### Testes Mercado Pago (Checkout Pro / preferencias)
 

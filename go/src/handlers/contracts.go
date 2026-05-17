@@ -179,10 +179,9 @@ func validateState(v *validationCollector, field string, value string) string {
 }
 
 type UserUpdateRequestDTO struct {
-	Name       string `json:"name"`
-	Email      string `json:"email"`
-	Phone      string `json:"phone"`
-	IsTestUser *bool  `json:"is_test_user"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Phone string `json:"phone"`
 }
 
 type AddressUpsertRequestDTO struct {
